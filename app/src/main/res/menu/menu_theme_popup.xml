@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/theme_system"
+        android:title="@string/theme_system"
+        android:icon="@drawable/ic_theme_system"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/theme_light"
+        android:title="@string/theme_light"
+        android:icon="@drawable/ic_theme_light"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/theme_dark"
+        android:title="@string/theme_dark"
+        android:icon="@drawable/ic_theme_dark"
+        android:checkable="true"/>
+
+</menu>

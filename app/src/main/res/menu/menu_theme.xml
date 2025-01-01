@@ -1,0 +1,9 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/theme_button"
+        android:title="@string/theme_system"
+        android:icon="@drawable/ic_theme_system"
+        app:showAsAction="always"/>
+</menu>

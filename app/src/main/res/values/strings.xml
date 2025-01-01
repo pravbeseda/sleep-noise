@@ -1,3 +1,6 @@
 <resources>
-    <string name="app_name">White Noise</string>
+    <string name="app_name">White and Brown Noise</string>
+    <string name="theme_system">System Theme</string>
+    <string name="theme_light">Light Theme</string>
+    <string name="theme_dark">Dark Theme</string>
 </resources>

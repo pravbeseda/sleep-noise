@@ -1,5 +1,11 @@
 <resources>
-    <style name="Theme.WhiteNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar" />
-    <style name="Theme.WhiteNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar" />
-    <style name="Theme.WhiteNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar" />
+    <style name="Theme.WhiteNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorControlNormal">#CCCCCC</item>
+    </style>
+    <style name="Theme.WhiteNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorControlNormal">#CCCCCC</item>
+    </style>
+    <style name="Theme.WhiteNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorControlNormal">#CCCCCC</item>
+    </style>
 </resources>
