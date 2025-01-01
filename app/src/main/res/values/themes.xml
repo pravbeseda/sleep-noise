@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.WhiteNoise" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.WhiteNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar" />
+    <style name="Theme.WhiteNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar" />
+    <style name="Theme.WhiteNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar" />
 </resources>
