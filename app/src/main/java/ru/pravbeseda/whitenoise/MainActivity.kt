@@ -20,6 +20,11 @@ class MainActivity : AppCompatActivity() {
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
 
+        whiteNoiseVolume.progress = 50
+        brownNoiseVolume.progress = 50
+        whiteNoiseGenerator.setVolume(0.5f)
+        brownNoiseGenerator.setVolume(0.5f)
+
         playPauseButton.setOnClickListener {
             if (isPlaying) {
                 stopNoise()
