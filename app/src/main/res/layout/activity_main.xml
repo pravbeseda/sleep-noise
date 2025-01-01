@@ -7,21 +7,33 @@
     android:padding="16dp">
 
     <Button
-        android:id="@+id/startWhiteNoiseButton"
+        android:id="@+id/playPauseButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start White Noise"/>
+        android:text="Play Noise"/>
 
-    <Button
-        android:id="@+id/startBrownNoiseButton"
-        android:layout_width="match_parent"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Brown Noise"/>
+        android:text="White Noise Volume"
+        android:paddingTop="16dp"/>
 
-    <Button
-        android:id="@+id/stopNoiseButton"
+    <SeekBar
+        android:id="@+id/whiteNoiseVolume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Stop Noise"/>
+        android:max="100"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Brown Noise Volume"
+        android:paddingTop="16dp"/>
+
+    <SeekBar
+        android:id="@+id/brownNoiseVolume"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"/>
 
 </LinearLayout>

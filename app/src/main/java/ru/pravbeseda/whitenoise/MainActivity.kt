@@ -3,49 +3,64 @@ package ru.pravbeseda.whitenoise
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
+import android.widget.SeekBar
 import ru.pravbeseda.whitenoise.media.BrownNoiseGenerator
 import ru.pravbeseda.whitenoise.media.WhiteNoiseGenerator
 
 class MainActivity : AppCompatActivity() {
     private val whiteNoiseGenerator = WhiteNoiseGenerator()
     private val brownNoiseGenerator = BrownNoiseGenerator()
-    private var currentGenerator: Any? = null
+    private var isPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val startWhiteNoiseButton: Button = findViewById(R.id.startWhiteNoiseButton)
-        val startBrownNoiseButton: Button = findViewById(R.id.startBrownNoiseButton)
-        val stopNoiseButton: Button = findViewById(R.id.stopNoiseButton)
+        val playPauseButton: Button = findViewById(R.id.playPauseButton)
+        val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
+        val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
 
-        startWhiteNoiseButton.setOnClickListener {
-            stopCurrentNoise()
-            currentGenerator = whiteNoiseGenerator
-            whiteNoiseGenerator.startNoise()
+        playPauseButton.setOnClickListener {
+            if (isPlaying) {
+                stopNoise()
+                playPauseButton.text = "Play Noise"
+            } else {
+                startNoise()
+                playPauseButton.text = "Stop Noise"
+            }
+            isPlaying = !isPlaying
         }
 
-        startBrownNoiseButton.setOnClickListener {
-            stopCurrentNoise()
-            currentGenerator = brownNoiseGenerator
-            brownNoiseGenerator.startNoise()
-        }
+        whiteNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                whiteNoiseGenerator.setVolume(progress / 100f)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
-        stopNoiseButton.setOnClickListener {
-            stopCurrentNoise()
-        }
+        brownNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                brownNoiseGenerator.setVolume(progress / 100f)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
     }
 
-    private fun stopCurrentNoise() {
-        when (currentGenerator) {
-            is WhiteNoiseGenerator -> whiteNoiseGenerator.stopNoise()
-            is BrownNoiseGenerator -> brownNoiseGenerator.stopNoise()
-        }
-        currentGenerator = null
+    private fun startNoise() {
+        whiteNoiseGenerator.startNoise()
+        brownNoiseGenerator.startNoise()
+    }
+
+    private fun stopNoise() {
+        whiteNoiseGenerator.stopNoise()
+        brownNoiseGenerator.stopNoise()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        stopCurrentNoise()
+        stopNoise()
     }
 }
+
