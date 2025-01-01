@@ -20,11 +20,13 @@ abstract class BaseNoiseGenerator {
     }
 
     fun startNoise() {
-        val bufferSize = AudioTrack.getMinBufferSize(
+        val minBufferSize = AudioTrack.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_OUT_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
+
+        val bufferSize = minBufferSize * 2
 
         audioTrack = AudioTrack.Builder()
             .setAudioAttributes(
@@ -58,7 +60,10 @@ abstract class BaseNoiseGenerator {
                 audioTrack?.write(noiseData, 0, noiseData.size)
             }
             Log.d("NoiseGenerator", "Thread stopped.")
-        }.start()
+        }.apply {
+            priority = Thread.MAX_PRIORITY
+            start()
+        }
     }
 
     fun stopNoise() {
