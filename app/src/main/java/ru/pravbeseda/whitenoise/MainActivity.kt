@@ -8,6 +8,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.SeekBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.PopupMenu
 import ru.pravbeseda.whitenoise.media.BrownNoiseGenerator
@@ -23,6 +24,8 @@ class MainActivity : AppCompatActivity() {
     private val brownNoiseGenerator = BrownNoiseGenerator()
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
+    private lateinit var whiteNoiseLabel: TextView
+    private lateinit var brownNoiseLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
@@ -35,14 +38,16 @@ class MainActivity : AppCompatActivity() {
         val playButton: Button = findViewById(R.id.playButton)
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
+        whiteNoiseLabel = findViewById(R.id.whiteNoiseLabel)
+        brownNoiseLabel = findViewById(R.id.brownNoiseLabel)
 
         val whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, 0.5f)
         val brownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, 0.5f)
 
         whiteNoiseVolume.progress = (whiteVolume * 100).toInt()
         brownNoiseVolume.progress = (brownVolume * 100).toInt()
-        whiteNoiseGenerator.setVolume(whiteVolume)
-        brownNoiseGenerator.setVolume(brownVolume)
+        setWhiteNoiseVolume(whiteVolume)
+        setBrownNoiseVolume(brownVolume)
 
         playButton.setOnClickListener {
             if (isPlaying) {
@@ -58,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         whiteNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val volume = progress / 100f
-                whiteNoiseGenerator.setVolume(volume)
+                setWhiteNoiseVolume(volume)
                 saveVolume(WHITE_NOISE_VOLUME, volume)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -68,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         brownNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val volume = progress / 100f
-                brownNoiseGenerator.setVolume(volume)
+                setBrownNoiseVolume(volume)
                 saveVolume(BROWN_NOISE_VOLUME, volume)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -176,6 +181,16 @@ class MainActivity : AppCompatActivity() {
             "light" -> themeItem?.setIcon(R.drawable.ic_theme_light)
             "dark" -> themeItem?.setIcon(R.drawable.ic_theme_dark)
         }
+    }
+
+    private fun setWhiteNoiseVolume(volume: Float) {
+        whiteNoiseGenerator.setVolume(volume)
+        whiteNoiseLabel.text = getString(R.string.white_noise_volume, (volume * 100).toInt())
+    }
+
+    private fun setBrownNoiseVolume(volume: Float) {
+        brownNoiseGenerator.setVolume(volume)
+        brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
     }
 }
 
