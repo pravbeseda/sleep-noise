@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/theme_button"
+        android:title="@string/theme_system"
+        android:icon="@drawable/ic_theme_system"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/language_button"
+        android:title="@string/language"
+        android:icon="@drawable/ic_language"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/mail"
+        android:title="@string/mail"
+        android:icon="@drawable/ic_email"
+        app:showAsAction="never"/>
+</menu>

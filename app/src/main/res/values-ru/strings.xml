@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">ru</string>
+    <string name="app_name">Шум для сна</string>
+    <string name="white_noise_volume">Белый шум: %1$d%%</string>
+    <string name="brown_noise_volume">Коричневый шум: %1$d%%</string>
+    <string name="play_button">Играть</string>
+    <string name="theme_system">Системная тема</string>
+    <string name="theme_light">Светлая тема</string>
+    <string name="theme_dark">Темная тема</string>
+    <string name="language">Язык (Language)</string>
+    <string name="select_language">Выбрать язык</string>
+    <string name="title_language_need">Нам нужна помощь с переводом</string>
+    <string name="text_language_need">Если вы хотите помочь с переводом приложения на другой язык, напишите разработчику. Спасибо!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Отмена</string>
+    <string name="mail">Написать разработчику</string>
+    <string name="mail_choose">Выберите почтовое приложение</string>
+</resources>

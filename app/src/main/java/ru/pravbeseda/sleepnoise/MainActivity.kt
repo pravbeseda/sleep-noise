@@ -1,6 +1,12 @@
 package ru.pravbeseda.sleepnoise
 
+import android.annotation.SuppressLint
+import android.content.DialogInterface
+import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -9,15 +15,21 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
 import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
 import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
+import ru.pravbeseda.sleepnoise.models.Language
+import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
+import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
 const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
+const val CURRENT_LANGUAGE = "selectedLanguage"
 
 class MainActivity : AppCompatActivity() {
     private val whiteNoiseGenerator = WhiteNoiseGenerator()
@@ -31,9 +43,12 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
         val currentTheme = preferences.getString(CURRENT_THEME, "system") ?: "system"
         applyTheme(currentTheme)
+        applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        supportActionBar?.title = getString(R.string.app_name)
 
         val playButton: Button = findViewById(R.id.playButton)
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
@@ -81,9 +96,19 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    @SuppressLint("RestrictedApi")
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_theme, menu)
+        menuInflater.inflate(R.menu.menu, menu)
         updateThemeIcon(menu)
+        try {
+            // hack to show icons in popup menu
+            if (menu is MenuBuilder) {
+                menu.setOptionalIconsVisible(true)
+            }
+        } catch (e: ClassCastException) {
+            e.printStackTrace()
+        }
+
         return true
     }
 
@@ -91,6 +116,14 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.theme_button -> {
                 showThemePopup(findViewById(R.id.theme_button))
+                true
+            }
+            R.id.language_button -> {
+                languageSelection()
+                true
+            }
+            R.id.mail -> {
+                mailToMe()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -191,6 +224,93 @@ class MainActivity : AppCompatActivity() {
     private fun setBrownNoiseVolume(volume: Float) {
         brownNoiseGenerator.setVolume(volume)
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
+    }
+
+    private fun languageSelection() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.select_language)
+        val languages = arrayOf(
+            Language("en", R.drawable.flag_united_kingdom, R.string.english),
+            Language("ru", R.drawable.flag_russia, R.string.russian, "Russian"),
+            Language("", R.drawable.flag_united_nations, R.string.another_language),
+        )
+        var selected = languages.indexOfFirst { it.code == getString(R.string.lang) }
+        val listAdapter = LanguagesArrayAdapter(this, languages)
+        builder.setSingleChoiceItems(listAdapter, selected) { _: DialogInterface, i: Int ->
+            selected = i
+        }
+        builder.setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
+            if (languages[selected].code != "") {
+                setLanguage(languages[selected].code)
+                recreate()
+            } else {
+                showNewLanguageMessage()
+            }
+        }
+        builder.setNegativeButton(R.string.cancel, null)
+        builder.create().show()
+    }
+
+    fun setLanguage(language: String?) {
+        val lang = if (!language.isNullOrBlank()) {
+            val ed = preferences.edit()
+            ed.putString(CURRENT_LANGUAGE, language)
+            ed.apply()
+            language
+        } else {
+            val savedLang = preferences.getString(CURRENT_LANGUAGE, null)
+            if (!savedLang.isNullOrBlank()) {
+                savedLang
+            } else {
+                getString(R.string.lang)
+            }
+        }
+        applyLanguage(lang)
+    }
+
+    private fun applyLanguage(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration()
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    private fun showNewLanguageMessage() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.title_language_need)
+        builder.setMessage(R.string.text_language_need)
+        builder.setPositiveButton(R.string.mail) { _, _ ->
+            mailToMe()
+        }
+        builder.setNegativeButton(R.string.cancel, null)
+        builder.show()
+    }
+
+    private fun mailToMe() {
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.type = "plain/text"
+        intent.putExtra(Intent.EXTRA_EMAIL, arrayOf("kalugaman@gmail.com"))
+        intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+        intent.putExtra(Intent.EXTRA_TEXT, getDebugInfo())
+        startActivity(Intent.createChooser(intent, getString(R.string.mail_choose)))
+    }
+
+    private fun getDebugInfo(): String {
+        var appVersion = ""
+        try {
+            val pInfo = this.packageManager.getPackageInfo(packageName, 0)
+            appVersion = pInfo.versionName.toString()
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        var res = "\ndevice: " + Build.DEVICE
+        res += "\nmodel: " + Build.MODEL
+        res += "\nSDK: " + Build.VERSION.SDK_INT
+        res += "\nOSVer: " + Build.VERSION.RELEASE
+        if (appVersion != "") res += "\nAppVer: $appVersion"
+        res += "\n\n"
+        return res
     }
 }
 

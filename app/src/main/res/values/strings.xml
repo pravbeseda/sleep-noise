@@ -1,9 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="lang">en</string>
     <string name="app_name">Sleep Noise</string>
-    <string name="white_noise_volume">White Noise Volume: %1$d%%</string>
-    <string name="brown_noise_volume">Brown Noise Volume: %1$d%%</string>
+    <string name="white_noise_volume">White Noise: %1$d%%</string>
+    <string name="brown_noise_volume">Brown Noise: %1$d%%</string>
     <string name="play_button">Play</string>
     <string name="theme_system">System Theme</string>
     <string name="theme_light">Light Theme</string>
     <string name="theme_dark">Dark Theme</string>
+    <string name="language">Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="title_language_need">We need help to translate</string>
+    <string name="text_language_need">If you want to help with the translation of the application into another language, please contact the app developer. Thank you!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="mail">Email to developer</string>
+    <string name="mail_choose">Select mail app</string>
+
+    <!-- No need to translate below. Just add your language -->
+    <string name="russian" translatable="false">Русский</string>
+    <string name="english" translatable="false">English</string>
+    <string name="another_language" translatable="false">Another language</string>
 </resources>
