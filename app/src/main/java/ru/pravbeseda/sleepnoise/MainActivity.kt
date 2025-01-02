@@ -1,4 +1,4 @@
-package ru.pravbeseda.whitenoise
+package ru.pravbeseda.sleepnoise
 
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -11,8 +11,8 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.PopupMenu
-import ru.pravbeseda.whitenoise.media.BrownNoiseGenerator
-import ru.pravbeseda.whitenoise.media.WhiteNoiseGenerator
+import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
+import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
 
 const val APP_PREFS = "AppPreferences"
 const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "White Noise"
+rootProject.name = "Sleep Noise"
 include(":app")
  

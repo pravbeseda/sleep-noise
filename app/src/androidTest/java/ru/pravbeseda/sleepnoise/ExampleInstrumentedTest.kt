@@ -1,4 +1,4 @@
-package ru.pravbeseda.whitenoise
+package ru.pravbeseda.sleepnoise
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

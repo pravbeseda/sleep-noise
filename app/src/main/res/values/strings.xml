@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">White and Brown Noise</string>
+    <string name="app_name">Sleep Noise</string>
     <string name="white_noise_volume">White Noise Volume: %1$d%%</string>
     <string name="brown_noise_volume">Brown Noise Volume: %1$d%%</string>
     <string name="play_button">Play</string>

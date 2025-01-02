@@ -1,4 +1,4 @@
-package ru.pravbeseda.whitenoise
+package ru.pravbeseda.sleepnoise
 
 import org.junit.Test
 

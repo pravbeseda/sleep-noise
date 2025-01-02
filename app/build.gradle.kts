@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "ru.pravbeseda.whitenoise"
+    namespace = "ru.pravbeseda.sleepnoise"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "ru.pravbeseda.whitenoise"
+        applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

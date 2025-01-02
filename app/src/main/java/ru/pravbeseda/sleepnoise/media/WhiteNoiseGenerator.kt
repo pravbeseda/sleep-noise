@@ -1,4 +1,4 @@
-package ru.pravbeseda.whitenoise.media
+package ru.pravbeseda.sleepnoise.media
 
 import kotlin.random.Random
 
