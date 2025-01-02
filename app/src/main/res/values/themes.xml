@@ -1,11 +1,14 @@
 <resources>
     <style name="Theme.WhiteNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorControlNormal">#CCCCCC</item>
+        <item name="colorControlNormal">@color/colorControlNormal</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
     <style name="Theme.WhiteNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorControlNormal">#CCCCCC</item>
+        <item name="colorControlNormal">@color/colorControlNormal</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
     <style name="Theme.WhiteNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorControlNormal">#CCCCCC</item>
+        <item name="colorControlNormal">@color/colorControlNormal</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
 </resources>

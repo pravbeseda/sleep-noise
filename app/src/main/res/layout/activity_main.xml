@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:gravity="center_horizontal"
     android:padding="16dp">
 
     <TextView
@@ -31,9 +32,16 @@
         android:max="100"/>
 
     <Button
-        android:id="@+id/playPauseButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Play Noise"/>
+        android:id="@+id/playButton"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:contentDescription="@string/play_button"
+        android:text=""
+        android:tint="@color/cardview_dark_background"
+        android:gravity="center"
+        android:padding="16dp"
+        android:layout_marginTop="40dp"
+        android:drawableTop="@drawable/ic_play"
+        android:drawablePadding="0dp"/>
 
 </LinearLayout>

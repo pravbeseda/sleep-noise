@@ -8,6 +8,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.PopupMenu
 import ru.pravbeseda.whitenoise.media.BrownNoiseGenerator
 import ru.pravbeseda.whitenoise.media.WhiteNoiseGenerator
@@ -25,12 +26,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        applyTheme(preferences.getString(CURRENT_THEME, "system") ?: "system")
+        val currentTheme = preferences.getString(CURRENT_THEME, "system") ?: "system"
+        applyTheme(currentTheme)
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val playPauseButton: Button = findViewById(R.id.playPauseButton)
+        val playButton: Button = findViewById(R.id.playButton)
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
 
@@ -42,13 +44,13 @@ class MainActivity : AppCompatActivity() {
         whiteNoiseGenerator.setVolume(whiteVolume)
         brownNoiseGenerator.setVolume(brownVolume)
 
-        playPauseButton.setOnClickListener {
+        playButton.setOnClickListener {
             if (isPlaying) {
                 stopNoise()
-                playPauseButton.text = "Play Noise"
+                playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_play, 0, 0)
             } else {
                 startNoise()
-                playPauseButton.text = "Stop Noise"
+                playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_pause, 0, 0)
             }
             isPlaying = !isPlaying
         }
@@ -150,9 +152,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyTheme(theme: String) {
         when (theme) {
-            "system" -> setTheme(R.style.Theme_WhiteNoise_System)
-            "light" -> setTheme(R.style.Theme_WhiteNoise_Light)
-            "dark" -> setTheme(R.style.Theme_WhiteNoise_Dark)
+            "system" -> {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                setTheme(R.style.Theme_WhiteNoise_System)
+            }
+            "light" -> {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                setTheme(R.style.Theme_WhiteNoise_Light)
+            }
+            "dark" -> {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                setTheme(R.style.Theme_WhiteNoise_Dark)
+            }
         }
     }
 
