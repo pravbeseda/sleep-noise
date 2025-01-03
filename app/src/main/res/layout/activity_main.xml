@@ -33,18 +33,48 @@
         android:layout_height="wrap_content"
         android:max="100"/>
 
-    <Button
-        android:id="@+id/playButton"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:contentDescription="@string/play_button"
-        android:text=""
-        android:tint="@color/cardview_dark_background"
-        android:gravity="center"
-        android:padding="16dp"
-        android:layout_marginTop="40dp"
-        android:drawableTop="@drawable/ic_play"
-        android:drawablePadding="0dp"/>
+    <LinearLayout
+        android:id="@+id/playTimerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/playButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:contentDescription="@string/play_button"
+                android:text=""
+                android:tint="@color/cardview_dark_background"
+                android:gravity="center"
+                android:padding="16dp"
+                android:drawableTop="@drawable/ic_play"
+                android:drawablePadding="0dp"
+                android:layout_gravity="center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ru.pravbeseda.sleepnoise.timer.TimerView
+                android:id="@+id/timerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <Space
         android:layout_width="match_parent"
@@ -52,7 +82,7 @@
         android:layout_weight="1"/>
 
     <ImageView
-        android:id="@+id/app_logo"
+        android:id="@+id/cats"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"

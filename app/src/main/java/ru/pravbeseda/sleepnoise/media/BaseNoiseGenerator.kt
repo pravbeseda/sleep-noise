@@ -4,11 +4,14 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
+import java.util.concurrent.atomic.AtomicBoolean
 
 abstract class BaseNoiseGenerator {
     private var audioTrack: AudioTrack? = null
     private val sampleRate = 44100
     private var volume: Float = 1.0f
+    private val isPlaying = AtomicBoolean(false)
+    private val isStopped = AtomicBoolean(false)
 
     abstract fun generateNoiseData(bufferSize: Int): ShortArray
 
@@ -20,6 +23,11 @@ abstract class BaseNoiseGenerator {
     }
 
     fun startNoise() {
+        if (isPlaying.get()) return
+
+        isPlaying.set(true)
+        isStopped.set(false)
+
         val minBufferSize = AudioTrack.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_OUT_MONO,
@@ -51,15 +59,23 @@ abstract class BaseNoiseGenerator {
             play()
         }
 
-        Log.d("NoiseGenerator", "AudioTrack State: ${audioTrack?.playState}")
-
         Thread {
-            Log.d("NoiseGenerator", "Thread started for noise playback.")
-            while (audioTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
-                val noiseData = generateNoiseData(bufferSize)
-                audioTrack?.write(noiseData, 0, noiseData.size)
+            try {
+                Log.d("NoiseGenerator", "Thread started for noise playback.")
+                while (isPlaying.get()) {
+                    val noiseData = generateNoiseData(bufferSize)
+                    audioTrack?.let {
+                        if (it.state == AudioTrack.STATE_INITIALIZED && !isStopped.get()) {
+                            it.write(noiseData, 0, noiseData.size)
+                        }
+                    }
+                }
+            } catch (e: IllegalStateException) {
+                Log.e("NoiseGenerator", "Error during audio playback: ${e.message}")
+            } finally {
+                stopNoiseInternal()
+                Log.d("NoiseGenerator", "Thread stopped.")
             }
-            Log.d("NoiseGenerator", "Thread stopped.")
         }.apply {
             priority = Thread.MAX_PRIORITY
             start()
@@ -67,10 +83,33 @@ abstract class BaseNoiseGenerator {
     }
 
     fun stopNoise() {
-        audioTrack?.apply {
-            stop()
-            release()
+        if (!isPlaying.get()) return
+
+        isPlaying.set(false)
+        isStopped.set(true)
+
+        stopNoiseInternal()
+    }
+
+    private fun stopNoiseInternal() {
+        synchronized(this) {
+            try {
+                audioTrack?.apply {
+                    if (state == AudioTrack.STATE_INITIALIZED) {
+                        stop()
+                    }
+                }
+            } catch (e: IllegalStateException) {
+                Log.e("NoiseGenerator", "Error stopping audio playback: ${e.message}")
+            } finally {
+                try {
+                    audioTrack?.release()
+                } catch (e: IllegalStateException) {
+                    Log.e("NoiseGenerator", "Error releasing audio playback: ${e.message}")
+                }
+                audioTrack = null
+                Log.d("NoiseGenerator", "AudioTrack released.")
+            }
         }
-        audioTrack = null
     }
 }

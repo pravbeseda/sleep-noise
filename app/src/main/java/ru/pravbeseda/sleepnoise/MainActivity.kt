@@ -23,6 +23,8 @@ import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
 import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
+import ru.pravbeseda.sleepnoise.timer.TimerController
+import ru.pravbeseda.sleepnoise.timer.TimerView
 import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
@@ -34,6 +36,9 @@ const val CURRENT_LANGUAGE = "selectedLanguage"
 class MainActivity : AppCompatActivity() {
     private val whiteNoiseGenerator = WhiteNoiseGenerator()
     private val brownNoiseGenerator = BrownNoiseGenerator()
+    private lateinit var playButton: Button
+    private lateinit var timerView: TimerView
+    private lateinit var timerController: TimerController
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
     private lateinit var whiteNoiseLabel: TextView
@@ -41,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        val currentTheme = preferences.getString(CURRENT_THEME, "system") ?: "system"
+        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
         applyTheme(currentTheme)
         applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
 
@@ -55,13 +60,22 @@ class MainActivity : AppCompatActivity() {
         val versionString = getString(R.string.version, versionName)
         versionTextView.text = versionString
 
-        val playButton: Button = findViewById(R.id.playButton)
+        playButton = findViewById(R.id.playButton)
+
+        timerView = findViewById(R.id.timerView)
+
+        timerController = TimerController(
+            onTick = { time -> timerView.showCountdown(time) },
+            onFinish = { stopPlayback() }
+        )
+
+
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
         whiteNoiseLabel = findViewById(R.id.whiteNoiseLabel)
         brownNoiseLabel = findViewById(R.id.brownNoiseLabel)
 
-        val whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, 0.5f)
+        val whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, 0.0f)
         val brownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, 0.5f)
 
         whiteNoiseVolume.progress = (whiteVolume * 100).toInt()
@@ -71,13 +85,10 @@ class MainActivity : AppCompatActivity() {
 
         playButton.setOnClickListener {
             if (isPlaying) {
-                stopNoise()
-                playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_play, 0, 0)
+                stopPlayback()
             } else {
-                startNoise()
-                playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_pause, 0, 0)
+                startPlayback()
             }
-            isPlaying = !isPlaying
         }
 
         whiteNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -133,6 +144,29 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun startPlayback() {
+        isPlaying = true
+        // playButton.setBackgroundResource(R.drawable.ic_pause)
+        playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_pause, 0, 0)
+        timerView.setPlayingState(true)
+
+        val timerValue = timerView.getTimerValueInMinutes()
+        if (timerValue > 0) {
+            timerController.startTimer(timerValue)
+        }
+
+        startNoise()
+    }
+
+    private fun stopPlayback() {
+        isPlaying = false
+        playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_play, 0, 0)
+        timerController.stopTimer()
+        timerView.setPlayingState(false)
+
+        stopNoise()
     }
 
     private fun showThemePopup(anchor: View) {
