@@ -8,6 +8,10 @@ android {
     namespace = "ru.pravbeseda.sleepnoise"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 24

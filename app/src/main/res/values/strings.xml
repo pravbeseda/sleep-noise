@@ -16,6 +16,7 @@
     <string name="cancel">Cancel</string>
     <string name="mail">Email to developer</string>
     <string name="mail_choose">Select mail app</string>
+    <string name="version">Version %1$s</string>
 
     <!-- No need to translate below. Just add your language -->
     <string name="russian" translatable="false">Русский</string>

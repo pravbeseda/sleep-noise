@@ -50,6 +50,11 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar?.title = getString(R.string.app_name)
 
+        val versionTextView: TextView = findViewById(R.id.version_text)
+        val versionName = BuildConfig.VERSION_NAME
+        val versionString = getString(R.string.version, versionName)
+        versionTextView.text = versionString
+
         val playButton: Button = findViewById(R.id.playButton)
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)

@@ -16,4 +16,5 @@
     <string name="cancel">Отмена</string>
     <string name="mail">Написать разработчику</string>
     <string name="mail_choose">Выберите почтовое приложение</string>
+    <string name="version">Версия %1$s</string>
 </resources>

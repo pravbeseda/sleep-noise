@@ -5,14 +5,14 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <TextView
         android:id="@+id/whiteNoiseLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/white_noise_volume"
-        android:paddingTop="16dp"/>
+        android:paddingTop="8dp"/>
 
     <SeekBar
         android:id="@+id/whiteNoiseVolume"
@@ -45,5 +45,28 @@
         android:layout_marginTop="40dp"
         android:drawableTop="@drawable/ic_play"
         android:drawablePadding="0dp"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <ImageView
+        android:id="@+id/app_logo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/cats"
+        android:layout_marginBottom="0dp"/>
+
+    <TextView
+        android:id="@+id/version_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/version"
+        android:textSize="11sp"
+        android:layout_gravity="center"
+        android:paddingTop="8dp"/>
 
 </LinearLayout>
