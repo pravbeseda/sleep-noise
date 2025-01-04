@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity() {
         val popup = PopupMenu(this, anchor)
         popup.menuInflater.inflate(R.menu.menu_theme_popup, popup.menu)
 
-        val currentTheme = preferences.getString(CURRENT_THEME, "system") ?: "system"
+        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
         when (currentTheme) {
             "system" -> popup.menu.findItem(R.id.theme_system).isChecked = true
             "light" -> popup.menu.findItem(R.id.theme_light).isChecked = true
@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateThemeIcon(menu: Menu?) {
-        val currentTheme = preferences.getString(CURRENT_THEME, "system") ?: "system"
+        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
         val themeItem = menu?.findItem(R.id.theme_button)
 
         when (currentTheme) {
