@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         timerController = TimerController(
             onTick = { time -> timerView.showCountdown(time) },
-            onFinish = { stopPlayback() }
+            onTime = { stopPlayback() }
         )
 
 
@@ -148,7 +148,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun startPlayback() {
         isPlaying = true
-        // playButton.setBackgroundResource(R.drawable.ic_pause)
         playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_pause, 0, 0)
         timerView.setPlayingState(true)
 

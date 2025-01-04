@@ -2,7 +2,7 @@ package ru.pravbeseda.sleepnoise.timer
 
 import android.os.CountDownTimer
 
-class TimerController(private val onTick: (String) -> Unit, private val onFinish: () -> Unit) {
+class TimerController(private val onTick: (String) -> Unit, private val onTime: () -> Unit) {
 
     private var timer: CountDownTimer? = null
 
@@ -24,7 +24,7 @@ class TimerController(private val onTick: (String) -> Unit, private val onFinish
             }
 
             override fun onFinish() {
-                onFinish()
+                onTime()
             }
         }.start()
     }
