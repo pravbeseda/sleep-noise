@@ -27,7 +27,7 @@
     <!-- No need to translate below. -->
     <string name="another_language" translatable="false">Another language</string>
     <string name="credits_text" translatable="false">
-        <b>Developer:</b> Alexander Ivanov \n
+        <b>Dev:</b> Alexander Ivanov\n
         <b>Logo:</b> Nina Ivanova
     </string>
     <string name="app_logo" translatable="false">App logo</string>
