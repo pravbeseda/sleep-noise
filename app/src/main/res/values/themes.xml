@@ -9,12 +9,18 @@
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
+
     <style name="Theme.SleepNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
+
     <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
+    </style>
+
+    <style name="CreditsDialogTheme" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:textColor">@color/credits_text_color</item>
     </style>
 </resources>

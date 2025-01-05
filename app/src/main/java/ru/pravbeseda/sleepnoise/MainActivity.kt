@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.Menu
@@ -140,6 +141,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.mail -> {
                 mailToMe()
+                true
+            }
+            R.id.credits -> {
+                showCreditsDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -326,11 +331,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mailToMe() {
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.type = "plain/text"
-        intent.putExtra(Intent.EXTRA_EMAIL, arrayOf("kalugaman@gmail.com"))
-        intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
-        intent.putExtra(Intent.EXTRA_TEXT, getDebugInfo())
+        val email = "kalugaman@gmail.com"
+        val subject = getString(R.string.app_name)
+        val body = getDebugInfo()
+
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:$email")
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+        }
         startActivity(Intent.createChooser(intent, getString(R.string.mail_choose)))
     }
 
@@ -349,6 +358,11 @@ class MainActivity : AppCompatActivity() {
         if (appVersion != "") res += "\nAppVer: $appVersion"
         res += "\n\n"
         return res
+    }
+
+    private fun showCreditsDialog() {
+        val dialog = CreditsDialogFragment.newInstance()
+        dialog.show(supportFragmentManager, "credits")
     }
 }
 

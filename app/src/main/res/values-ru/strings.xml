@@ -18,4 +18,5 @@
     <string name="mail_choose">Выберите почтовое приложение</string>
     <string name="version">Версия %1$s</string>
     <string name="timer">Таймер</string>
+    <string name="credits">Авторы</string>
 </resources>
