@@ -10,13 +10,12 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.WhiteNoise.System"
+        android:theme="@style/Theme.SleepNoise.Splash"
         tools:targetApi="35">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+            android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

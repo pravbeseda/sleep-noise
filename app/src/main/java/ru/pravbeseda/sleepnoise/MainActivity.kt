@@ -230,15 +230,15 @@ class MainActivity : AppCompatActivity() {
         when (theme) {
             "system" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                setTheme(R.style.Theme_WhiteNoise_System)
+                setTheme(R.style.Theme_SleepNoise_System)
             }
             "light" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                setTheme(R.style.Theme_WhiteNoise_Light)
+                setTheme(R.style.Theme_SleepNoise_Light)
             }
             "dark" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                setTheme(R.style.Theme_WhiteNoise_Dark)
+                setTheme(R.style.Theme_SleepNoise_Dark)
             }
         }
     }

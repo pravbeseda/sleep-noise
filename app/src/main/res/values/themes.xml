@@ -1,13 +1,19 @@
 <resources>
-    <style name="Theme.WhiteNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <style name="Theme.SleepNoise.Splash" parent="@style/Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.SleepNoise.System</item>
+    </style>
+
+    <style name="Theme.SleepNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
-    <style name="Theme.WhiteNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="Theme.SleepNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
-    <style name="Theme.WhiteNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
