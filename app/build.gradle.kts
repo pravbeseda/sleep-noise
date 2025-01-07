@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -42,6 +44,21 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.forEach { output ->
+            if (output is BaseVariantOutputImpl) {
+                val appName = "SleepNoise"
+                val versionName = variant.versionName
+                val versionCode = variant.versionCode
+                val buildTypeName = variant.buildType.name
+
+                val newApkName = "$appName-$versionName($versionCode)-$buildTypeName.apk"
+                output.outputFileName = newApkName
+            }
+        }
     }
 }
 
