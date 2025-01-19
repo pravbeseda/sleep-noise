@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">de</string>
+    <string name="app_name">Einschlafrauschen</string>
+    <string name="white_noise_volume">Weißes Rauschen: %1$d%%</string>
+    <string name="brown_noise_volume">Braunes Rauschen: %1$d%%</string>
+    <string name="play_button">Abspielen</string>
+    <string name="theme_system">Systemthema</string>
+    <string name="theme_light">Helles Thema</string>
+    <string name="theme_dark">Dunkles Thema</string>
+    <string name="language">Sprache</string>
+    <string name="select_language">Sprache wählen</string>
+    <string name="title_language_need">Wir brauchen Hilfe beim Übersetzen</string>
+    <string name="text_language_need">Wenn Sie bei der Übersetzung der Anwendung in eine andere Sprache helfen möchten, kontaktieren Sie bitte den App-Entwickler. Vielen Dank!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="mail">E-Mail an den Entwickler</string>
+    <string name="mail_choose">E-Mail-App auswählen</string>
+    <string name="version">Version %1$s</string>
+    <string name="timer">Timer</string>
+    <string name="credits">Credits</string>
+</resources>

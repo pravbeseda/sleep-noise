@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">uk</string>
+    <string name="app_name">Шум для сну</string>
+    <string name="white_noise_volume">Білий шум: %1$d%%</string>
+    <string name="brown_noise_volume">Коричневий шум: %1$d%%</string>
+    <string name="play_button">Відтворити</string>
+    <string name="theme_system">Системна тема</string>
+    <string name="theme_light">Світла тема</string>
+    <string name="theme_dark">Темна тема</string>
+    <string name="language">Мова</string>
+    <string name="select_language">Виберіть мову</string>
+    <string name="title_language_need">Нам потрібна допомога з перекладом</string>
+    <string name="text_language_need">Якщо ви хочете допомогти з перекладом додатка на іншу мову, будь ласка, зв’яжіться з розробником. Дякуємо!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Скасувати</string>
+    <string name="mail">Надіслати листа розробнику</string>
+    <string name="mail_choose">Оберіть поштову програму</string>
+    <string name="version">Версія %1$s</string>
+    <string name="timer">Таймер</string>
+    <string name="credits">Подяки</string>
+
+    <!-- Just add your language -->
+    <string name="russian" translatable="false">Русский</string>
+    <string name="english" translatable="false">English</string>
+
+    <!-- No need to translate all strings below. -->
+    <string name="another_language" translatable="false">Another language</string>
+    <string name="credits_text" translatable="false">
+        <b>Dev:</b> Alexander Ivanov\n
+        <b>Logo:</b> Nina Ivanova
+    </string>
+    <string name="app_logo" translatable="false">App logo</string>
+</resources>

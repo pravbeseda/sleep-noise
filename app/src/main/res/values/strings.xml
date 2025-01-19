@@ -20,11 +20,15 @@
     <string name="timer">Timer</string>
     <string name="credits">Credits</string>
 
-    <!-- No need to translate below. Just add your language -->
+    <!-- Just add your language -->
     <string name="russian" translatable="false">Русский</string>
     <string name="english" translatable="false">English</string>
+    <string name="german" translatable="false">Deutsch</string>
+    <string name="spanish" translatable="false">Español</string>
+    <string name="ukrainian" translatable="false">Українська</string>
+    <string name="arabic" translatable="false">العربية</string>
 
-    <!-- No need to translate below. -->
+    <!-- No need to translate all strings below. -->
     <string name="another_language" translatable="false">Another language</string>
     <string name="credits_text" translatable="false">
         <b>Dev:</b> Alexander Ivanov\n

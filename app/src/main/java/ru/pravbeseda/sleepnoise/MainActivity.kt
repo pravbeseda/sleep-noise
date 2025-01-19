@@ -5,10 +5,10 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -20,13 +20,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.os.LocaleListCompat
 import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
 import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.timer.TimerController
 import ru.pravbeseda.sleepnoise.timer.TimerView
-import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
 const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("RestrictedApi")
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu, menu)
         updateThemeIcon(menu)
         try {
@@ -124,6 +124,18 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: ClassCastException) {
             e.printStackTrace()
+        }
+
+        // Add (Language) for non-English languages
+        val languageItem = menu.findItem(R.id.language_button)
+        val currentLangCode = getString(R.string.lang)
+        val baseTitle = getString(R.string.language)
+        if (currentLangCode != "en") {
+            val bidi = BidiFormatter.getInstance()
+            val langSuffix = bidi.unicodeWrap("(Language)")
+            languageItem.title = "$baseTitle $langSuffix"
+        } else {
+            languageItem.title = baseTitle
         }
 
         return true
@@ -273,8 +285,12 @@ class MainActivity : AppCompatActivity() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(R.string.select_language)
         val languages = arrayOf(
+            Language("ar", R.drawable.ic_arabic, R.string.arabic, "Arabic"),
             Language("en", R.drawable.flag_united_kingdom, R.string.english),
+            Language("de", R.drawable.flag_germany, R.string.german, "German"),
             Language("ru", R.drawable.flag_russia, R.string.russian, "Russian"),
+            Language("es", R.drawable.flag_spain, R.string.spanish, "Spanish"),
+            Language("uk", R.drawable.flag_ukraine, R.string.ukrainian, "Ukrainian"),
             Language("", R.drawable.flag_united_nations, R.string.another_language),
         )
         var selected = languages.indexOfFirst { it.code == getString(R.string.lang) }
@@ -294,7 +310,7 @@ class MainActivity : AppCompatActivity() {
         builder.create().show()
     }
 
-    fun setLanguage(language: String?) {
+    private fun setLanguage(language: String?) {
         val lang = if (!language.isNullOrBlank()) {
             val ed = preferences.edit()
             ed.putString(CURRENT_LANGUAGE, language)
@@ -312,11 +328,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyLanguage(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        val config = Configuration()
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
+        val locales = LocaleListCompat.forLanguageTags(languageCode)
+        AppCompatDelegate.setApplicationLocales(locales)
     }
 
     private fun showNewLanguageMessage() {

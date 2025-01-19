@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">es</string>
+    <string name="app_name">Ruido para Dormir</string>
+    <string name="white_noise_volume">Ruido blanco: %1$d%%</string>
+    <string name="brown_noise_volume">Ruido marrón: %1$d%%</string>
+    <string name="play_button">Reproducir</string>
+    <string name="theme_system">Tema del sistema</string>
+    <string name="theme_light">Tema claro</string>
+    <string name="theme_dark">Tema oscuro</string>
+    <string name="language">Idioma</string>
+    <string name="select_language">Seleccionar idioma</string>
+    <string name="title_language_need">Necesitamos ayuda para traducir</string>
+    <string name="text_language_need">Si desea ayudar con la traducción de la aplicación a otro idioma, por favor póngase en contacto con el desarrollador de la aplicación. ¡Gracias!</string>
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="mail">Correo al desarrollador</string>
+    <string name="mail_choose">Seleccionar aplicación de correo</string>
+    <string name="version">Versión %1$s</string>
+    <string name="timer">Temporizador</string>
+    <string name="credits">Créditos</string>
+</resources>

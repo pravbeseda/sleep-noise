@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lang">ar</string>
+    <string name="app_name">ضوضاء للنوم</string>
+    <string name="white_noise_volume">الضوضاء البيضاء: %1$d%%</string>
+    <string name="brown_noise_volume">الضوضاء البنية: %1$d%%</string>
+    <string name="play_button">تشغيل</string>
+    <string name="theme_system">سمة النظام</string>
+    <string name="theme_light">سمة فاتحة</string>
+    <string name="theme_dark">سمة داكنة</string>
+    <string name="language">اللغة</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="title_language_need">نحتاج إلى مساعدة في الترجمة</string>
+    <string name="text_language_need">إذا كنت ترغب في المساعدة بترجمة التطبيق إلى لغة أخرى، يرجى التواصل مع مطوّر التطبيق. شكرًا لك!</string>
+    <string name="ok">حسنًا</string>
+    <string name="cancel">إلغاء</string>
+    <string name="mail">أرسل بريدًا للمطوّر</string>
+    <string name="mail_choose">اختر تطبيق البريد</string>
+    <string name="version">الإصدار %1$s</string>
+    <string name="timer">مؤقّت</string>
+    <string name="credits">الشكر والتقدير</string>
+</resources>

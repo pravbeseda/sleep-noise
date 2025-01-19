@@ -8,7 +8,7 @@
     <string name="theme_system">Системная тема</string>
     <string name="theme_light">Светлая тема</string>
     <string name="theme_dark">Темная тема</string>
-    <string name="language">Язык (Language)</string>
+    <string name="language">Язык</string>
     <string name="select_language">Выбрать язык</string>
     <string name="title_language_need">Нам нужна помощь с переводом</string>
     <string name="text_language_need">Если вы хотите помочь с переводом приложения на другой язык, напишите разработчику. Спасибо!</string>
