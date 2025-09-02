@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "ru.pravbeseda.sleepnoise"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures {
         buildConfig = true
@@ -19,7 +19,7 @@ android {
     defaultConfig {
         applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 4
         versionName = "1.0.2"
 

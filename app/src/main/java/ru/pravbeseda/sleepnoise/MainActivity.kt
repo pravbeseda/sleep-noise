@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.LocaleListCompat
+import androidx.core.view.WindowCompat
 import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
 import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
 import ru.pravbeseda.sleepnoise.models.Language
@@ -50,6 +51,9 @@ class MainActivity : AppCompatActivity() {
         val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
         applyTheme(currentTheme)
         applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
+
+        WindowCompat.enableEdgeToEdge(window)
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = currentTheme != "dark"
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
