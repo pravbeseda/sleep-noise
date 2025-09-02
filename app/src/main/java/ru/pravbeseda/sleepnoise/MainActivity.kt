@@ -52,11 +52,11 @@ class MainActivity : AppCompatActivity() {
         applyTheme(currentTheme)
         applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
 
-        WindowCompat.enableEdgeToEdge(window)
-        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = currentTheme != "dark"
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        WindowCompat.enableEdgeToEdge(window)
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = currentTheme != "dark"
 
         supportActionBar?.title = getString(R.string.app_name)
 
