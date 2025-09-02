@@ -5,14 +5,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    android:padding="16dp">
+    android:fitsSystemWindows="true"
+    android:padding="32dp">
 
     <TextView
         android:id="@+id/whiteNoiseLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/white_noise_volume"
-        android:paddingTop="16dp"/>
+        android:paddingTop="32dp"/>
 
     <SeekBar
         android:id="@+id/whiteNoiseVolume"
