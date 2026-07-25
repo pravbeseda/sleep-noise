@@ -67,10 +67,13 @@ is something worth releasing, realistically after phase 3.
 
 Locks the workflow down before any automation exists, so nothing lands on `main` unreviewed.
 
-- [ ] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release`, activated
-      with `git config core.hooksPath .githooks`. SpendControl keeps its hook in
-      `.git/hooks/pre-push`, where it is invisible to the repo and lost on a fresh clone —
-      versioning it is the one improvement over that setup.
+- [ ] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release` on
+      `origin`, activated with `git config core.hooksPath .githooks`. SpendControl keeps its
+      hook in `.git/hooks/pre-push`, where it is invisible to the repo and lost on a fresh
+      clone — versioning it is the one improvement over that setup.
+- [ ] Versioned `.githooks/pre-commit` refusing commits made on a protected branch, so the
+      mistake surfaces immediately instead of after a pile of commits has to be rewritten.
+      An in-progress merge is exempt.
 - [ ] GitHub branch protection on `main`: pull request required, force-push and deletion
       blocked. This repo is **public**, so classic branch protection is available at no cost —
       SpendControl is private and could only use the local hook.

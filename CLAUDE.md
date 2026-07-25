@@ -10,7 +10,7 @@ An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check 
 
 ## Contributing workflow
 
-`main` is protected: **no direct commits or pushes**, on GitHub and via a local hook. Always branch from an up-to-date `main`, then open a PR.
+`main` is protected: **no direct commits or pushes**, enforced on GitHub and by local hooks. Always branch from an up-to-date `main`, then open a PR.
 
 ```bash
 git fetch origin && git checkout -b <type>/<slug> origin/main
@@ -22,7 +22,9 @@ After a fresh clone, activate the versioned hooks once — git does not pick the
 git config core.hooksPath .githooks
 ```
 
-`.githooks/pre-push` rejects pushes to `main` and `release`. `git push --no-verify` bypasses it deliberately; GitHub still enforces the rule server-side.
+Two hooks back this up: `.githooks/pre-commit` rejects a commit made while `main` or `release` is checked out, and `.githooks/pre-push` rejects a push to either — on `origin` only, so forks and scratch remotes are unaffected. Both accept `--no-verify` as a deliberate bypass, and GitHub enforces the same rule server-side.
+
+An in-progress merge is exempt from the commit hook, so resolving a conflict on `main` still works.
 
 **Delete the branch once its PR is merged.** GitHub removes the remote branch automatically (`delete_branch_on_merge`), so only the local copy is left behind:
 
