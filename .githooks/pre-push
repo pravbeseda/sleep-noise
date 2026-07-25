@@ -1,0 +1,51 @@
+#!/bin/sh
+# Block direct pushes to protected branches on origin. Enforce a PR-only workflow.
+#
+# This hook is versioned in the repository, so it survives a fresh clone —
+# but git never activates hooks from a tracked directory automatically.
+# Each clone must opt in once:
+#
+#     git config core.hooksPath .githooks
+#
+# Intentional bypass: git push --no-verify
+#
+# GitHub branch protection enforces the same rule server-side; this hook only
+# makes the failure immediate instead of a rejected push after upload.
+
+protected="refs/heads/main refs/heads/release"
+
+# Only guard the canonical remote. Pushing main to a fork or a scratch remote
+# is somebody else's business. $1 is the remote name, or the URL itself when
+# the remote is not named; compare both.
+remote_name="$1"
+remote_url="$2"
+origin_url=$(git config --get remote.origin.url)
+
+if [ "$remote_name" != "origin" ]; then
+	if [ -z "$origin_url" ] || [ "$remote_url" != "$origin_url" ]; then
+		exit 0
+	fi
+fi
+
+# Drain the whole ref list before deciding, so every offending branch is
+# reported at once. This does NOT let the other refs through: git aborts the
+# entire push on a non-zero exit, by design. It only avoids fixing one branch
+# and immediately tripping over the next.
+blocked=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+	for p in $protected; do
+		if [ "$remote_ref" = "$p" ]; then
+			blocked="$blocked ${remote_ref#refs/heads/}"
+		fi
+	done
+done
+
+if [ -n "$blocked" ]; then
+	echo "✋ Direct push blocked —${blocked}" >&2
+	echo "   Open a Pull Request instead. Note that git aborts the whole push," >&2
+	echo "   so any other branches in this command did not go through either." >&2
+	echo "   Bypass intentionally: git push --no-verify" >&2
+	exit 1
+fi
+
+exit 0

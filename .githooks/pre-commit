@@ -1,0 +1,29 @@
+#!/bin/sh
+# Block commits made directly on a protected branch, so the mistake surfaces
+# at commit time rather than at push time. See .githooks/pre-push for the
+# push-side guard and CLAUDE.md for the workflow.
+#
+# Intentional bypass: git commit --no-verify
+
+protected="main release"
+
+# Detached HEAD (rebase, bisect, cherry-pick onto a detached checkout) has no
+# branch to protect — let those through.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
+
+# A merge in progress is not a hand-written commit: `git pull` on a diverged
+# main must still be able to finish.
+if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+	exit 0
+fi
+
+for p in $protected; do
+	if [ "$branch" = "$p" ]; then
+		echo "✋ Commit on '$branch' blocked — work on a branch and open a PR." >&2
+		echo "   Move what you have: git switch -c <type>/<slug>" >&2
+		echo "   Bypass intentionally: git commit --no-verify" >&2
+		exit 1
+	fi
+done
+
+exit 0
