@@ -76,6 +76,8 @@ Locks the workflow down before any automation exists, so nothing lands on `main`
       SpendControl is private and could only use the local hook.
 - [ ] Zero required approvals: a solo maintainer cannot approve their own PR, and any non-zero
       count would deadlock every merge.
+- [ ] Enable `delete_branch_on_merge` on the repository, so merged branches do not pile up,
+      and set `remote.origin.prune` locally so stale tracking refs disappear on fetch.
 - [ ] `.gitignore` for signed build outputs (`/app/release/`, `*.apk`, `*.aab`) and stray
       root-level screenshots, all of which are currently untracked clutter.
 - [ ] Commit the existing untracked docs: `CLAUDE.md` and this plan.

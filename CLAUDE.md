@@ -24,6 +24,14 @@ git config core.hooksPath .githooks
 
 `.githooks/pre-push` rejects pushes to `main` and `release`. `git push --no-verify` bypasses it deliberately; GitHub still enforces the rule server-side.
 
+**Delete the branch once its PR is merged.** GitHub removes the remote branch automatically (`delete_branch_on_merge`), so only the local copy is left behind:
+
+```bash
+git checkout main && git pull && git branch -d <branch>
+```
+
+`git fetch` prunes stale remote-tracking refs on its own (`remote.origin.prune` is set locally). Never reuse a merged branch for new work — branch again from an up-to-date `main`.
+
 ## Commands
 
 ```bash
