@@ -93,9 +93,24 @@ Everything that has to be true before a runner can build this project at all.
       while `app/build.gradle.kts` applies `com.google.gms.google-services` and the Crashlytics
       plugin unconditionally. Any CI job — even unit tests — fails at
       `processDebugGoogleServices`. Two options:
-      1. Commit the file, as SpendControl does (`SpendConrol/google-services.json` is tracked).
-         It carries no secret beyond what already ships inside the APK. **Recommended.**
-      2. Store it base64-encoded as a secret and decode it in a step.
+      1. Store it base64-encoded in a `GOOGLE_SERVICES_JSON_B64` secret and decode it into
+         `app/` as the first build step. **Recommended.**
+      2. Commit the file, as SpendControl does (`SpendConrol/google-services.json` is tracked).
+
+      SpendControl's precedent does **not** transfer: that repository is private, this one is
+      public. The usual defence — "it carries no secret beyond what already ships in the APK" —
+      is technically true (Firebase keys identify a project, they do not authorise access; the
+      real controls are Security Rules and the SHA-1 signing certificate), but it ignores cost
+      of discovery. A key sitting in a public repository is grepped by automated scanners
+      within hours, and once committed it is in the history for good. Only Analytics and
+      Crashlytics are wired up here — no Firestore, RTDB, or Storage — so the blast radius is
+      junk events, not data loss. Still not worth paying to undo later.
+
+      Price of option 1, to be paid knowingly: a clean clone no longer builds until the file is
+      fetched from the Firebase console. Document that where the build commands live.
+- [ ] Independently of the above, restrict the Android API key by package name and SHA-1
+      signing certificate in the Google Cloud console. Google recommends this regardless of
+      where the file is stored, and it is what actually makes the key useless to anyone else.
 - [ ] Move `versionName` into `version.properties`, bumped manually on release.
 - [ ] Derive `versionCode` from `git rev-list --count HEAD`. Current commit count is **34**
       against a manual `versionCode` of **5**, so the switch is safe and monotonic — the next
@@ -167,6 +182,7 @@ re-signs the artifact.
 
 | Secret | Used by | Source |
 |---|---|---|
+| `GOOGLE_SERVICES_JSON_B64` | every job that builds | `base64 -i app/google-services.json` |
 | `ANDROID_KEYSTORE_B64` | alpha, beta | `base64 -i .key/Drevo.Keystore` |
 | `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD` | alpha, beta | existing keystore credentials |
 | `FIREBASE_APP_ID` | alpha | Firebase console → project settings |
@@ -176,8 +192,8 @@ re-signs the artifact.
 ### Differences from SpendControl worth restating
 
 1. **AAB for Play**, not APK — the listing is not grandfathered (see D4).
-2. **`google-services.json` must be un-ignored or injected** — SpendControl has it committed,
-   this repo does not (see D1).
+2. **`google-services.json` is injected from a secret, not committed** — SpendControl can
+   afford to commit it because it is private; this repository is public (see D1).
 3. **No product flavors** — every Gradle task name loses the flavor segment, and the beta job
    needs no `strategy.matrix`.
 4. **Real branch protection is available** — this repo is public, SpendControl is private

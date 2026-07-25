@@ -54,7 +54,7 @@ Single unit test:
 ./gradlew testDebugUnitTest --tests "ru.pravbeseda.sleepnoise.ExampleUnitTest.addition_isCorrect"
 ```
 
-`app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it.
+`app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
 Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>(<versionCode>)-<buildType>.apk`. There is no `signingConfig` in the build script; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
 
