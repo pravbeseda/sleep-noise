@@ -10,3 +10,12 @@
 .cxx
 local.properties
 app/google-services.json
+
+# Signed build outputs produced by Android Studio's release wizard
+/app/release/
+*.apk
+*.aab
+output-metadata.json
+
+# Ad-hoc screenshots dropped in the repo root (graph/ keeps the curated ones)
+/Screenshot_*.png
