@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -6,6 +7,60 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+}
+
+// --- Versioning -------------------------------------------------------------
+// versionName: managed in version.properties, bumped by hand on release.
+// versionCode: derived from the git commit count, so it is monotonic and never
+//   edited manually.
+//
+// Monotonicity is NOT enforced here — it relies on main and release staying
+// append-only, and on CI checking out with fetch-depth: 0. A shallow clone makes
+// `git rev-list --count HEAD` return 1, which would ship a lower code than the
+// one already on Play. The floor is the last manually assigned versionCode: the
+// count must never legitimately fall below it. Release builds fail loudly rather
+// than silently publishing a stale code; debug builds fall back to the floor so
+// that building outside a git checkout still works.
+val versionCodeFloor = 5
+
+val isReleaseBuild = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+val appVersionName: String = Properties().apply {
+    val propsFile = file("version.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { load(it) }
+    }
+}.getProperty("versionName", "0.0.0")
+
+val appVersionCode: Int = run {
+    val count = try {
+        providers.exec {
+            commandLine("git", "rev-list", "--count", "HEAD")
+        }.standardOutput.asText.get().trim().toInt()
+    } catch (e: Exception) {
+        if (isReleaseBuild) {
+            throw GradleException(
+                "Cannot derive versionCode from git for a release build: ${e.message}",
+                e
+            )
+        }
+        versionCodeFloor
+    }
+
+    if (count < versionCodeFloor) {
+        if (isReleaseBuild) {
+            throw GradleException(
+                "versionCode from git commit count ($count) is below the floor " +
+                    "($versionCodeFloor) — most likely a shallow clone. " +
+                    "CI must check out with fetch-depth: 0."
+            )
+        }
+        versionCodeFloor
+    } else {
+        count
+    }
 }
 
 android {
@@ -20,8 +75,8 @@ android {
         applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.0.3"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,7 +110,9 @@ android {
                 val versionCode = variant.versionCode
                 val buildTypeName = variant.buildType.name
 
-                val newApkName = "$appName-$versionName($versionCode)-$buildTypeName.apk"
+                // No parentheses: the filename ends up in shell globs and CI
+                // artifact paths, where they need quoting to survive.
+                val newApkName = "$appName-$versionName-$versionCode-$buildTypeName.apk"
                 output.outputFileName = newApkName
             }
         }
