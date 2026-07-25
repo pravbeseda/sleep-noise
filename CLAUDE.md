@@ -16,10 +16,13 @@ An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check 
 git fetch origin && git checkout -b <type>/<slug> origin/main
 ```
 
-After a fresh clone, activate the versioned hooks once — git does not pick them up on its own:
+### After a fresh clone
+
+Both settings below live in `.git/config`, which is never cloned. Run them once per clone — git applies neither on its own:
 
 ```bash
-git config core.hooksPath .githooks
+git config core.hooksPath .githooks    # activate the versioned hooks
+git config remote.origin.prune true    # drop stale remote-tracking refs on fetch
 ```
 
 Two hooks back this up: `.githooks/pre-commit` rejects a commit made while `main` or `release` is checked out, and `.githooks/pre-push` rejects a push to either — on `origin` only, so forks and scratch remotes are unaffected. Both accept `--no-verify` as a deliberate bypass, and GitHub enforces the same rule server-side.
@@ -32,7 +35,7 @@ An in-progress merge is exempt from the commit hook, so resolving a conflict on 
 git checkout main && git pull && git branch -d <branch>
 ```
 
-`git fetch` prunes stale remote-tracking refs on its own (`remote.origin.prune` is set locally). Never reuse a merged branch for new work — branch again from an up-to-date `main`.
+With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tracking ref too. Never reuse a merged branch for new work — branch again from an up-to-date `main`.
 
 ## Commands
 
