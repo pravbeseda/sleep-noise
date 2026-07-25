@@ -67,29 +67,29 @@ is something worth releasing, realistically after phase 3.
 
 Locks the workflow down before any automation exists, so nothing lands on `main` unreviewed.
 
-- [ ] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release` on
+- [x] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release` on
       `origin`, activated with `git config core.hooksPath .githooks`. SpendControl keeps its
       hook in `.git/hooks/pre-push`, where it is invisible to the repo and lost on a fresh
       clone — versioning it is the one improvement over that setup.
-- [ ] Versioned `.githooks/pre-commit` refusing commits made on a protected branch, so the
+- [x] Versioned `.githooks/pre-commit` refusing commits made on a protected branch, so the
       mistake surfaces immediately instead of after a pile of commits has to be rewritten.
       An in-progress merge is exempt.
-- [ ] GitHub branch protection on `main`: pull request required, force-push and deletion
+- [x] GitHub branch protection on `main`: pull request required, force-push and deletion
       blocked. This repo is **public**, so classic branch protection is available at no cost —
       SpendControl is private and could only use the local hook.
-- [ ] Zero required approvals: a solo maintainer cannot approve their own PR, and any non-zero
+- [x] Zero required approvals: a solo maintainer cannot approve their own PR, and any non-zero
       count would deadlock every merge.
-- [ ] Enable `delete_branch_on_merge` on the repository, so merged branches do not pile up,
+- [x] Enable `delete_branch_on_merge` on the repository, so merged branches do not pile up,
       and set `remote.origin.prune` locally so stale tracking refs disappear on fetch.
-- [ ] `.gitignore` for signed build outputs (`/app/release/`, `*.apk`, `*.aab`) and stray
+- [x] `.gitignore` for signed build outputs (`/app/release/`, `*.apk`, `*.aab`) and stray
       root-level screenshots, all of which are currently untracked clutter.
-- [ ] Commit the existing untracked docs: `CLAUDE.md` and this plan.
+- [x] Commit the existing untracked docs: `CLAUDE.md` and this plan.
 
 ### D1 — Make the build CI-ready
 
 Everything that has to be true before a runner can build this project at all.
 
-- [ ] **`google-services.json` is not in git.** `.gitignore` excludes `app/google-services.json`,
+- [x] **`google-services.json` is not in git.** `.gitignore` excludes `app/google-services.json`,
       while `app/build.gradle.kts` applies `com.google.gms.google-services` and the Crashlytics
       plugin unconditionally. Any CI job — even unit tests — fails at
       `processDebugGoogleServices`. Two options:
@@ -111,13 +111,13 @@ Everything that has to be true before a runner can build this project at all.
 - [ ] Independently of the above, restrict the Android API key by package name and SHA-1
       signing certificate in the Google Cloud console. Google recommends this regardless of
       where the file is stored, and it is what actually makes the key useless to anyone else.
-- [ ] Move `versionName` into `version.properties`, bumped manually on release.
-- [ ] Derive `versionCode` from `git rev-list --count HEAD`. Current commit count is **34**
+- [x] Move `versionName` into `version.properties`, bumped manually on release.
+- [x] Derive `versionCode` from `git rev-list --count HEAD`. Current commit count is **34**
       against a manual `versionCode` of **5**, so the switch is safe and monotonic — the next
       build jumps to 35 and keeps climbing.
-- [ ] Set the floor to the current value (5) and fail loudly on release builds when the count
+- [x] Set the floor to the current value (5) and fail loudly on release builds when the count
       falls below it, which is the signature of a shallow CI clone.
-- [ ] Drop the parentheses from the APK filename (see the warning under D3).
+- [x] Drop the parentheses from the APK filename (see the warning under D3).
 
 ### D2 — CI workflow: unit tests and lint
 

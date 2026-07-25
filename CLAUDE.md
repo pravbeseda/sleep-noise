@@ -56,7 +56,7 @@ Single unit test:
 
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
-Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>(<versionCode>)-<buildType>.apk`. There is no `signingConfig` in the build script; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
+Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`. There is no `signingConfig` in the build script yet; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
 
 ## Architecture
 
@@ -96,6 +96,12 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-## Releasing
+## Versioning and releasing
 
-Bump `versionCode` and `versionName` in `app/build.gradle.kts`. Release commits follow the message form `Release 1.0.3 (5)`.
+`versionName` lives in `app/version.properties` and is the only value bumped by hand.
+
+`versionCode` is **derived** from `git rev-list --count HEAD` — never edit it. It is monotonic only while `main` (and later `release`) stay append-only, so no force-push or rebase on those branches.
+
+A shallow clone makes that count return 1, which would publish a code below what is already on Play. Release builds therefore fail with an explicit message when the count falls below the floor (`5`, the last hand-assigned value); debug builds silently fall back to the floor so building outside a git checkout still works. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
+
+Release commits follow the message form `Release 1.0.3 (5)`.
