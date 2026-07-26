@@ -170,15 +170,35 @@ android {
     }
 
     lint {
-        // The 40 warnings this project already carries are recorded in the
+        // The 29 warnings this project already carries are recorded in the
         // baseline, so CI fails on new ones only. Clearing them out is phase 6
         // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
         // stops the count from quietly growing.
         //
-        // Regenerate after fixing something: ./gradlew updateLintBaseline
+        // Regenerate after fixing something: ./gradlew updateLintBaseline.
+        // That writes every issue it finds, informational ones included; drop
+        // those from the file again, or each run reports them as baseline
+        // entries "not found in the project" once their version numbers move.
         baseline = file("lint-baseline.xml")
         warningsAsErrors = true
         abortOnError = true
+
+        // Version-currency checks answer "is something newer available?", which
+        // depends on the day and the machine rather than on the commit under
+        // test. They drift: a local baseline recorded 11 of them that the runner
+        // then did not reproduce, while the runner raised 4 OldTargetApi errors
+        // that a local SDK 36 install never sees. Left as errors they would fail
+        // untouched code as soon as Google ships a release.
+        //
+        // informational, not disable: they stay in the uploaded HTML report,
+        // they just cannot break the build. Acting on them is dependency-update
+        // work — phase 6 — not a merge gate.
+        informational += setOf(
+            "AndroidGradlePluginVersion",
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "OldTargetApi",
+        )
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
