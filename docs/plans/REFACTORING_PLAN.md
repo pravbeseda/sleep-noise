@@ -129,16 +129,20 @@ Everything that has to be true before a runner can build this project at all.
 
 ### D2 — CI workflow: unit tests and lint
 
-- [ ] `.github/workflows/ci.yml`, triggered on `pull_request` and `push` to `main`, plus
+- [x] `.github/workflows/ci.yml`, triggered on `pull_request` and `push` to `main`, plus
       `workflow_dispatch`.
-- [ ] JDK 17 via `actions/setup-java@v4` (AGP 8.12 requires 17+; the module's own `jvmTarget`
+- [x] JDK 17 via `actions/setup-java@v4` (AGP 8.12 requires 17+; the module's own `jvmTarget`
       stays at 11), `android-actions/setup-android@v3`, `gradle/actions/setup-gradle@v4`.
-- [ ] `./gradlew testDebugUnitTest --stacktrace`. No product flavors here, so the task name is
+- [x] `./gradlew testDebugUnitTest --stacktrace`. No product flavors here, so the task name is
       plain — unlike SpendControl's `testFreeOpenDebugUnitTest`.
-- [ ] Upload `app/build/reports/tests/testDebugUnitTest` as an artifact with `if: always()`.
-- [ ] Add a lint job. There are 40 existing warnings, so generate a baseline first
-      (`./gradlew updateLintBaseline`) and let CI fail only on **new** warnings. This is what
-      makes phase 6 measurable instead of open-ended.
+- [x] Upload `app/build/reports/tests/testDebugUnitTest` as an artifact with `if: always()`.
+- [x] Add a lint job with `warningsAsErrors` plus a baseline, so CI fails on **new** warnings
+      only. This is what makes phase 6 measurable instead of open-ended: the debt is exactly
+      the 29 findings in `app/lint-baseline.xml`.
+- [x] Mark version-currency checks (`GradleDependency`, `NewerVersionAvailable`,
+      `AndroidGradlePluginVersion`, `OldTargetApi`) informational. Their messages embed the
+      versions being compared, so the baseline stops matching as soon as either side moves —
+      they failed the first CI run against code that had not changed.
 - [ ] Once the check has run at least once, add it to the required status checks configured
       in D0.
 
