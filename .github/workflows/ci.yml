@@ -11,10 +11,13 @@ permissions:
   contents: read
 
 concurrency:
-  # A superseded run on the same ref tells us nothing. Alpha and beta jobs get
-  # their own groups when they arrive, so cancelling here never kills a delivery.
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Pull requests only. A superseded PR run tells us nothing, but this key sits
+  # at workflow level and cancels the entire run — so on main it would leave the
+  # first of two quick merges with no completed check, and once D3 adds an alpha
+  # job to this file, a job-level concurrency group would not save the delivery
+  # from being cancelled along with everything else.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unit-tests:
