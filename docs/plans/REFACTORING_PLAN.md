@@ -67,29 +67,29 @@ is something worth releasing, realistically after phase 3.
 
 Locks the workflow down before any automation exists, so nothing lands on `main` unreviewed.
 
-- [ ] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release` on
+- [x] Versioned `.githooks/pre-push` blocking direct pushes to `main` and `release` on
       `origin`, activated with `git config core.hooksPath .githooks`. SpendControl keeps its
       hook in `.git/hooks/pre-push`, where it is invisible to the repo and lost on a fresh
       clone — versioning it is the one improvement over that setup.
-- [ ] Versioned `.githooks/pre-commit` refusing commits made on a protected branch, so the
+- [x] Versioned `.githooks/pre-commit` refusing commits made on a protected branch, so the
       mistake surfaces immediately instead of after a pile of commits has to be rewritten.
       An in-progress merge is exempt.
-- [ ] GitHub branch protection on `main`: pull request required, force-push and deletion
+- [x] GitHub branch protection on `main`: pull request required, force-push and deletion
       blocked. This repo is **public**, so classic branch protection is available at no cost —
       SpendControl is private and could only use the local hook.
-- [ ] Zero required approvals: a solo maintainer cannot approve their own PR, and any non-zero
+- [x] Zero required approvals: a solo maintainer cannot approve their own PR, and any non-zero
       count would deadlock every merge.
-- [ ] Enable `delete_branch_on_merge` on the repository, so merged branches do not pile up,
+- [x] Enable `delete_branch_on_merge` on the repository, so merged branches do not pile up,
       and set `remote.origin.prune` locally so stale tracking refs disappear on fetch.
-- [ ] `.gitignore` for signed build outputs (`/app/release/`, `*.apk`, `*.aab`) and stray
+- [x] `.gitignore` for signed build outputs (`/app/release/`, `*.apk`, `*.aab`) and stray
       root-level screenshots, all of which are currently untracked clutter.
-- [ ] Commit the existing untracked docs: `CLAUDE.md` and this plan.
+- [x] Commit the existing untracked docs: `CLAUDE.md` and this plan.
 
 ### D1 — Make the build CI-ready
 
 Everything that has to be true before a runner can build this project at all.
 
-- [ ] **`google-services.json` is not in git.** `.gitignore` excludes `app/google-services.json`,
+- [x] **`google-services.json` is not in git.** `.gitignore` excludes `app/google-services.json`,
       while `app/build.gradle.kts` applies `com.google.gms.google-services` and the Crashlytics
       plugin unconditionally. Any CI job — even unit tests — fails at
       `processDebugGoogleServices`. Two options:
@@ -111,13 +111,21 @@ Everything that has to be true before a runner can build this project at all.
 - [ ] Independently of the above, restrict the Android API key by package name and SHA-1
       signing certificate in the Google Cloud console. Google recommends this regardless of
       where the file is stored, and it is what actually makes the key useless to anyone else.
-- [ ] Move `versionName` into `version.properties`, bumped manually on release.
-- [ ] Derive `versionCode` from `git rev-list --count HEAD`. Current commit count is **34**
-      against a manual `versionCode` of **5**, so the switch is safe and monotonic — the next
-      build jumps to 35 and keeps climbing.
-- [ ] Set the floor to the current value (5) and fail loudly on release builds when the count
-      falls below it, which is the signature of a shallow CI clone.
-- [ ] Drop the parentheses from the APK filename (see the warning under D3).
+- [x] Move `versionName` into `version.properties`, bumped manually on release.
+- [x] Derive `versionCode` from `git rev-list --count HEAD`. The commit count is already an
+      order of magnitude above the last manual `versionCode` of **5**, so the switch only ever
+      raises the code and stays monotonic from there. The current value is whatever
+      `git rev-list --count HEAD` prints — deliberately not restated here, since a number
+      written into a document that lives in the repository it counts is stale on the next
+      commit.
+- [x] Reject a versionCode that cannot be trusted, via two separate guards rather than one
+      threshold doing both jobs. `git rev-parse --is-shallow-repository` catches a truncated
+      history at any depth — a `--depth 20` clone clears any numeric floor while still
+      producing a stale count. The floor (5, the last hand-assigned value) then catches what
+      depth cannot: a history that is not the one this app ships from. Both are enforced by
+      `verifyReleaseVersioning`, hung off the tasks that package a release rather than off the
+      requested task name, so `build` and `bundle` are covered and `lintRelease` is not.
+- [x] Drop the parentheses from the APK filename (see the warning under D3).
 
 ### D2 — CI workflow: unit tests and lint
 
@@ -145,18 +153,27 @@ Everything that has to be true before a runner can build this project at all.
       `ANDROID_KEYSTORE_B64` and decode into `$RUNNER_TEMP` at build time.
 - [ ] Job gated on `needs: unit-tests`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`.
 - [ ] `concurrency: { group: alpha, cancel-in-progress: true }` so rapid merges do not queue up.
-- [ ] Check out with `fetch-depth: 0` — the commit-count versionCode from D1 collapses to 1 on
-      a shallow clone.
+- [ ] Check out with `fetch-depth: 0`. Any shallow clone truncates the commit-count versionCode
+      from D1, and the release gate rejects the build outright rather than letting a stale code
+      through — so this is not optional for a job that packages a release.
 - [ ] Decode the keystore, then `./gradlew assembleRelease`.
 - [ ] Deliver with `wzieba/Firebase-Distribution-Github-Action` to the `qa` group. Firebase is
       already wired into the app (analytics + Crashlytics), so the Firebase project exists.
 - [ ] APK, not AAB: App Distribution only accepts AAB when the app is linked to Play and the
       bundle has been processed, whereas an APK installs on the phone immediately.
 
-⚠️ The `applicationVariants` block renames outputs to `SleepNoise-1.0.3(5)-release.apk`.
-**Parentheses in a filename** are fragile in shell globs and artifact upload paths. Either
-quote every path carefully, or — simpler — change the separator to `SleepNoise-1.0.3-5-release.apk`
-while setting this up.
+The `applicationVariants` block renames outputs to
+`SleepNoise-<versionName>-<versionCode>-release.apk` — dash-separated, no parentheses, so the
+upload path globs without quoting. The parentheses this section used to warn about are already
+gone (see the checked item under D1); keep the separator as it is when wiring the upload.
+
+That block is the one place still on the deprecated `applicationVariants` API, and it stays
+there on purpose: `androidComponents.onVariants` has no equivalent. `VariantOutput` exposes
+`versionCode`, `versionName` and `enabled` and nothing else — the same in `gradle-api` 8.12.2
+and 9.0.1 — so AGP 9 removes the API without replacing what it is used for. Renaming through
+the modern API means a `Copy` task wired to `SingleArtifact.APK`, which also changes where the
+artifact lands. Settle that here, when the upload path that consumes the name is being written,
+rather than guessing at it beforehand.
 
 ### D4 — Beta: AAB to Google Play internal
 
