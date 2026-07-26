@@ -121,4 +121,10 @@ jobs:
           path: |
             app/build/reports/lint-results-debug.html
             app/build/reports/lint-results-debug.xml
-          if-no-files-found: ignore
+          # warn, not ignore: these paths are hardcoded to the debug variant, so
+          # a variant change or an AGP rename would leave an empty artifact on
+          # exactly the run where the report is needed — lint failing is when
+          # someone comes looking for it. Not error either: the build already
+          # failed for a real reason, and burying that under a missing-file
+          # error helps nobody.
+          if-no-files-found: warn
