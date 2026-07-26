@@ -39,19 +39,27 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Decode google-services.json
+      - name: Provide google-services.json
         env:
           GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
         run: |
           # The google-services and Crashlytics plugins are applied
-          # unconditionally, so every Gradle task needs this file — including
-          # unit tests. Fail with a readable message rather than letting
-          # processDebugGoogleServices report a missing file.
-          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
-            echo "::error::GOOGLE_SERVICES_JSON_B64 is empty. Secrets are not exposed to pull requests from forks."
-            exit 1
+          # unconditionally, so every Gradle task needs this file to exist —
+          # including unit tests, which never reach Firebase at runtime.
+          #
+          # Secrets are withheld from pull requests opened from forks, and
+          # GitHub treats Dependabot the same way. Those runs fall back to a
+          # checked-in stub, so a contribution can still go green once these
+          # become required checks. Only the package name has to be real.
+          #
+          # Jobs that publish an artifact (D3, D4) must not use this fallback:
+          # a stub would ship an app whose Crashlytics and Analytics go nowhere.
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+          else
+            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+            cp ci/google-services-stub.json app/google-services.json
           fi
-          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
@@ -85,15 +93,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Decode google-services.json
+      - name: Provide google-services.json
         env:
           GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
         run: |
-          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
-            echo "::error::GOOGLE_SERVICES_JSON_B64 is empty. Secrets are not exposed to pull requests from forks."
-            exit 1
+          # Same fallback as the unit-tests job — see the comment there.
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+          else
+            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+            cp ci/google-services-stub.json app/google-services.json
           fi
-          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
 
       - name: Run lint
         # warningsAsErrors is on and the 29 findings this code already carries
