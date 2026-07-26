@@ -102,6 +102,10 @@ The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, acti
 
 `versionCode` is **derived** from `git rev-list --count HEAD` — never edit it. It is monotonic only while `main` (and later `release`) stay append-only, so no force-push or rebase on those branches.
 
-A shallow clone makes that count return 1, which would publish a code below what is already on Play. Release builds therefore fail with an explicit message when the count falls below the floor (`5`, the last hand-assigned value); debug builds silently fall back to the floor so building outside a git checkout still works. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
+A shallow clone undercounts, which would publish a code below what is already on Play, so any shallow checkout is rejected — not just `--depth 1`, since a depth of 20 would clear a numeric threshold while still producing a stale code. A count below the floor (`5`, the last hand-assigned value) is rejected too, as a history that is not the one the app ships from.
+
+A missing or keyless `version.properties` is rejected on the same terms: the `versionName` falls back to `0.0.0`, and a release carrying that placeholder is one nobody can identify afterwards.
+
+The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` and `packageReleaseBundle` — the two tasks that turn a version into a publishable artifact. So `./gradlew build` and `./gradlew bundle` are covered even though neither names a release, while `lintRelease`, `testReleaseUnitTest` and any debug build still work on a shallow clone, falling back to the floor. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
 
 Release commits follow the message form `Release 1.0.3 (5)`.

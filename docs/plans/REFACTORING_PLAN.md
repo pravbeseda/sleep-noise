@@ -112,9 +112,12 @@ Everything that has to be true before a runner can build this project at all.
       signing certificate in the Google Cloud console. Google recommends this regardless of
       where the file is stored, and it is what actually makes the key useless to anyone else.
 - [x] Move `versionName` into `version.properties`, bumped manually on release.
-- [x] Derive `versionCode` from `git rev-list --count HEAD`. Current commit count is **34**
-      against a manual `versionCode` of **5**, so the switch is safe and monotonic — the next
-      build jumps to 35 and keeps climbing.
+- [x] Derive `versionCode` from `git rev-list --count HEAD`. The commit count is already an
+      order of magnitude above the last manual `versionCode` of **5**, so the switch only ever
+      raises the code and stays monotonic from there. The current value is whatever
+      `git rev-list --count HEAD` prints — deliberately not restated here, since a number
+      written into a document that lives in the repository it counts is stale on the next
+      commit.
 - [x] Set the floor to the current value (5) and fail loudly on release builds when the count
       falls below it, which is the signature of a shallow CI clone.
 - [x] Drop the parentheses from the APK filename (see the warning under D3).
@@ -153,10 +156,10 @@ Everything that has to be true before a runner can build this project at all.
 - [ ] APK, not AAB: App Distribution only accepts AAB when the app is linked to Play and the
       bundle has been processed, whereas an APK installs on the phone immediately.
 
-⚠️ The `applicationVariants` block renames outputs to `SleepNoise-1.0.3(5)-release.apk`.
-**Parentheses in a filename** are fragile in shell globs and artifact upload paths. Either
-quote every path carefully, or — simpler — change the separator to `SleepNoise-1.0.3-5-release.apk`
-while setting this up.
+The `applicationVariants` block renames outputs to
+`SleepNoise-<versionName>-<versionCode>-release.apk` — dash-separated, no parentheses, so the
+upload path globs without quoting. The parentheses this section used to warn about are already
+gone (see the checked item under D1); keep the separator as it is when wiring the upload.
 
 ### D4 — Beta: AAB to Google Play internal
 
