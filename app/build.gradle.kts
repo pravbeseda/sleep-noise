@@ -168,6 +168,18 @@ android {
             )
         }
     }
+
+    lint {
+        // The 40 warnings this project already carries are recorded in the
+        // baseline, so CI fails on new ones only. Clearing them out is phase 6
+        // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
+        // stops the count from quietly growing.
+        //
+        // Regenerate after fixing something: ./gradlew updateLintBaseline
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        abortOnError = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
