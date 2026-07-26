@@ -168,6 +168,57 @@ android {
             )
         }
     }
+
+    lint {
+        // The 29 warnings this project already carries are recorded in the
+        // baseline, so CI fails on new ones only. Clearing them out is phase 6
+        // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
+        // stops the count from quietly growing.
+        //
+        // Regenerate after fixing something: ./gradlew updateLintBaseline.
+        // That writes every issue it finds, informational ones included; drop
+        // those from the file again, or each run reports them as baseline
+        // entries "not found in the project" once their version numbers move.
+        //
+        // The file also holds two pairs of entries that look like generator
+        // duplicates and are not: lint reports DefaultLocale at
+        // TimerView.kt:43 and UseKtx at MainActivity.kt:356 twice each. Three
+        // String.format call sites yield four findings. Deleting a "duplicate"
+        // leaves that copy unmatched, which turns it into a new error and
+        // reddens CI. Both disappear on their own in phase 6.
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        abortOnError = true
+
+        // These answer "is something newer available?", which depends on the day
+        // and the machine rather than on the commit under test. Left as errors
+        // they fail untouched code as soon as Google ships a release.
+        //
+        // The first three drift because their messages carry the versions being
+        // compared ("a newer version than 8.13 is available: 8.14.5"), and
+        // baseline matching is on message text — so a runner with a fresher
+        // index reports the same finding as a new one. A locally recorded
+        // baseline listed 11 that the runner then could not match.
+        //
+        // OldTargetApi is here for a different reason, and it is the weaker
+        // case of the four: its message is generic, so a baseline would hold it
+        // fine. It differs because lint compares targetSdk against the newest
+        // API level it knows about, and the runner's SDK components are ahead of
+        // a local SDK 36 install — one error there, none here. Unlike the other
+        // three it tracks a Play deadline, so muting it loses a signal worth
+        // keeping: that is why the targetSdk bump is written into
+        // docs/plans/REFACTORING_PLAN.md instead, where a baseline regeneration
+        // cannot quietly drop it.
+        //
+        // informational, not disable: all four stay in the uploaded report, they
+        // just cannot break the build.
+        informational += setOf(
+            "AndroidGradlePluginVersion",
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "OldTargetApi",
+        )
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

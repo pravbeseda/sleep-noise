@@ -44,7 +44,7 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 ./gradlew installDebug                   # build + install on connected device
 ./gradlew testDebugUnitTest              # JVM unit tests
 ./gradlew connectedAndroidTest           # instrumented tests (needs device/emulator)
-./gradlew lint                           # Android lint
+./gradlew lint                           # Android lint (fails on new warnings)
 ./gradlew assembleRelease                # unsigned release APK
 ```
 
@@ -57,6 +57,14 @@ Single unit test:
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
 Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`. There is no `signingConfig` in the build script yet; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
+
+## CI
+
+`.github/workflows/ci.yml` runs two independent jobs — unit tests and lint — on every PR and push to `main`. Both decode `app/google-services.json` from the `GOOGLE_SERVICES_JSON_B64` secret first, because the Firebase plugins are applied unconditionally and every Gradle task needs the file.
+
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 29 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+
+Version-currency checks (`GradleDependency`, `NewerVersionAvailable`, `AndroidGradlePluginVersion`, `OldTargetApi`) are informational on purpose: their messages contain the versions being compared, so they stop matching the baseline whenever a new release appears and would fail untouched code.
 
 ## Architecture
 

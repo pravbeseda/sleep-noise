@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Pull requests only. A superseded PR run tells us nothing, but this key sits
+  # at workflow level and cancels the entire run — so on main it would leave the
+  # first of two quick merges with no completed check, and once D3 adds an alpha
+  # job to this file, a job-level concurrency group would not save the delivery
+  # from being cancelled along with everything else.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # Default shallow checkout is fine: the release gate in
+        # app/build.gradle.kts only guards tasks that package an artifact, and
+        # this job packages nothing. Release jobs need fetch-depth: 0.
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          # The google-services and Crashlytics plugins are applied
+          # unconditionally, so every Gradle task needs this file to exist —
+          # including unit tests, which never reach Firebase at runtime.
+          #
+          # Secrets are withheld from pull requests opened from forks, and
+          # GitHub treats Dependabot the same way. Those runs fall back to a
+          # checked-in stub, so a contribution can still go green once these
+          # become required checks. Only the package name has to be real.
+          #
+          # Jobs that publish an artifact (D3, D4) must not use this fallback:
+          # a stub would ship an app whose Crashlytics and Analytics go nowhere.
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+          else
+            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+            cp ci/google-services-stub.json app/google-services.json
+          fi
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    # Independent of unit-tests: a lint regression and a failing test are
+    # different problems, and seeing both in one run beats fixing them serially.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          # Same fallback as the unit-tests job — see the comment there.
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+          else
+            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+            cp ci/google-services-stub.json app/google-services.json
+          fi
+
+      - name: Run lint
+        # warningsAsErrors is on and the 29 findings this code already carries
+        # sit in app/lint-baseline.xml, so this fails on new warnings only.
+        # Lint reports 40 in total: the other 11 are version-currency checks,
+        # marked informational in app/build.gradle.kts because their messages
+        # embed version numbers and stop matching a baseline as releases appear.
+        run: ./gradlew lint --stacktrace
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: |
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.xml
+          # warn, not ignore: these paths are hardcoded to the debug variant, so
+          # a variant change or an AGP rename would leave an empty artifact on
+          # exactly the run where the report is needed — lint failing is when
+          # someone comes looking for it. Not error either: the build already
+          # failed for a real reason, and burying that under a missing-file
+          # error helps nobody.
+          if-no-files-found: warn
