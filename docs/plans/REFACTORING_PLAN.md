@@ -118,8 +118,13 @@ Everything that has to be true before a runner can build this project at all.
       `git rev-list --count HEAD` prints — deliberately not restated here, since a number
       written into a document that lives in the repository it counts is stale on the next
       commit.
-- [x] Set the floor to the current value (5) and fail loudly on release builds when the count
-      falls below it, which is the signature of a shallow CI clone.
+- [x] Reject a versionCode that cannot be trusted, via two separate guards rather than one
+      threshold doing both jobs. `git rev-parse --is-shallow-repository` catches a truncated
+      history at any depth — a `--depth 20` clone clears any numeric floor while still
+      producing a stale count. The floor (5, the last hand-assigned value) then catches what
+      depth cannot: a history that is not the one this app ships from. Both are enforced by
+      `verifyReleaseVersioning`, hung off the tasks that package a release rather than off the
+      requested task name, so `build` and `bundle` are covered and `lintRelease` is not.
 - [x] Drop the parentheses from the APK filename (see the warning under D3).
 
 ### D2 — CI workflow: unit tests and lint
@@ -148,8 +153,9 @@ Everything that has to be true before a runner can build this project at all.
       `ANDROID_KEYSTORE_B64` and decode into `$RUNNER_TEMP` at build time.
 - [ ] Job gated on `needs: unit-tests`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`.
 - [ ] `concurrency: { group: alpha, cancel-in-progress: true }` so rapid merges do not queue up.
-- [ ] Check out with `fetch-depth: 0` — the commit-count versionCode from D1 collapses to 1 on
-      a shallow clone.
+- [ ] Check out with `fetch-depth: 0`. Any shallow clone truncates the commit-count versionCode
+      from D1, and the release gate rejects the build outright rather than letting a stale code
+      through — so this is not optional for a job that packages a release.
 - [ ] Decode the keystore, then `./gradlew assembleRelease`.
 - [ ] Deliver with `wzieba/Firebase-Distribution-Github-Action` to the `qa` group. Firebase is
       already wired into the app (analytics + Crashlytics), so the Firebase project exists.
@@ -160,6 +166,14 @@ The `applicationVariants` block renames outputs to
 `SleepNoise-<versionName>-<versionCode>-release.apk` — dash-separated, no parentheses, so the
 upload path globs without quoting. The parentheses this section used to warn about are already
 gone (see the checked item under D1); keep the separator as it is when wiring the upload.
+
+That block is the one place still on the deprecated `applicationVariants` API, and it stays
+there on purpose: `androidComponents.onVariants` has no equivalent. `VariantOutput` exposes
+`versionCode`, `versionName` and `enabled` and nothing else — the same in `gradle-api` 8.12.2
+and 9.0.1 — so AGP 9 removes the API without replacing what it is used for. Renaming through
+the modern API means a `Copy` task wired to `SingleArtifact.APK`, which also changes where the
+artifact lands. Settle that here, when the upload path that consumes the name is being written,
+rather than guessing at it beforehand.
 
 ### D4 — Beta: AAB to Google Play internal
 

@@ -90,10 +90,15 @@ val versioningProblems: List<String> = listOfNotNull(
 
 val verifyReleaseVersioning = tasks.register("verifyReleaseVersioning") {
     description = "Fails a release build whose version cannot be derived from the repository."
+    // Copied into a local before doLast closes over it. A top-level `val` in a
+    // Kotlin build script is a field of the script object, so referring to
+    // versioningProblems directly from the action would make the action hold a
+    // reference to the script — which the configuration cache cannot serialize.
+    val problems = versioningProblems
     doLast {
-        if (versioningProblems.isNotEmpty()) {
+        if (problems.isNotEmpty()) {
             throw GradleException(
-                versioningProblems.joinToString(
+                problems.joinToString(
                     prefix = "Refusing to package a release:\n  - ",
                     separator = "\n  - ",
                     postfix = "\nCI must check out with fetch-depth: 0 and keep " +
@@ -104,6 +109,8 @@ val verifyReleaseVersioning = tasks.register("verifyReleaseVersioning") {
     }
 }
 
+val gatedPackagingTasks = mutableSetOf<String>()
+
 androidComponents {
     onVariants { variant ->
         if (variant.buildType != "release") return@onVariants
@@ -111,10 +118,26 @@ androidComponents {
         // packageX builds the APK, packageXBundle the AAB — the two tasks that
         // turn a versionCode into something publishable.
         setOf("package$name", "package${name}Bundle").forEach { taskName ->
+            gatedPackagingTasks += taskName
             tasks.matching { it.name == taskName }.configureEach {
                 dependsOn(verifyReleaseVersioning)
             }
         }
+    }
+}
+
+// tasks.matching is lenient: a name AGP no longer uses matches nothing and says
+// nothing, so the gate would disappear while the build stayed green and releases
+// kept packaging. Since this block exists to stop a bad release, a missing name
+// has to be loud. tasks.names reads the registered names without realizing the
+// tasks, so the assertion costs nothing and does not undo the laziness above.
+afterEvaluate {
+    val missing = gatedPackagingTasks - tasks.names
+    check(missing.isEmpty()) {
+        "verifyReleaseVersioning is wired to $missing, which no longer exist — " +
+            "AGP has renamed or split the packaging tasks, and the release gate " +
+            "is no longer attached to anything. Update the names in the " +
+            "versioning block of app/build.gradle.kts."
     }
 }
 
@@ -156,6 +179,15 @@ android {
         compose = true
     }
 
+    // Deliberately still the deprecated applicationVariants API, while the
+    // release gate above uses androidComponents.onVariants. The modern API has
+    // no equivalent: VariantOutput exposes versionCode, versionName and enabled,
+    // and nothing else — checked against gradle-api 8.12.2 and 9.0.1 alike, so
+    // AGP 9 removes this API without replacing what it is used for here.
+    // Renaming through the new API means a Copy task wired to
+    // SingleArtifact.APK, which also moves where the artifact lands. That is a
+    // D3 decision (the upload path is what consumes the name), not one to guess
+    // at now — see docs/plans/REFACTORING_PLAN.md.
     applicationVariants.all {
         val variant = this
         outputs.forEach { output ->
