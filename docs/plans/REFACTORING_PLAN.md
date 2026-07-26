@@ -419,8 +419,23 @@ volumes, theme, language, and timer.
 
 ## Phase 6 — Cleanup
 
-Lint currently reports 40 warnings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`).
+Lint reports 40 findings (`./gradlew lint`, report at
+`app/build/reports/lint-results-debug.html`). 29 of them are real and parked in
+`app/lint-baseline.xml`; the other 11 are version-currency checks marked informational in
+`app/build.gradle.kts`, so this phase is measured by emptying the baseline.
+
+### Deadline: targetSdk
+
+Tracked here rather than in lint. `OldTargetApi` fires on CI (the runner's SDK components are
+ahead of a local install) but it is informational, and a baseline entry would not survive the
+regenerations this phase requires — so the reminder lives where regeneration cannot drop it.
+
+Google requires each app to target the previous year's API level by 31 August annually, and
+misses mean Play stops accepting updates. `targetSdk` is currently 36, which satisfies the
+present requirement; the lint finding is about the cycle after it.
+
+- [ ] Confirm the current Play deadline and target level in the Play Console before each
+      August, and raise `targetSdk` with a pass over behaviour changes for that release.
 
 ### Tasks
 

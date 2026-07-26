@@ -183,16 +183,28 @@ android {
         warningsAsErrors = true
         abortOnError = true
 
-        // Version-currency checks answer "is something newer available?", which
-        // depends on the day and the machine rather than on the commit under
-        // test. They drift: a local baseline recorded 11 of them that the runner
-        // then did not reproduce, while the runner raised 4 OldTargetApi errors
-        // that a local SDK 36 install never sees. Left as errors they would fail
-        // untouched code as soon as Google ships a release.
+        // These answer "is something newer available?", which depends on the day
+        // and the machine rather than on the commit under test. Left as errors
+        // they fail untouched code as soon as Google ships a release.
         //
-        // informational, not disable: they stay in the uploaded HTML report,
-        // they just cannot break the build. Acting on them is dependency-update
-        // work — phase 6 — not a merge gate.
+        // The first three drift because their messages carry the versions being
+        // compared ("a newer version than 8.13 is available: 8.14.5"), and
+        // baseline matching is on message text — so a runner with a fresher
+        // index reports the same finding as a new one. A locally recorded
+        // baseline listed 11 that the runner then could not match.
+        //
+        // OldTargetApi is here for a different reason, and it is the weaker
+        // case of the four: its message is generic, so a baseline would hold it
+        // fine. It differs because lint compares targetSdk against the newest
+        // API level it knows about, and the runner's SDK components are ahead of
+        // a local SDK 36 install — one error there, none here. Unlike the other
+        // three it tracks a Play deadline, so muting it loses a signal worth
+        // keeping: that is why the targetSdk bump is written into
+        // docs/plans/REFACTORING_PLAN.md instead, where a baseline regeneration
+        // cannot quietly drop it.
+        //
+        // informational, not disable: all four stay in the uploaded report, they
+        // just cannot break the build.
         informational += setOf(
             "AndroidGradlePluginVersion",
             "GradleDependency",
