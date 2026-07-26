@@ -18,3 +18,6 @@ app/google-services.json
 
 # Ad-hoc screenshots dropped in the repo root (graph/ keeps the curated ones)
 /Screenshot_*.png
+
+# Working notes, not part of the project's public documentation
+/docs/code-quality-suggestions.md
