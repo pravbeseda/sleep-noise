@@ -96,8 +96,11 @@ jobs:
           printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
 
       - name: Run lint
-        # warningsAsErrors is on and the existing 40 warnings sit in
-        # app/lint-baseline.xml, so this fails on new warnings only.
+        # warningsAsErrors is on and the 29 findings this code already carries
+        # sit in app/lint-baseline.xml, so this fails on new warnings only.
+        # Lint reports 40 in total: the other 11 are version-currency checks,
+        # marked informational in app/build.gradle.kts because their messages
+        # embed version numbers and stop matching a baseline as releases appear.
         run: ./gradlew lint --stacktrace
 
       - name: Upload lint report
