@@ -8,6 +8,11 @@ Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise 
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
+`README.md` is the outward-facing description of the same project. Build commands, requirements and
+process live in both files: change one and the other goes stale silently, since nothing checks them
+against each other. Keep them in step, and the plan too when a change closes or moves one of its
+phases.
+
 ## Contributing workflow
 
 `main` is protected: **no direct commits or pushes**, enforced on GitHub and by local hooks. Always branch from an up-to-date `main`, then open a PR.
@@ -28,6 +33,15 @@ git config remote.origin.prune true    # drop stale remote-tracking refs on fetc
 Two hooks back this up: `.githooks/pre-commit` rejects a commit made while `main` or `release` is checked out, and `.githooks/pre-push` rejects a push to either — on `origin` only, so forks and scratch remotes are unaffected. Both accept `--no-verify` as a deliberate bypass, and GitHub enforces the same rule server-side.
 
 An in-progress merge is exempt from the commit hook, so resolving a conflict on `main` still works.
+
+### Scope of one PR
+
+One PR does one thing. Where the work maps onto `docs/plans/REFACTORING_PLAN.md`, that means one
+deliverable of one phase. Refactoring and behaviour changes do not share a PR: a diff that moves
+code *and* changes what it does cannot be reviewed, only trusted.
+
+Files outside the stated scope stay untouched, however tempting. Something worth fixing that turns
+up along the way goes into the PR description or an issue, not into the diff.
 
 **Delete the branch once its PR is merged.** GitHub removes the remote branch automatically (`delete_branch_on_merge`), so only the local copy is left behind:
 
@@ -58,13 +72,74 @@ Single unit test:
 
 Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`. There is no `signingConfig` in the build script yet; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
 
+## Tests are mandatory
+
+The project reached this point with no test covering its own code, which is exactly why the rule is
+written down rather than assumed. It is deliberately not "always TDD": test-first pays for itself on
+logic and fights you on Android plumbing, so the boundary is explicit.
+
+**Pure logic is written test-first.** Pure logic is anything that does not import `android.*`: noise
+sample generation, time formatting, state computation, settings migration. Order: a failing test,
+the smallest implementation that passes it, then refactoring. New pure logic without a test in the
+same commit is not finished work — do not describe it as done.
+
+**Android plumbing** (Activity, View, Service, `SharedPreferences`) is not written test-first. If the
+behaviour can be expressed through Robolectric, the test lands after the implementation in the same
+PR. If it cannot, the PR description says which behaviour is uncovered and why. "Untested" is an
+acceptable answer; "untested and unmentioned" is not.
+
+**A bug fix starts with a test** that reproduces the defect and fails before the fix.
+
+**Never weaken a test to get a green build.** Not by deleting it, not with `@Ignore`, not by
+loosening an assertion. A test that seems wrong is a discussion in the PR, not a silent edit.
+
+### Definition of done
+
+```bash
+./gradlew testDebugUnitTest lint
+```
+
+Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
+a step could not be run at all, say which one and why rather than reporting around it.
+
+The command grows as tooling lands (`spotlessCheck`, `detekt`); when it does, update it here.
+
 ## CI
 
-`.github/workflows/ci.yml` runs two independent jobs — unit tests and lint — on every PR and push to `main`. Both decode `app/google-services.json` from the `GOOGLE_SERVICES_JSON_B64` secret first, because the Firebase plugins are applied unconditionally and every Gradle task needs the file.
+`.github/workflows/ci.yml` runs two independent jobs — unit tests and lint — on every PR and push to `main`. Both are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. Neither can be bypassed from the UI; `enforce_admins` is on.
+
+Both jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
 Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 29 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
+**The baseline only ever shrinks.** Regenerating it to make a new warning disappear converts a
+five-minute fix into permanent debt, and does it invisibly — the build goes green and the count goes
+up. A new finding gets fixed. The baseline changes only in a PR whose subject is reducing it, and
+that PR states the entry count before and after. Same rule for suppression: a new `@Suppress` or
+`tools:ignore` carries a comment on the same line saying why.
+
 Version-currency checks (`GradleDependency`, `NewerVersionAvailable`, `AndroidGradlePluginVersion`, `OldTargetApi`) are informational on purpose: their messages contain the versions being compared, so they stop matching the baseline whenever a new release appears and would fail untouched code.
+
+## Kotlin conventions
+
+Six rules, each of them a mistake this codebase has already made or is one edit away from making.
+
+- **`String.format` always takes an explicit `Locale`.** Arabic is a supported language, and without
+  one the timer renders Eastern Arabic numerals on an Arabic device. The four `DefaultLocale`
+  entries in the lint baseline come from three call sites in `timer/`.
+- **No `e.printStackTrace()`.** Crashlytics is wired up; a stack trace printed to logcat in a release
+  build goes nowhere at all. Use `Log` for the expected case, Crashlytics for the unexpected one.
+  Two call sites remain (`MainActivity.kt:130` and `:369`) and are not a precedent.
+- **No `!!`.** There is currently not one in the project, which is worth keeping. `?.let`,
+  `requireNotNull(x) { "why" }`, or an early return say the same thing without the crash.
+- **Preference keys and theme/language values are constants, not literals at the call site.** The
+  string `"dark"` appears throughout `MainActivity` as key, default and comparison at once; phase 5
+  turns those into an enum. Do not add the twentieth occurrence in the meantime.
+- **New dependencies go through `gradle/libs.versions.toml`,** with a line in the PR description
+  saying why. The Compose stack is the cautionary tale: seven artifacts on the classpath, none used.
+- **`versionCode`, `app/version.properties` and the versioning block of `app/build.gradle.kts` are
+  release-PR territory.** Every other PR leaves them alone. See the versioning section for why the
+  code is derived rather than written.
 
 ## Architecture
 
