@@ -43,26 +43,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
-        env:
-          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
-        run: |
-          # The google-services and Crashlytics plugins are applied
-          # unconditionally, so every Gradle task needs this file to exist —
-          # including unit tests, which never reach Firebase at runtime.
-          #
-          # Secrets are withheld from pull requests opened from forks, and
-          # GitHub treats Dependabot the same way. Those runs fall back to a
-          # checked-in stub, so a contribution can still go green once these
-          # become required checks. Only the package name has to be real.
-          #
-          # Jobs that publish an artifact (D3, D4) must not use this fallback:
-          # a stub would ship an app whose Crashlytics and Analytics go nowhere.
-          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
-          else
-            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
-            cp ci/google-services-stub.json app/google-services.json
-          fi
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
@@ -97,16 +80,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
-        env:
-          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
-        run: |
-          # Same fallback as the unit-tests job — see the comment there.
-          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
-          else
-            echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
-            cp ci/google-services-stub.json app/google-services.json
-          fi
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - name: Run lint
         # warningsAsErrors is on and the 29 findings this code already carries

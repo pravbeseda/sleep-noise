@@ -1,0 +1,39 @@
+name: Provide google-services.json
+description: >
+  Puts app/google-services.json in place, falling back to the checked-in stub when the secret is
+  unavailable. Every Gradle task needs the file, so every job needs this step.
+
+inputs:
+  secret-b64:
+    description: >
+      Base64-encoded google-services.json, normally secrets.GOOGLE_SERVICES_JSON_B64. Composite
+      actions cannot read secrets themselves, so the caller passes it in. Empty is a valid value
+      and selects the stub.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Write app/google-services.json
+      shell: bash
+      env:
+        GOOGLE_SERVICES_JSON_B64: ${{ inputs.secret-b64 }}
+      run: |
+        # The google-services and Crashlytics plugins are applied unconditionally, so every Gradle
+        # task needs this file to exist — including unit tests, which never reach Firebase at
+        # runtime.
+        #
+        # Secrets are withheld from pull requests opened from forks, and GitHub treats Dependabot
+        # the same way. Those runs fall back to a checked-in stub, so a contribution can still go
+        # green against the required checks. Only the package name has to be real.
+        #
+        # Jobs that publish an artifact (D3, D4) must NOT use the fallback: a stub would ship an app
+        # whose Crashlytics and Analytics go nowhere. Those jobs must assert the secret is present
+        # before calling this action, or not call it at all.
+        if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
+        else
+          echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+          cp ci/google-services-stub.json app/google-services.json
+        fi
