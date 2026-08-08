@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("ru.pravbeseda.whitenoise", appContext.packageName)
+        assertEquals("ru.pravbeseda.sleepnoise", appContext.packageName)
     }
 }
