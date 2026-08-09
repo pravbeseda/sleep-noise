@@ -59,6 +59,8 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 ./gradlew testDebugUnitTest              # JVM unit tests
 ./gradlew connectedAndroidTest           # instrumented tests (needs device/emulator)
 ./gradlew lint                           # Android lint (fails on new warnings)
+./gradlew spotlessCheck                  # ktlint formatting, changed files only
+./gradlew spotlessApply                  # rewrite those files in place
 ./gradlew assembleRelease                # unsigned release APK
 ```
 
@@ -96,19 +98,21 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 ### Definition of done
 
 ```bash
-./gradlew testDebugUnitTest lint
+./gradlew spotlessCheck testDebugUnitTest lint
 ```
 
 Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
 a step could not be run at all, say which one and why rather than reporting around it.
 
-The command grows as tooling lands (`spotlessCheck`, `detekt`); when it does, update it here.
+The command grows as tooling lands (`detekt` next); when it does, update it here.
 
 ## CI
 
-`.github/workflows/ci.yml` runs two independent jobs — unit tests and lint — on every PR and push to `main`. Both are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. Neither can be bypassed from the UI; `enforce_admins` is on.
+`.github/workflows/ci.yml` runs three independent jobs — unit tests, lint and format — on every PR and push to `main`. All are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
 
-Both jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
+The context names in the branch protection (`Unit tests`, `Lint`, `Format`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
+
+All three jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
 Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 29 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
@@ -119,6 +123,21 @@ that PR states the entry count before and after. Same rule for suppression: a ne
 `tools:ignore` carries a comment on the same line saying why.
 
 Version-currency checks (`GradleDependency`, `NewerVersionAvailable`, `AndroidGradlePluginVersion`, `OldTargetApi`) are informational on purpose: their messages contain the versions being compared, so they stop matching the baseline whenever a new release appears and would fail untouched code.
+
+## Formatting
+
+Spotless with ktlint 1.8.0 owns whitespace, import order and brace placement — `./gradlew
+spotlessApply` settles any question about them, and a formatting argument in review means the
+config is wrong, not the code.
+
+It runs with `ratchetFrom("origin/main")`: only files a branch changed are formatted or checked.
+The whole tree was deliberately **not** reformatted — that commit would rewrite every blame line in
+the project and teach nothing. The price is a hard dependency on the `origin/main` ref, so a
+shallow or single-branch clone fails every spotless task outright instead of quietly checking
+nothing, and the CI job checks out with `fetch-depth: 0`.
+
+Do not widen the ratchet to `spotlessApply` the whole codebase in a PR about something else. A
+formatting sweep is its own PR, if it ever happens at all.
 
 ## Kotlin conventions
 
