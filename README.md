@@ -103,6 +103,22 @@ The hooks refuse commits and pushes on `main` and `release`; GitHub enforces the
 server-side. Delete your branch once its PR is merged, and never reuse it — `versionCode` is
 derived from the commit count, so `main` has to stay append-only.
 
+### Tests
+
+Unit tests and lint are required checks: a red run blocks the merge, and the branch has to be
+current with `main` before it can go in. Before opening a PR:
+
+```bash
+./gradlew testDebugUnitTest lint
+```
+
+New pure logic — anything that does not import `android.*` — is written test-first and lands with
+its test in the same commit. Android plumbing is exempt from test-first, but a PR that leaves
+behaviour uncovered says which behaviour and why. Bug fixes start with a test that reproduces the
+bug. No test gets disabled or weakened to turn a build green.
+
+The full rule, and the reasoning for drawing the line there, is in [`CLAUDE.md`](CLAUDE.md).
+
 ### Adding a language
 
 Translations are the most welcome contribution — the app even asks users for them.

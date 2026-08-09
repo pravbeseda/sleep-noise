@@ -143,8 +143,11 @@ Everything that has to be true before a runner can build this project at all.
       `AndroidGradlePluginVersion`, `OldTargetApi`) informational. Their messages embed the
       versions being compared, so the baseline stops matching as soon as either side moves —
       they failed the first CI run against code that had not changed.
-- [ ] Once the check has run at least once, add it to the required status checks configured
-      in D0.
+- [x] Once the check has run at least once, add it to the required status checks configured
+      in D0. Done 8 August 2026: `strict: true`, contexts `Unit tests` and `Lint`. A context
+      name is the job's `name:` value, and the two are stored in separate places — renaming a
+      job in `ci.yml` without updating branch protection leaves a required check that can never
+      report, which blocks every merge until someone edits the protection by hand.
 
 ### D3 — Alpha: signed APK to Firebase App Distribution
 
@@ -439,10 +442,16 @@ present requirement; the lint finding is about the cycle after it.
 
 ### Tasks
 
-- [ ] `DefaultLocale` (4 hits, `TimerController.kt:18,20` and `TimerView.kt`): pass an
-      explicit `Locale`. Arabic is a shipped language, so the timer currently renders
-      Arabic-Indic digits there. Decide deliberately: `Locale.ROOT` for stable digits, or
-      keep the localized ones.
+- [ ] `DefaultLocale` (4 hits, `TimerController.kt:18,20` and `TimerView.kt`): pass
+      `Locale.getDefault()` explicitly. The decision was taken on 8 August 2026 and is written
+      into CLAUDE.md — localized digits stay, so an Arabic device keeps reading `١٢:٣٤` like its
+      system clock. That makes this a no-op on output: it silences the check and records the
+      choice, nothing more. Do not "fix" it to `Locale.ROOT` while clearing the baseline.
+- [ ] Check the timer under RTL on a device, which nothing has done. `"%02d:%02d"` reaches the
+      bidi algorithm as digits around a neutral colon, and the failure mode is a countdown that
+      reads `34:12`. `BidiFormatter` is already applied to language names in `MainActivity` but
+      not here. Independent of the digit question above — it goes wrong the same way with
+      Western digits in an RTL layout.
 - [ ] `UseKtx` (8 hits): replace `preferences.edit().apply()` with `edit { }` and friends.
 - [ ] `Untranslatable` (5), `IconDuplicates` (5), `MonochromeLauncherIcon` (2),
       `AlwaysShowAction`, `Overdraw`, `UnusedResources`.
