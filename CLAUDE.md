@@ -124,9 +124,14 @@ Version-currency checks (`GradleDependency`, `NewerVersionAvailable`, `AndroidGr
 
 Six rules, each of them a mistake this codebase has already made or is one edit away from making.
 
-- **`String.format` always takes an explicit `Locale`.** Arabic is a supported language, and without
-  one the timer renders Eastern Arabic numerals on an Arabic device. The four `DefaultLocale`
-  entries in the lint baseline come from three call sites in `timer/`.
+- **`String.format` always names its `Locale`, and for anything a user reads that `Locale` is
+  `Locale.getDefault()`.** Leaving it out uses the default anyway, so "explicit" on its own changes
+  no output — naming it makes the choice deliberate and reviewable instead of accidental.
+  Locale-native digits are the intended behaviour, not the bug: on an Arabic device the timer reads
+  `١٢:٣٤`, the same as the system clock, because someone who picked Arabic picked all of it.
+  `Locale.ROOT` is for strings a machine parses, never for strings a person reads. The four
+  `DefaultLocale` entries in the baseline come from three call sites in `timer/`; phase 6 makes
+  them explicit without changing what they render.
 - **No `e.printStackTrace()`.** Crashlytics is wired up; a stack trace printed to logcat in a release
   build goes nowhere at all. Use `Log` for the expected case, Crashlytics for the unexpected one.
   Two call sites remain (`MainActivity.kt:130` and `:369`) and are not a precedent.
