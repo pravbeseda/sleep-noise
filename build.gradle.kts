@@ -9,6 +9,12 @@ plugins {
     id("com.google.firebase.crashlytics") version "3.0.2" apply false
 }
 
+// Spotless reads ktlint_code_style out of .editorconfig but not max_line_length,
+// measured on this project: without the override below, ktlint joined an already
+// wrapped class declaration into a 156-character line. Both places carry 140 —
+// .editorconfig for the IDE, this for the check.
+val lineLength = mapOf("max_line_length" to "140")
+
 spotless {
     // Ratchet: only files that differ from origin/main are formatted or checked.
     // Reformatting the whole tree in one commit would rewrite every blame line
@@ -22,12 +28,12 @@ spotless {
     kotlin {
         target("**/*.kt")
         targetExclude("**/build/**")
-        ktlint(libs.versions.ktlint.get())
+        ktlint(libs.versions.ktlint.get()).editorConfigOverride(lineLength)
     }
     kotlinGradle {
         target("**/*.gradle.kts")
         targetExclude("**/build/**")
-        ktlint(libs.versions.ktlint.get())
+        ktlint(libs.versions.ktlint.get()).editorConfigOverride(lineLength)
     }
     format("xml") {
         // Whitespace only. Layouts and strings.xml carry attribute ordering and

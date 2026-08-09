@@ -1,0 +1,29 @@
+# Read by Android Studio, and partly by ktlint through Spotless — the code style
+# below comes from here, the line length has to be repeated in the build script
+# (see the note on it). The point is that the IDE and the check describe the
+# same layout instead of quietly disagreeing.
+root = true
+
+[*.{kt,kts}]
+# intellij_idea, not ktlint_official. The two differ mainly in how they wrap
+# multi-line expressions, and ktlint_official rewrites a chained call into one
+# call per line and moves every assigned expression onto its own indented line.
+# Measured on this project: a one-line edit to app/build.gradle.kts dragged 67
+# added and 55 removed lines of pure wrapping along with it, because Spotless
+# ratchets whole files. intellij_idea is also what Android Studio's formatter
+# produces, so the IDE and the check agree without anyone configuring the IDE.
+ktlint_code_style = intellij_idea
+
+# intellij_idea leaves the line length unset, which means no limit at all. 140 is
+# what ktlint_official would have used.
+#
+# This value governs the IDE. Spotless does not read it from here — measured:
+# without an explicit override in the root build.gradle.kts, ktlint joined an
+# already wrapped class declaration into a 156-character line — so the same
+# number is repeated there, and detekt's MaxLineLength is set to it as well.
+# Three places, one number: change one and change all three.
+#
+# Enforcement is detekt's, not ktlint's. Spotless runs ktlint in format mode and
+# a too-long line is not something it can fix, so it passes silently: a
+# 483-character line went through spotlessCheck untouched.
+max_line_length = 140
