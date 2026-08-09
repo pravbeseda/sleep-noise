@@ -63,8 +63,14 @@ secret scanners within hours and stuck in the history for good.
 ./gradlew testDebugUnitTest      # JVM unit tests
 ./gradlew connectedAndroidTest   # instrumented tests (needs a device or emulator)
 ./gradlew lint                   # Android lint — fails on new warnings
+./gradlew spotlessCheck          # ktlint formatting, changed files only
+./gradlew spotlessApply          # fix what spotlessCheck reports
 ./gradlew assembleRelease        # unsigned release APK
 ```
+
+Spotless formats only what your branch changed relative to `origin/main`, so the existing code is
+left alone. That ratchet needs the `origin/main` ref: in a shallow or single-branch clone every
+spotless task fails instead of silently checking nothing.
 
 ## Project layout
 
@@ -105,11 +111,11 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests and lint are required checks: a red run blocks the merge, and the branch has to be
-current with `main` before it can go in. Before opening a PR:
+Unit tests, lint and formatting are required checks: a red run blocks the merge, and the branch has
+to be current with `main` before it can go in. Before opening a PR:
 
 ```bash
-./gradlew testDebugUnitTest lint
+./gradlew spotlessCheck testDebugUnitTest lint
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
