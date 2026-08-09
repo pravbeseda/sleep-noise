@@ -1,0 +1,33 @@
+# Overrides on top of the detekt 1.23.8 defaults (buildUponDefaultConfig = true
+# in the root build.gradle.kts). Everything not named here keeps detekt's
+# default.
+#
+# The root build script, not app/build.gradle.kts: applying the plugin there
+# means editing that file, and the Spotless ratchet then pulls all ~300 lines of
+# it into ktlint's scope, so an unrelated reformat rides along in whatever PR
+# touches detekt. Moving this config into :app undoes that.
+#
+# The only rules switched off are the ones ktlint already owns. Two formatters
+# with two opinions about the same line is how a project ends up unable to
+# satisfy either, and ktlint is the one that can fix its findings itself
+# (./gradlew spotlessApply). Detekt is kept for what ktlint cannot see: logic,
+# complexity and API misuse.
+#
+# One rule is worth naming for what is NOT set here: empty-blocks
+# EmptyFunctionBlock keeps its default (active, ignoreOverridden: false), so all
+# six of its current findings — required-but-empty listener overrides — sit in
+# the baseline rather than being silenced. Four belong to the two duplicated
+# SeekBar listeners that phase 2 of the refactoring plan deletes, and
+# ignoreOverridden would hide exactly the smell the plan is aiming at.
+style:
+  MaxLineLength:
+    # ktlint enforces the line length, from .editorconfig if the project ever
+    # adds one. Detekt's own 120 would be a second, silently different limit.
+    active: false
+  WildcardImport:
+    # ktlint's no-wildcard-imports, and it rewrites the import instead of only
+    # reporting it.
+    active: false
+  NewLineAtEndOfFile:
+    # ktlint's final-newline rule, applied to every file a branch touches.
+    active: false

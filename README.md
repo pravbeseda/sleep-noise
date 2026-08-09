@@ -63,6 +63,7 @@ secret scanners within hours and stuck in the history for good.
 ./gradlew testDebugUnitTest      # JVM unit tests
 ./gradlew connectedAndroidTest   # instrumented tests (needs a device or emulator)
 ./gradlew lint                   # Android lint — fails on new warnings
+./gradlew detekt                 # Kotlin static analysis (baselined)
 ./gradlew spotlessCheck          # ktlint formatting, changed files only
 ./gradlew spotlessApply          # fix what spotlessCheck reports
 ./gradlew assembleRelease        # unsigned release APK
@@ -111,11 +112,11 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests, lint and formatting are required checks: a red run blocks the merge, and the branch has
+Unit tests, lint, detekt and formatting are required checks: a red run blocks the merge, and the branch has
 to be current with `main` before it can go in. Before opening a PR:
 
 ```bash
-./gradlew spotlessCheck testDebugUnitTest lint
+./gradlew spotlessCheck detekt testDebugUnitTest lint
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
