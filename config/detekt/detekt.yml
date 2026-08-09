@@ -1,0 +1,29 @@
+# Overrides on top of the detekt 1.23.8 defaults (buildUponDefaultConfig = true
+# in app/build.gradle.kts). Everything not named here keeps detekt's default.
+#
+# The only rules switched off are the ones ktlint already owns. Two formatters
+# with two opinions about the same line is how a project ends up unable to
+# satisfy either, and ktlint is the one that can fix its findings itself
+# (./gradlew spotlessApply). Detekt is kept for what ktlint cannot see: logic,
+# complexity and API misuse.
+style:
+  MaxLineLength:
+    # ktlint enforces the line length, from .editorconfig if the project ever
+    # adds one. Detekt's own 120 would be a second, silently different limit.
+    active: false
+  WildcardImport:
+    # ktlint's no-wildcard-imports, and it rewrites the import instead of only
+    # reporting it.
+    active: false
+  NewLineAtEndOfFile:
+    # ktlint's final-newline rule, applied to every file a branch touches.
+    active: false
+
+empty-blocks:
+  EmptyFunctionBlock:
+    # Deliberately left active even though all six current findings are
+    # required-but-empty listener overrides, which ignoreOverridden would drop.
+    # Four of them belong to the two duplicated SeekBar listeners that phase 2
+    # of the refactoring plan removes, so the option would hide exactly the
+    # smell the plan is aiming at.
+    active: true

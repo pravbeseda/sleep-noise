@@ -59,6 +59,7 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 ./gradlew testDebugUnitTest              # JVM unit tests
 ./gradlew connectedAndroidTest           # instrumented tests (needs device/emulator)
 ./gradlew lint                           # Android lint (fails on new warnings)
+./gradlew detekt                         # Kotlin static analysis (baselined)
 ./gradlew spotlessCheck                  # ktlint formatting, changed files only
 ./gradlew spotlessApply                  # rewrite those files in place
 ./gradlew assembleRelease                # unsigned release APK
@@ -98,25 +99,25 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 ### Definition of done
 
 ```bash
-./gradlew spotlessCheck testDebugUnitTest lint
+./gradlew spotlessCheck detekt testDebugUnitTest lint
 ```
 
 Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
 a step could not be run at all, say which one and why rather than reporting around it.
 
-The command grows as tooling lands (`detekt` next); when it does, update it here.
+The command grows as tooling lands (Kover next); when it does, update it here.
 
 ## CI
 
-`.github/workflows/ci.yml` runs three independent jobs — unit tests, lint and format — on every PR and push to `main`. All are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
+`.github/workflows/ci.yml` runs four independent jobs — unit tests, lint, detekt and format — on every PR and push to `main`. All are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
 
-The context names in the branch protection (`Unit tests`, `Lint`, `Format`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
+The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
 
-All three jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
+All four jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
 Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 29 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
-**The baseline only ever shrinks.** Regenerating it to make a new warning disappear converts a
+**Both baselines only ever shrink** — `app/lint-baseline.xml` and `config/detekt/baseline.xml` alike. Regenerating one to make a new warning disappear converts a
 five-minute fix into permanent debt, and does it invisibly — the build goes green and the count goes
 up. A new finding gets fixed. The baseline changes only in a PR whose subject is reducing it, and
 that PR states the entry count before and after. Same rule for suppression: a new `@Suppress` or
@@ -138,6 +139,37 @@ nothing, and the CI job checks out with `fetch-depth: 0`.
 
 Do not widen the ratchet to `spotlessApply` the whole codebase in a PR about something else. A
 formatting sweep is its own PR, if it ever happens at all.
+
+## Static analysis: detekt
+
+detekt 1.23.8, configured on the **root** project next to Spotless — not inside `:app`. Applying it
+there would mean editing `app/build.gradle.kts`, and the Spotless ratchet then drags that whole
+300-line file into ktlint's scope, so an unrelated wholesale reformat rides along in whatever PR
+touches it. Detekt runs without type resolution and needs nothing from AGP but the paths.
+
+Source paths are listed explicitly: `app/src/main/java`, `app/src/test/java`,
+`app/src/androidTest/java`. The last one is not among detekt's defaults, and it is the source set
+that already shipped a test asserting the wrong package name. Reports land in
+`build/reports/detekt/` (root), not under `app/`.
+
+Config is `config/detekt/detekt.yml` on top of `buildUponDefaultConfig`. It switches off exactly
+three rules — `MaxLineLength`, `WildcardImport`, `NewLineAtEndOfFile` — because ktlint already owns
+them and can fix them, while two tools with two opinions about one line is how a project ends up
+unable to satisfy either. Anything else that is silenced belongs in that file with its reason, not
+in an inline `@Suppress`.
+
+`config/detekt/baseline.xml` holds the debt this landed on: **20 entries covering 38 findings** —
+`MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `PrintStackTrace` 2,
+`TooManyFunctions` 1. The two counts differ because a baseline entry is a signature, not a location,
+so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
+an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
+
+`ImplicitDefaultLocale` and `PrintStackTrace` restate two of the Kotlin conventions below in
+executable form; the remaining `MagicNumber` findings are concentrated in `media/` and are what
+phase 1 of the refactoring plan turns into named constants.
+
+The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
+two minors and a major ahead of this project. Revisit when the project moves, not before.
 
 ## Kotlin conventions
 
