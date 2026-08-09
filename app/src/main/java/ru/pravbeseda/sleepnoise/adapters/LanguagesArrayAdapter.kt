@@ -23,7 +23,11 @@ class LanguagesArrayAdapter(context: Context, private val items: Array<Language>
         }
         textView.text = text
         textView.setCompoundDrawablesRelativeWithIntrinsicBounds(this.items[position].flag, 0, 0, 0)
-        textView.compoundDrawablePadding = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 12f, context.resources.displayMetrics).toInt()
+        textView.compoundDrawablePadding = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            12f,
+            context.resources.displayMetrics,
+        ).toInt()
         return view
     }
 }

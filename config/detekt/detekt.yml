@@ -21,9 +21,13 @@
 # ignoreOverridden would hide exactly the smell the plan is aiming at.
 style:
   MaxLineLength:
-    # ktlint enforces the line length, from .editorconfig if the project ever
-    # adds one. Detekt's own 120 would be a second, silently different limit.
-    active: false
+    # 140, the value .editorconfig carries for the IDE and for ktlint's wrapping
+    # decisions. Detekt is what actually enforces it: Spotless runs ktlint in
+    # format mode, and a line that is too long is not something ktlint can fix,
+    # so it passes silently — measured, with a 483-character line sailing
+    # through spotlessCheck. Keep the two numbers equal.
+    active: true
+    maxLineLength: 140
   WildcardImport:
     # ktlint's no-wildcard-imports, and it rewrites the import instead of only
     # reporting it.

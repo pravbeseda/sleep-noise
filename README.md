@@ -69,8 +69,9 @@ secret scanners within hours and stuck in the history for good.
 ./gradlew assembleRelease        # unsigned release APK
 ```
 
-Spotless formats only what your branch changed relative to `origin/main`, so the existing code is
-left alone. That ratchet needs the `origin/main` ref: in a shallow or single-branch clone every
+Formatting rules live in `.editorconfig` (ktlint's `intellij_idea` style, 140-column lines), so
+Android Studio and the CI check agree without configuring the IDE. Spotless formats only what your
+branch changed relative to `origin/main`, so the existing code is left alone. That ratchet needs the `origin/main` ref: in a shallow or single-branch clone every
 spotless task fails instead of silently checking nothing.
 
 ## Project layout

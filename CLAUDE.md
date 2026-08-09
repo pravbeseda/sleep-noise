@@ -131,6 +131,22 @@ Spotless with ktlint 1.8.0 owns whitespace, import order and brace placement —
 spotlessApply` settles any question about them, and a formatting argument in review means the
 config is wrong, not the code.
 
+The style is `intellij_idea`, set in `.editorconfig`, not ktlint's own `ktlint_official`. The two
+differ mainly in wrapping, and `ktlint_official` moves every assigned expression onto its own
+indented line and splits chained calls one call per line: a one-line edit to `app/build.gradle.kts`
+came out as 67 added and 55 removed lines of pure wrapping, since the ratchet takes whole files.
+`intellij_idea` is also what Android Studio produces, so the IDE and the check agree with no IDE
+setup.
+
+**Line length is 140, written in three places, and they have to stay equal:** `.editorconfig` (for
+the IDE), `editorConfigOverride` in the root `build.gradle.kts` (Spotless reads the code style out
+of `.editorconfig` but *not* the line length — without the override ktlint joined an already
+wrapped class declaration into a 156-character line), and detekt's `MaxLineLength`.
+
+**Detekt is what enforces it, not ktlint.** Spotless runs ktlint in format mode, and a line that is
+too long is not something ktlint can fix, so it passes silently — a 483-character line went through
+`spotlessCheck` untouched. Both facts were measured on this project, not assumed.
+
 It runs with `ratchetFrom("origin/main")`: only files a branch changed are formatted or checked.
 The whole tree was deliberately **not** reformatted — that commit would rewrite every blame line in
 the project and teach nothing. The price is a hard dependency on the `origin/main` ref, so a
@@ -152,11 +168,12 @@ Source paths are listed explicitly: `app/src/main/java`, `app/src/test/java`,
 that already shipped a test asserting the wrong package name. Reports land in
 `build/reports/detekt/` (root), not under `app/`.
 
-Config is `config/detekt/detekt.yml` on top of `buildUponDefaultConfig`. It switches off exactly
-three rules — `MaxLineLength`, `WildcardImport`, `NewLineAtEndOfFile` — because ktlint already owns
-them and can fix them, while two tools with two opinions about one line is how a project ends up
-unable to satisfy either. Anything else that is silenced belongs in that file with its reason, not
-in an inline `@Suppress`.
+Config is `config/detekt/detekt.yml` on top of `buildUponDefaultConfig`. It switches off two rules —
+`WildcardImport` and `NewLineAtEndOfFile` — because ktlint owns them **and can fix them**, while two
+tools with two opinions about one line is how a project ends up unable to satisfy either.
+`MaxLineLength` is the opposite case and stays on at 140: ktlint cannot fix a long line, so it says
+nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
+inline `@Suppress`.
 
 `config/detekt/baseline.xml` holds the debt this landed on: **20 entries covering 38 findings** —
 `MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `PrintStackTrace` 2,
