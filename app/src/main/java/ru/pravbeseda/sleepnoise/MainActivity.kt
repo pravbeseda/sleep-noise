@@ -9,23 +9,25 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.BidiFormatter
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
 import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
 import ru.pravbeseda.sleepnoise.models.Language
-import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.timer.TimerController
 import ru.pravbeseda.sleepnoise.timer.TimerView
 
@@ -34,6 +36,8 @@ const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
+
+private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity() {
     private val whiteNoiseGenerator = WhiteNoiseGenerator()
@@ -71,9 +75,8 @@ class MainActivity : AppCompatActivity() {
 
         timerController = TimerController(
             onTick = { time -> timerView.showCountdown(time) },
-            onTime = { stopPlayback() }
+            onTime = { stopPlayback() },
         )
-
 
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
@@ -127,7 +130,8 @@ class MainActivity : AppCompatActivity() {
                 menu.setOptionalIconsVisible(true)
             }
         } catch (e: ClassCastException) {
-            e.printStackTrace()
+            // Only the optional icons are lost, the menu itself is still usable.
+            Log.w(TAG, "Could not enable optional icons in the options menu", e)
         }
 
         // Add (Language) for non-English languages
@@ -145,26 +149,28 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.theme_button -> {
-                showThemePopup(findViewById(R.id.theme_button))
-                true
-            }
-            R.id.language_button -> {
-                languageSelection()
-                true
-            }
-            R.id.mail -> {
-                mailToMe()
-                true
-            }
-            R.id.credits -> {
-                showCreditsDialog()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.theme_button -> {
+            showThemePopup(findViewById(R.id.theme_button))
+            true
         }
+
+        R.id.language_button -> {
+            languageSelection()
+            true
+        }
+
+        R.id.mail -> {
+            mailToMe()
+            true
+        }
+
+        R.id.credits -> {
+            showCreditsDialog()
+            true
+        }
+
+        else -> super.onOptionsItemSelected(item)
     }
 
     private fun startPlayback() {
@@ -210,9 +216,11 @@ class MainActivity : AppCompatActivity() {
                 R.id.theme_system -> {
                     setThemePreference("system")
                 }
+
                 R.id.theme_light -> {
                     setThemePreference("light")
                 }
+
                 R.id.theme_dark -> {
                     setThemePreference("dark")
                 }
@@ -253,10 +261,12 @@ class MainActivity : AppCompatActivity() {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                 setTheme(R.style.Theme_SleepNoise_System)
             }
+
             "light" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 setTheme(R.style.Theme_SleepNoise_Light)
             }
+
             "dark" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 setTheme(R.style.Theme_SleepNoise_Dark)
@@ -366,7 +376,8 @@ class MainActivity : AppCompatActivity() {
             val pInfo = this.packageManager.getPackageInfo(packageName, 0)
             appVersion = pInfo.versionName.toString()
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            // The app asking for its own package and not finding it should be impossible.
+            FirebaseCrashlytics.getInstance().recordException(e)
         }
         var res = "\ndevice: " + Build.DEVICE
         res += "\nmodel: " + Build.MODEL
@@ -382,4 +393,3 @@ class MainActivity : AppCompatActivity() {
         dialog.show(supportFragmentManager, "credits")
     }
 }
-
