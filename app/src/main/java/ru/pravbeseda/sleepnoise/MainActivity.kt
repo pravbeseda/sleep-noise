@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.BidiFormatter
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -36,8 +35,6 @@ const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
-
-private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity() {
     private val whiteNoiseGenerator = WhiteNoiseGenerator()
@@ -124,14 +121,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu, menu)
         updateThemeIcon(menu)
-        try {
-            // hack to show icons in popup menu
-            if (menu is MenuBuilder) {
-                menu.setOptionalIconsVisible(true)
-            }
-        } catch (e: ClassCastException) {
-            // Only the optional icons are lost, the menu itself is still usable.
-            Log.w(TAG, "Could not enable optional icons in the options menu", e)
+        // hack to show icons in popup menu
+        if (menu is MenuBuilder) {
+            menu.setOptionalIconsVisible(true)
         }
 
         // Add (Language) for non-English languages
