@@ -1,0 +1,83 @@
+# Agent Orchestrator — stage 1: observation.
+#
+# No reaction here is automatic. AO creates the worktree, launches the agent,
+# and shows PR/CI/review state — but never writes into an agent session on its
+# own. Automation is switched on one piece at a time; the order, the criterion
+# for moving on, and the rollback for each stage live in docs/plans/AO_ROLLOUT.md.
+#
+# Project identity (path, projectId, storageKey, originUrl, sessionPrefix)
+# belongs to AO's global registry, not here. This file is behaviour only.
+
+defaultBranch: main
+
+agent: claude-code
+runtime: tmux
+workspace: worktree
+
+agentConfig:
+  # Stage 1 asks before acting, deliberately: the point of the stage is to see
+  # what the agent intends to do. Relaxed to auto-edit at stage 2 and to
+  # permissionless at stage 5.
+  permissions: default
+
+# app/google-services.json is gitignored and simultaneously required: the
+# google-services and Crashlytics plugins are applied unconditionally, so
+# without the file every Gradle task fails, debug builds included. A fresh
+# worktree does not get it — only a symlink saves it, otherwise each session
+# dies on its first command.
+#
+# local.properties needs no symlink: it is committed (it reached the index
+# before it reached .gitignore), so the worktree gets it for free.
+#
+# .claude/settings.local.json carries the permission set already approved, and
+# without it the agent in a worktree re-asks what was granted long ago.
+symlinks:
+  - app/google-services.json
+  - .claude
+
+# The project rules are already written and already maintained. No second copy.
+agentRulesFile: CLAUDE.md
+
+agentRules: |
+  When the task names a GitHub issue — by number, by URL, or by both — run
+  `gh issue view <number>` and read it in full before touching anything. The
+  issue is the specification; the task description is only a pointer to it.
+  Do what the issue says and nothing beyond it.
+
+  AO created the branch. Work in it: do not create your own, do not switch to
+  main, do not rebase onto main or release.
+
+  Work is finished when this is green:
+  ./gradlew spotlessCheck detekt testDebugUnitTest lint
+  If a step could not be run at all, say which one and why. A report that
+  routes around the step it skipped is worse than a red result.
+
+  Do not widen the scope. Anything worth fixing that turns up along the way
+  goes into the PR description, not into the diff.
+
+# Everything manual. This is the baseline the later stages count from: each of
+# them flips exactly one of these keys to auto: true.
+reactions:
+  ci-failed:
+    auto: false
+  changes-requested:
+    auto: false
+  bugbot-comments:
+    auto: false
+  merge-conflicts:
+    auto: false
+
+  # AO never merges, at any stage. That stays a human action.
+  approved-and-green:
+    auto: false
+    action: notify
+    priority: action
+
+  # The escalation channel. For now the agent merely waits for input, but the
+  # notification is already urgent — at stage 5 the deliberate stops on
+  # contested decisions travel through this same path.
+  agent-needs-input:
+    priority: urgent
+  agent-stuck:
+    priority: urgent
+    threshold: "10m"
