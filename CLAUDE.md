@@ -175,15 +175,16 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **20 entries covering 38 findings** —
-`MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `PrintStackTrace` 2,
-`TooManyFunctions` 1. The two counts differ because a baseline entry is a signature, not a location,
+`config/detekt/baseline.xml` holds the debt this landed on: **19 entries covering 36 findings** —
+`MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `TooManyFunctions` 1.
+The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
 
-`ImplicitDefaultLocale` and `PrintStackTrace` restate two of the Kotlin conventions below in
-executable form; the remaining `MagicNumber` findings are concentrated in `media/` and are what
-phase 1 of the refactoring plan turns into named constants.
+`ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form;
+`PrintStackTrace` did the same until its two call sites were fixed and the entry dropped. The
+remaining `MagicNumber` findings are concentrated in `media/` and are what phase 1 of the
+refactoring plan turns into named constants.
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
@@ -202,7 +203,8 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
   them explicit without changing what they render.
 - **No `e.printStackTrace()`.** Crashlytics is wired up; a stack trace printed to logcat in a release
   build goes nowhere at all. Use `Log` for the expected case, Crashlytics for the unexpected one.
-  Two call sites remain (`MainActivity.kt:130` and `:369`) and are not a precedent.
+  There is not one left in the project, and the detekt rule is no longer baselined, so a new one
+  fails the build.
 - **No `!!`.** There is currently not one in the project, which is worth keeping. `?.let`,
   `requireNotNull(x) { "why" }`, or an early return say the same thing without the crash.
 - **Preference keys and theme/language values are constants, not literals at the call site.** The
