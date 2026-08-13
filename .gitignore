@@ -21,3 +21,7 @@ app/google-services.json
 
 # Working notes, not part of the project's public documentation
 /docs/code-quality-suggestions.md
+
+# Claude Code: the per-machine permission set. A shared .claude/settings.json
+# is versioned deliberately if one is ever added; this one never is.
+/.claude/settings.local.json

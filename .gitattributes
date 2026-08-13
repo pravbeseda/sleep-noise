@@ -1,0 +1,10 @@
+# Line endings are declared, not left to each machine's git configuration.
+# gradlew.bat kept coming back as a 89-line "change" that was nothing but
+# CRLF against the LF stored in the repository.
+#
+# Deliberately narrow: no `* text=auto`, which would renormalise every file
+# in the repository on the next commit that touches it.
+
+*.bat   text eol=crlf
+gradlew text eol=lf
+*.sh    text eol=lf
