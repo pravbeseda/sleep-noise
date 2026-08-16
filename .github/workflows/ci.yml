@@ -188,3 +188,97 @@ jobs:
           # failed for a real reason, and burying that under a missing-file
           # error helps nobody.
           if-no-files-found: warn
+
+  guardrails:
+    name: Guardrails
+    runs-on: ubuntu-latest
+    # Pull requests only. The check is a comparison against the base commit, and
+    # a push to main has nothing to compare against.
+    if: github.event_name == 'pull_request'
+    # No JDK, no Android SDK, no Gradle, no google-services.json: this job reads
+    # the diff and counts lines. Adding the setup steps the other four jobs need
+    # would turn seconds into minutes for no gain.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Needed to reach the base commit: the default shallow checkout cannot
+          # resolve github.event.pull_request.base.sha.
+          fetch-depth: 0
+
+      - name: Baselines only shrink
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          # Counts an entry, not a line: one signature per entry in both files.
+          #
+          # The lint pattern is deliberately '<issue( |$)' and not '<issue'. The
+          # latter also matches the root <issues> element, so it reports 30 where
+          # the file holds 29 — and the first entry a PR adds would slip through
+          # unnoticed. Both counts are stated in CLAUDE.md; verify with
+          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 29
+          #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 19
+          count_at() { # <ref-or-empty-for-worktree> <path> <pattern>
+            if [ -n "$1" ]; then
+              git cat-file -e "$1:$2" 2>/dev/null || { echo 0; return; }
+              git show "$1:$2" | grep -cE "$3" || true
+            else
+              [ -f "$2" ] || { echo 0; return; }
+              grep -cE "$3" "$2" || true
+            fi
+          }
+
+          status=0
+          check() { # <path> <pattern>
+            before=$(count_at "$BASE_SHA" "$1" "$2")
+            after=$(count_at "" "$1" "$2")
+            echo "$1: $before -> $after"
+            if [ "$after" -gt "$before" ]; then
+              echo "::error file=$1::$1 grew from $before to $after entries. Baselines only ever shrink (CLAUDE.md, CI section): fix the finding instead of recording it. A baseline may grow only in a PR whose subject is the baseline itself."
+              status=1
+            fi
+          }
+
+          check app/lint-baseline.xml '<issue( |$)'
+          check config/detekt/baseline.xml '<ID>'
+          exit $status
+
+      - name: No test silently disabled
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          # Added lines only. Removing an @Ignore is a test coming back, which is
+          # the direction this check exists to protect.
+          annotation='@([[:alnum:]_]+\.)*(Ignore|Disabled)\b'
+          status=0
+
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            # Held in variables rather than piped straight into grep -q: -q
+            # exits on the first match, and the SIGPIPE that kills the producer
+            # would then fail the pipeline under pipefail — skipping the very
+            # file that matched.
+            diff=$(git diff "$BASE_SHA...HEAD" -- "$file")
+            # The +++ header is dropped by its own grep rather than by an
+            # ^\+[^+] prefix. That prefix consumes the first character after the
+            # +, which for an annotation in column 0 is the @ itself — so
+            # +@Ignore("flaky") and +@org.junit.Ignore, the form that switches a
+            # whole class off, went through unseen while only the indented
+            # method-level one matched.
+            added=$(grep -E '^\+' <<<"$diff" | grep -vE '^\+\+\+' || true)
+            grep -qE "$annotation" <<<"$added" || continue
+            status=1
+            # The diff says the line was added; the worktree says where it is now.
+            while IFS=: read -r line _; do
+              echo "::error file=$file,line=$line::Test disabled by an annotation added in this PR. Never weaken a test to get a green build (CLAUDE.md, \"Tests are mandatory\"): fix the test or the code it covers, or make the case in review."
+            done < <(grep -nE "$annotation" "$file")
+          done < <(git diff --name-only --diff-filter=d "$BASE_SHA...HEAD" -- app/src/test app/src/androidTest)
+
+          if [ "$status" -eq 0 ]; then
+            echo "No @Ignore/@Disabled added under app/src/test or app/src/androidTest."
+          fi
+          exit $status
