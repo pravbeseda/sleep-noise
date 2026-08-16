@@ -15,10 +15,29 @@ runtime: tmux
 workspace: worktree
 
 agentConfig:
-  # Stage 1 asks before acting, deliberately: the point of the stage is to see
-  # what the agent intends to do. Relaxed to auto-edit at stage 2 and to
-  # permissionless at stage 5.
-  permissions: default
+  # Stage 1 asked before acting, deliberately: the point was to see what the
+  # agent intended to do. Two tasks answered that, and nothing in the approval
+  # prompts was a surprise. The waiting is not free — task 1 spent 21 minutes of
+  # wall time against 2m34s of API time, almost all of it sitting on approvals.
+  #
+  # Relaxed ahead of stage 2 on purpose: permissions and reactions are separate
+  # knobs, and every reaction below is still auto: false. Stage 5 relaxes this
+  # further, to permissionless.
+  permissions: auto-edit
+
+  # Pinned rather than inherited from the desktop app's default: the rollout
+  # measures three consecutive tasks per stage, and a default that changes
+  # between task 2 and task 4 invalidates the measurement without announcing
+  # itself. Opus is the deliberate tier — see the worker-model decision in
+  # docs/plans/AO_ROLLOUT.md.
+  #
+  # The alias, not a full identifier such as claude-opus-5: the tier is what
+  # this pin is about, and an exact id is the one line here that goes stale on
+  # its own — at worst by failing to start a session on the day it is retired.
+  #
+  # AO reads worker.agentConfig.model first and falls back to this key, so with
+  # no worker block the value covers every session the project spawns.
+  model: opus
 
 # app/google-services.json is gitignored and simultaneously required: the
 # google-services and Crashlytics plugins are applied unconditionally, so
@@ -54,6 +73,11 @@ agentRules: |
 
   Do not widen the scope. Anything worth fixing that turns up along the way
   goes into the PR description, not into the diff.
+
+  Documentation that the change makes false is part of the change, not a
+  widening of scope. Update it in the same PR and say so in the description.
+  CLAUDE.md and README.md describe the same project and go stale silently:
+  when one of them stops being true, check the other.
 
 # Everything manual. This is the baseline the later stages count from: each of
 # them flips exactly one of these keys to auto: true.

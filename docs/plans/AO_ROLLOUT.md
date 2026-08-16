@@ -22,7 +22,8 @@ nothing.
 
 ## Current state
 
-**Stage 1, one task of the three done.**
+**Stage 1, two tasks of the three done.** A stage that was not in the
+original list, 1a, was inserted and passed along the way.
 
 ### What stage 1 has already proved
 
@@ -60,24 +61,69 @@ carrying forward:
   fresh input and the rest cache read: a ~50k context re-read across ~26 turns.
   Nothing wasteful was loaded; the model was simply the wrong size for the task.
   Wall time 21 minutes against 2m34s of API time — the difference is
-  `permissions: default` waiting for approvals, which stage 2 removes.
+  `permissions: default` waiting for approvals, which decision 4 below removes.
 
 Processing the single review comment in that same session took the total to
 2.5M tokens. Lesson: once a session is long, run `ali-process-pr-comments` in a
 **fresh** agent session started in the worktree directory, not in the session
 terminal. The branch is the same; the context is not.
 
-### Open decisions
+### Task 2 — issue #14, PR #15 (`ao/sleepnoise-6/ci-guardrails`)
 
-1. **Documentation versus scope.** Proposed addition to `agentRules`:
-   "Documentation that the change makes false is part of the change, not a
-   widening of scope. Update it in the same PR and say so in the description."
-   Without it, the same collision recurs on the next task — the `Locale` fix
-   will make the `DefaultLocale` paragraph in `CLAUDE.md` false too.
-2. **Worker model.** Set `worker.agentConfig.model` to Sonnet rather than
-   relying on the GUI default. The exact identifier has to come from the model
-   dropdown in the desktop app; the ones in AO's own docs are from an older
-   generation.
+Added the `Guardrails` job described under stage 1a. Three things worth
+carrying forward:
+
+- **The agent argued back, and was right to.** Review asked it to fail a
+  deleted test as well. Rather than implement that, it showed that the obvious
+  form of the check — counting `@Test` — would fail the `ExampleUnitTest`
+  removal the quality plan schedules, opened issue #16, and wrote the gap into
+  `CLAUDE.md` in plain words. This is the behaviour stage 5 is meant to produce
+  through escalation, arriving on its own four stages early. It is also what
+  settled the worker-model decision below.
+- **Documentation was updated this time — but only one file of two.** The task 1
+  collision did not recur for `CLAUDE.md`. `README.md` describes the same
+  required checks and went stale unnoticed, and so did the definition-of-done
+  command, which now covers four of the five required checks. Both were caught
+  in review and fixed by hand afterwards. Hence the second sentence in the
+  documentation rule below.
+- **The one landmine in the spec was stepped over, not into.** `grep -c '<issue'`
+  on the lint baseline returns 30 against 29 real entries, because the root
+  `<issues>` element matches too. The issue named the trap explicitly and the
+  agent handled it — which is not evidence it would have found it alone.
+
+### Decisions taken
+
+1. **Documentation versus scope — settled, in `agentRules`.** "Documentation
+   that the change makes false is part of the change, not a widening of scope.
+   Update it in the same PR and say so in the description. `CLAUDE.md` and
+   `README.md` describe the same project and go stale silently: when one of
+   them stops being true, check the other." The last sentence is not from the
+   original proposal; task 2 showed the rule catches half the problem without
+   it.
+2. **Worker model — staying on Opus, deliberately.** The proposal was Sonnet, on
+   the strength of $1.37 for a two-line fix. Task 2 changed the answer: the
+   push-back that produced issue #16 is the judgement a larger model is kept
+   for, and it landed on a task where a cheaper one would plausibly have built
+   the bad check instead. The cost observation still holds but points elsewhere
+   — 1.3M tokens on task 1 was 26 turns re-reading a 50k context, which
+   `auto-edit` and a fresh session for review comments address directly and a
+   smaller model would not.
+3. **The model is pinned, as an alias.** `agentConfig.model: opus`. This half of
+   the question was about determinism rather than tier: a GUI default that
+   changes between task 2 and task 4 invalidates the three-task measurement
+   without announcing itself, and the file claims to describe behaviour while
+   the largest behavioural knob sat outside the repository. An exact identifier
+   was rejected as the opposite failure — it is the one line in the file that
+   goes stale by itself, at worst by refusing to start a session on the day the
+   id is retired. AO reads `worker.agentConfig.model` first and falls back to
+   `agentConfig.model`, so with no `worker` block the pin covers every session;
+   the value reaches the agent as `claude --model opus`.
+4. **`permissions: auto-edit` switched on ahead of stage 2.** Stage 1 asked
+   before acting so that the agent's intentions were visible; two tasks made
+   them visible and none of the prompts was a surprise. What the waiting cost
+   is measured — task 1, 21 minutes of wall time against 2m34s of API time.
+   Reactions are a separate knob and all four stay at `auto: false`, so stage 2
+   still has exactly one key to flip.
 
 ### Next task
 
@@ -87,6 +133,10 @@ first task to touch **`app/lint-baseline.xml`** (4 `DefaultLocale` entries),
 which means `./gradlew updateLintBaseline` and stripping the informational
 entries it adds back. That is the most temperamental part of the tooling and is
 better met on a three-line change.
+
+It now carries a second job: the baseline goes from 29 entries to 25, which is
+the first legitimate shrink the stage 1a guardrail will see. A check that has
+only ever passed on PRs that touch no baseline has not been tested.
 
 ---
 
@@ -157,18 +207,57 @@ is not.
 
 ---
 
+## Stage 1a — machine-checkable guardrails
+
+**Switched on:** nothing in AO. A fifth CI job, `Guardrails`, added as a
+required status check.
+
+This stage is not in the original list. It was inserted after task 1 because
+stage 2 as written violates the ordering principle above. Its criterion reads
+"none of which came down to weakening a check ... verified by reading the diff;
+nothing catches it automatically" — so the first automation switched on would
+have depended on a manual check. The first two rows of the stage 5 stop list
+are visible in a diff, and the plan already noted they "can later be backed by
+a check in CI". Later turned out to be now.
+
+The job enforces those two rows, and only the half of each a diff makes
+visible: neither baseline grows (entry counts against the base commit), and no
+`@Ignore` or `@Disabled` is added under the test source sets. It needs no JDK,
+no Android SDK and no Gradle, so it costs seconds rather than minutes.
+
+Deleting a test outright is deliberately not covered — a bare `@Test` count
+would fail the `ExampleUnitTest` removal the quality plan schedules. That half
+needs its own design and has issue #16.
+
+**Order that matters:** merge the job first, watch it run green on a pull
+request, add it to the branch protection last. A required check that no run
+ever reports blocks every merge in the repository.
+
+**Criterion to move on:** the job has passed on a PR that legitimately shrinks
+a baseline. The `Locale` task is that PR.
+
+**Rollback:** remove `Guardrails` from the required checks. The job stays and
+reports without blocking.
+
+---
+
 ## Stage 2 — CI self-repair
 
 **Switched on:** `ci-failed: auto: true`. Red CI wakes the agent without you.
 
 This is the first automation not because it is the most useful but because its
 verdict is objective: the build is green or it is not, and the agent cannot
-talk itself into having succeeded. This is also where permissions relax to
-`auto-edit` — repairing CI without the right to edit files is pointless.
+talk itself into having succeeded. Repairing CI without the right to edit files
+is pointless, so `auto-edit` belongs to this stage — but it was switched on
+early, after task 2, and the stage now switches on one key rather than two.
+Permissions and reactions are separate knobs: two tasks of approval prompts
+held no surprises, while task 1 spent 21 minutes of wall time against 2m34s of
+API time, nearly all of it waiting on those prompts. Nothing became automatic
+by relaxing them — every reaction stayed at `auto: false`.
 
 ```yaml
 agentConfig:
-  permissions: auto-edit
+  permissions: auto-edit   # already in place since task 2
 
 reactions:
   ci-failed:
