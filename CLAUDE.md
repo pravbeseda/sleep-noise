@@ -105,17 +105,21 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
 a step could not be run at all, say which one and why rather than reporting around it.
 
+These four run locally. The fifth required check, Guardrails, compares the PR against its base
+commit and exists only on CI: a green local run means the work is done, not that the PR is
+mergeable. See the CI section.
+
 The command grows as tooling lands (Kover next); when it does, update it here.
 
 ## CI
 
-`.github/workflows/ci.yml` runs five independent jobs. Four of them — unit tests, lint, detekt and format — run on every PR and push to `main` and are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
+`.github/workflows/ci.yml` runs five independent jobs, and all five are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
 
-The fifth is **Guardrails**, and it is different on both counts: it runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against; and it is **not yet a required check** — a required check that has never run on `main` blocks every merge in the repository, so it is added to the branch protection by hand once it has been seen working. Until that happens a red Guardrails run is visible but not blocking.
+Four of them — unit tests, lint, detekt and format — run on every PR and push to `main`. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
 
 It enforces two rules this file states in prose, and only the half of each that a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/`. Removing one passes — that direction is a test coming back. Deleting a test outright is not caught by either rule and stays a matter for review — a bare `@Test` count would fail the `ExampleUnitTest` removal the quality plan schedules, so that half needs its own design (issue #16).
 
-The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format` — `Guardrails` once it is added) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
+The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
 
 The four Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
