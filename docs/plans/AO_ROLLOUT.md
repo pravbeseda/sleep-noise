@@ -34,11 +34,18 @@ rather than guesses. The agent ran the full definition-of-done suite inside its
 worktree and reached green CI, which it could not have done had any of them been
 wrong: the hooks fired from the shared `.git/config`, the Spotless ratchet found
 `origin/main`, and `versionCode` counted the full history. The worktree question
-is settled for those three; what remains is the three-tasks-without-intervention
-part of the criterion.
+is settled for those three.
 
-The fourth — the `app/google-services.json` symlink — did not prove what it was
-read as proving, and finding that out led somewhere larger. See below.
+Two things remain, not one. The three-tasks-without-intervention count is the
+lesser of them. The fourth expectation — the `app/google-services.json` symlink —
+did not prove what it was read as proving: the mechanism never ran, so the row
+the stage 1 table calls "the real test of the stage" is untested, and finding
+that out led somewhere larger. See below. **Stage 1 does not close on the task
+count alone.** The symlink is the one mechanism of the four a worktree does not
+supply for free — the other three fall out of the shared object store and the
+shared `.git/config` — so a run of three green PRs with the file put in place by
+hand answers a smaller question than the stage was set up to ask. Closing it
+needs a session where the symlink is created by AO, which needs #19.
 
 ### The config file is not being read
 
@@ -165,8 +172,14 @@ carrying forward:
    changes none of those four. The model does bear on what the later stages
    measure — the quality of the agent's judgement — which is exactly why it is
    pinned before the count that measures it. Approvals were themselves a hand
-   reaching in, so task 3 under `accept-edits` is a cleaner reading of "three tasks
-   without intervention" than the two before it, not a weaker one.
+   reaching in, so a task run under `accept-edits` is a cleaner reading of
+   "three tasks without intervention" than the two before it, not a weaker one.
+
+   Which task that first is depends on #19, not on this file. If the config is
+   still unread when the `Locale` task starts, task 3 runs under AO's defaults —
+   approval prompts and all — exactly as tasks 1 and 2 did, and the write-up of
+   task 3 has to say which of the two it was. A measurement condition recorded
+   here is not one that applied.
 
 ### Next task
 
@@ -234,7 +247,7 @@ Three places where this could break, and why they probably will not:
 
 | Mechanism | Risk in a worktree | Expectation |
 | --- | --- | --- |
-| `app/google-services.json` | Gitignored and required; a worktree does not get it | Covered by the symlink in the config — **this is the real test of the stage** |
+| `app/google-services.json` | Gitignored and required; a worktree does not get it | Covered by the symlink in the config — **this is the real test of the stage**, and it is still untested: the symlink has never been created, see #19 |
 | `.githooks` via `core.hooksPath` | The setting lives in `.git/config`, which a worktree "does not have" | Works: a worktree shares `config` with the main repository |
 | Spotless `ratchetFrom("origin/main")` | Needs the `origin/main` ref | Works: the object store is shared |
 | `versionCode` from `git rev-list --count HEAD` | A shallow clone undercounts | Works: the worktree sees the full history |
@@ -242,9 +255,11 @@ Three places where this could break, and why they probably will not:
 The right-hand column is exactly that — expectations. This stage exists to turn
 them into measured facts.
 
-**Criterion to move on:** three agent-made PRs in a worktree taken to green CI.
-Reaching into the code by hand is fine at this stage; reaching into the build
-is not.
+**Criterion to move on:** three agent-made PRs in a worktree taken to green CI,
+**and** one of them with `app/google-services.json` put there by AO rather than
+by hand. Reaching into the code by hand is fine at this stage; reaching into the
+build is not — and a file placed by hand to make the build work is reaching into
+the build. The second half of the criterion is blocked on #19.
 
 **Rollback:** delete `agent-orchestrator.yaml` and work as before.
 
