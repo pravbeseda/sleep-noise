@@ -113,8 +113,9 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests, lint, detekt and formatting are required checks: a red run blocks the merge, and the branch has
-to be current with `main` before it can go in. Before opening a PR:
+Unit tests, lint, detekt, formatting and Guardrails are required checks: a red run blocks the merge,
+and the branch has to be current with `main` before it can go in. The first four run locally;
+Guardrails compares the PR against its base commit, so it exists only on CI. Before opening a PR:
 
 ```bash
 ./gradlew spotlessCheck detekt testDebugUnitTest lint

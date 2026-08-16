@@ -105,6 +105,10 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
 a step could not be run at all, say which one and why rather than reporting around it.
 
+These four run locally. The fifth required check, Guardrails, compares the PR against its base
+commit and exists only on CI: a green local run means the work is done, not that the PR is
+mergeable. See the CI section.
+
 The command grows as tooling lands (Kover next); when it does, update it here.
 
 ## CI
