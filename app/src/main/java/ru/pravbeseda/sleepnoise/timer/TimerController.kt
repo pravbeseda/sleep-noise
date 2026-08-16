@@ -1,6 +1,7 @@
 package ru.pravbeseda.sleepnoise.timer
 
 import android.os.CountDownTimer
+import java.util.Locale
 
 class TimerController(private val onTick: (String) -> Unit, private val onTime: () -> Unit) {
 
@@ -15,9 +16,9 @@ class TimerController(private val onTick: (String) -> Unit, private val onTime: 
                 val seconds = (millisUntilFinished / 1000) % 60
 
                 val formattedTime = if (hours > 0) {
-                    String.format("%02d:%02d:%02d", hours, minutes, seconds)
+                    String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
                 } else {
-                    String.format("%02d:%02d", minutes, seconds)
+                    String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
                 }
 
                 onTick(formattedTime)
