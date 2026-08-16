@@ -7,6 +7,12 @@
 #
 # Project identity (path, projectId, storageKey, originUrl, sessionPrefix)
 # belongs to AO's global registry, not here. This file is behaviour only.
+#
+# CAVEAT, measured rather than assumed: the installed build does not read this
+# file. Its per-project config lives in ~/.ao/data/ao.db, set through
+# `ao project set-config`, and for this project that config is empty — the
+# symlinks below have demonstrably never been applied. Nothing here is in
+# effect until issue #19 settles how the two are connected.
 
 defaultBranch: main
 
@@ -22,8 +28,13 @@ agentConfig:
   #
   # Relaxed ahead of stage 2 on purpose: permissions and reactions are separate
   # knobs, and every reaction below is still auto: false. Stage 5 relaxes this
-  # further, to permissionless.
-  permissions: auto-edit
+  # further, to bypass-permissions.
+  #
+  # The value set is the daemon's own: `ao project set-config --permission`
+  # takes one of default, accept-edits, auto, bypass-permissions, and anything
+  # else is rejected with that list. auto-edit and permissionless, both written
+  # here earlier, are not among them.
+  permissions: accept-edits
 
   # Pinned rather than inherited from the desktop app's default: the rollout
   # measures three consecutive tasks per stage, and a default that changes

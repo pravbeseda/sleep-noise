@@ -22,18 +22,51 @@ nothing.
 
 ## Current state
 
-**Stage 1, two tasks of the three done.** A stage that was not in the
-original list, 1a, was inserted and passed along the way.
+**Stage 1, two tasks of the three done.** A stage that was not in the original
+list, 1a, was inserted along the way: its job is merged and required, and its
+criterion is not met yet — `Guardrails` has so far only run on PRs that touch
+no baseline, and the `Locale` task is the PR that will test it.
 
 ### What stage 1 has already proved
 
-The four expectations in the stage 1 table are now measured facts rather than
-guesses. The agent ran the full definition-of-done suite inside its worktree and
-reached green CI, which it could not have done had any of them been wrong: the
-`app/google-services.json` symlink resolved, the hooks fired from the shared
-`.git/config`, the Spotless ratchet found `origin/main`, and `versionCode`
-counted the full history. The worktree question is settled; what remains is the
-three-tasks-without-intervention part of the criterion.
+Three of the four expectations in the stage 1 table are now measured facts
+rather than guesses. The agent ran the full definition-of-done suite inside its
+worktree and reached green CI, which it could not have done had any of them been
+wrong: the hooks fired from the shared `.git/config`, the Spotless ratchet found
+`origin/main`, and `versionCode` counted the full history. The worktree question
+is settled for those three; what remains is the three-tasks-without-intervention
+part of the criterion.
+
+The fourth — the `app/google-services.json` symlink — did not prove what it was
+read as proving, and finding that out led somewhere larger. See below.
+
+### The config file is not being read
+
+Written down because everything above and below was designed on the assumption
+that it is. The installed build of AO does not read `agent-orchestrator.yaml` at
+all. Four facts, in order of how conclusive they are:
+
+- In the surviving worktree of task 2, `app/google-services.json` is an ordinary
+  file and `.claude` an ordinary directory — neither is a symlink. The
+  `symlinks:` block has never run. The file arrived some other way, so the row
+  the stage 1 table calls "the real test of the stage" is untested.
+- The project's stored config is empty where this file is full:
+  `sqlite3 ~/.ao/data/ao.db 'select config from projects'` gives
+  `{"defaultBranch":"main","agentConfig":{},…}` — no permissions, no model, no
+  symlinks, no rules.
+- Neither the daemon binary nor `app.asar` contains the string
+  `agent-orchestrator.yaml`; of YAML filenames the daemon knows `config.yaml`
+  and agent-specific ones only.
+- `ProjectConfig` in the daemon's own schema has no `reactions` key at all, so
+  the reaction table below has nothing to bind to in this build. Config is set
+  through `ao project set-config` and stored in that database.
+
+What this costs the rollout: every stage that switches something on by editing
+this file switches on nothing. The two tasks so far ran under AO's defaults, not
+under the rules in `agentRules`. Issue #19 carries the repair — either the
+config moves into `ao project set-config`, or the file is confirmed as the input
+of a build that reads it. Until then, decisions 3 and 4 below are decisions
+about what the config should say, not about what any session has run under.
 
 ### Task 1 — issue #10, PR #11 (`ao/sleepnoise-5/no-print-stack-trace`)
 
@@ -106,7 +139,7 @@ carrying forward:
    for, and it landed on a task where a cheaper one would plausibly have built
    the bad check instead. The cost observation still holds but points elsewhere
    — 1.3M tokens on task 1 was 26 turns re-reading a 50k context, which
-   `auto-edit` and a fresh session for review comments address directly and a
+   `accept-edits` and a fresh session for review comments address directly and a
    smaller model would not.
 3. **The model is pinned, as an alias.** `agentConfig.model: opus`. This half of
    the question was about determinism rather than tier: a GUI default that
@@ -118,12 +151,22 @@ carrying forward:
    id is retired. AO reads `worker.agentConfig.model` first and falls back to
    `agentConfig.model`, so with no `worker` block the pin covers every session;
    the value reaches the agent as `claude --model opus`.
-4. **`permissions: auto-edit` switched on ahead of stage 2.** Stage 1 asked
+4. **`permissions: accept-edits` switched on ahead of stage 2.** Stage 1 asked
    before acting so that the agent's intentions were visible; two tasks made
    them visible and none of the prompts was a surprise. What the waiting cost
    is measured — task 1, 21 minutes of wall time against 2m34s of API time.
    Reactions are a separate knob and all four stay at `auto: false`, so stage 2
    still has exactly one key to flip.
+
+   This does not restart the stage 1 count, and the difference from decision 3
+   is worth stating rather than assuming. Stage 1 measures the build, not the
+   agent: whether the symlink resolves, the hooks fire, the ratchet finds
+   `origin/main` and `versionCode` sees the full history. A permission mode
+   changes none of those four. The model does bear on what the later stages
+   measure — the quality of the agent's judgement — which is exactly why it is
+   pinned before the count that measures it. Approvals were themselves a hand
+   reaching in, so task 3 under `accept-edits` is a cleaner reading of "three tasks
+   without intervention" than the two before it, not a weaker one.
 
 ### Next task
 
@@ -248,7 +291,7 @@ reports without blocking.
 This is the first automation not because it is the most useful but because its
 verdict is objective: the build is green or it is not, and the agent cannot
 talk itself into having succeeded. Repairing CI without the right to edit files
-is pointless, so `auto-edit` belongs to this stage — but it was switched on
+is pointless, so `accept-edits` belongs to this stage — but it was switched on
 early, after task 2, and the stage now switches on one key rather than two.
 Permissions and reactions are separate knobs: two tasks of approval prompts
 held no surprises, while task 1 spent 21 minutes of wall time against 2m34s of
@@ -257,7 +300,7 @@ by relaxing them — every reaction stayed at `auto: false`.
 
 ```yaml
 agentConfig:
-  permissions: auto-edit   # already in place since task 2
+  permissions: accept-edits   # already in place since task 2
 
 reactions:
   ci-failed:
@@ -378,7 +421,7 @@ backed by a check in CI. The last two live in the rule only.
 
 ```yaml
 agentConfig:
-  permissions: permissionless
+  permissions: bypass-permissions
 
 reactions:
   changes-requested:
@@ -480,7 +523,7 @@ Worth knowing, so no one goes looking for settings that do not exist.
 - **The bot list is hardcoded** in the SCM plugin and cannot be configured from
   the project file. A reviewer posting from an account outside that list has
   its comments routed to `changes-requested` rather than `bugbot-comments`.
-- **`permissionless` is not a sandbox.** The agent gets to run commands on the
+- **`bypass-permissions` is not a sandbox.** The agent gets to run commands on the
   machine. The isolation here is the worktree — repository files — and nothing
   beyond that.
 - **Parallel sessions consume the subscription limit in multiples.** An Opus
