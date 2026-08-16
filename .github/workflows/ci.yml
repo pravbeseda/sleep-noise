@@ -258,11 +258,19 @@ jobs:
 
           while IFS= read -r file; do
             [ -n "$file" ] || continue
-            # Held in a variable rather than piped into grep -q: -q exits on the
-            # first match, and the SIGPIPE that kills git diff would then fail
-            # the pipeline under pipefail — skipping the very file that matched.
+            # Held in variables rather than piped straight into grep -q: -q
+            # exits on the first match, and the SIGPIPE that kills the producer
+            # would then fail the pipeline under pipefail — skipping the very
+            # file that matched.
             diff=$(git diff "$BASE_SHA...HEAD" -- "$file")
-            grep -qE "^\+[^+].*$annotation" <<<"$diff" || continue
+            # The +++ header is dropped by its own grep rather than by an
+            # ^\+[^+] prefix. That prefix consumes the first character after the
+            # +, which for an annotation in column 0 is the @ itself — so
+            # +@Ignore("flaky") and +@org.junit.Ignore, the form that switches a
+            # whole class off, went through unseen while only the indented
+            # method-level one matched.
+            added=$(grep -E '^\+' <<<"$diff" | grep -vE '^\+\+\+' || true)
+            grep -qE "$annotation" <<<"$added" || continue
             status=1
             # The diff says the line was added; the worktree says where it is now.
             while IFS=: read -r line _; do
