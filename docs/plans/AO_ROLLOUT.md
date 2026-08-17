@@ -101,9 +101,20 @@ in one payload, or not at all.
 The payload is built from `agent-orchestrator.yaml` — `defaultBranch`,
 `agentConfig`, `symlinks`, `agentRulesFile`, `agentRules`, `worker`,
 `orchestrator`, `trackerIntake` — keeping the yaml as the readable source and
-the database as what actually runs. `reactions`, `runtime`, `workspace` and the
-top-level `agent` have no counterpart in the schema and are dropped in the
-translation; that mismatch is what #19 is for.
+the database as what actually runs.
+
+Four of the file's keys have no field of that name in the schema, and they are
+not equally lost:
+
+- **`agent`** survives, renamed. It becomes `worker.agent` and
+  `orchestrator.agent`, which is where the schema keeps a harness. The stored
+  config for this project carries `claude-code` in both.
+- **`runtime` and `workspace`** have no counterpart and need none: the daemon
+  runs sessions under tmux, and a git project gets a worktree — `ao spawn`
+  states it plainly ("Git projects use worktrees; Scratch uses an AO-managed
+  directory"). The file names what happens anyway; it just does not choose it.
+- **`reactions`** is the only loss that changes behaviour, and it is what #19
+  is for.
 
 The translation is by hand today, which is a step waiting to be automated and
 is tracked in #19 rather than carried here: a plan PR that ships tooling is two

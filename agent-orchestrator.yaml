@@ -16,10 +16,16 @@
 # here and nothing changes until the translation is repeated. Issue #19 is that
 # gap, and "How the config reaches AO" in the plan describes the translation.
 #
-# Two of the keys below have no counterpart in the schema and did not survive
-# it — see the note above the reactions block. AO is also less passive than
-# this stage assumes: the daemon nudges a worker session on CI failure, review
-# feedback and merge conflicts on its own, and that cannot be switched off.
+# Four keys below have no field of that name in the schema, and they fare
+# differently: `agent` survives as worker.agent and orchestrator.agent;
+# `runtime` and `workspace` describe what AO does anyway (tmux, and a worktree
+# for a git project) and simply cannot be chosen here; `reactions` is the one
+# loss that changes behaviour — see the note above that block, and "How the
+# config reaches AO" in the plan, which carries the same breakdown.
+#
+# AO is also less passive than this stage assumes: the daemon nudges a worker
+# session on CI failure, review feedback and merge conflicts on its own, and
+# that cannot be switched off.
 
 defaultBranch: main
 
