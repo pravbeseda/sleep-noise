@@ -27,8 +27,8 @@ agentConfig:
   # wall time against 2m34s of API time, almost all of it sitting on approvals.
   #
   # Relaxed ahead of stage 2 on purpose: permissions and reactions are separate
-  # knobs, and every reaction below is still auto: false. Stage 5 relaxes this
-  # further, to bypass-permissions.
+  # knobs, and every reaction below is still auto: false — though those keys
+  # configure nothing in this build, see the note above the reactions block.
   #
   # The value set is the daemon's own: `ao project set-config --permission`
   # takes one of default, accept-edits, auto, bypass-permissions, and anything
@@ -90,8 +90,14 @@ agentRules: |
   CLAUDE.md and README.md describe the same project and go stale silently:
   when one of them stops being true, check the other.
 
-# Everything manual. This is the baseline the later stages count from: each of
-# them flips exactly one of these keys to auto: true.
+# NOT SUPPORTED BY THE INSTALLED BUILD, kept as the record of what was intended.
+# ProjectConfig has no reactions key: auto, retries, priority and escalateAfter
+# have nothing to be written into, and the daemon nudges the worker on CI
+# failure, review feedback and merge conflicts on its own, always, with wording
+# of its own. So none of the keys below turns anything on or off, and the later
+# stages do not flip them. What replaces them is in docs/plans/AO_ROLLOUT.md,
+# stages 2 and 5; whether this block gets translated into something the schema
+# accepts, or deleted, is issue #19.
 reactions:
   ci-failed:
     auto: false

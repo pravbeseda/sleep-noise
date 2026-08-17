@@ -22,10 +22,17 @@ nothing.
 
 ## Current state
 
-**Stage 1, two tasks of the three done.** A stage that was not in the original
-list, 1a, was inserted along the way: its job is merged and required, and its
-criterion is not met yet — `Guardrails` has so far only run on PRs that touch
-no baseline, and the `Locale` task is the PR that will test it.
+**Stage 1, two tasks of the three done, the third running.** A stage that was
+not in the original list, 1a, was inserted along the way: its job is merged and
+required, and its criterion is not met yet — `Guardrails` has so far only run on
+PRs that touch no baseline, and the `Locale` task is the PR that will test it.
+
+Task 3 is that `Locale` task, and it is the first to run with the config
+actually applied: it was moved into AO's database before the session was
+spawned, so `app/google-services.json` and `.claude` are symlinks AO created,
+the model and permission mode came from that config, and the rules reached the
+agent. Its PR is #21 and is not reviewed yet, so the write-up of the task —
+including what it says about stage 1's criteria — waits for that to finish.
 
 ### What stage 1 has already proved
 
@@ -74,6 +81,39 @@ under the rules in `agentRules`. Issue #19 carries the repair — either the
 config moves into `ao project set-config`, or the file is confirmed as the input
 of a build that reads it. Until then, decisions 3 and 4 below are decisions
 about what the config should say, not about what any session has run under.
+
+### How the config reaches AO
+
+One command, and it replaces the whole object:
+
+```bash
+ao project set-config sleepnoise --config-json "$(cat <built ProjectConfig>.json)"
+```
+
+`set-config` **replaces** a project's config rather than merging into it. Its
+own help says so — "Set fields via flags, pass the whole object with
+`--config-json`, or `--clear` to remove all config" — and that is the trap
+worth naming: a later `--agent-rules "…"` on its own leaves the other fields
+alone, but a later `--config-json` that omits a field drops it, silently and
+without a diff to notice. So every field this file describes travels together,
+in one payload, or not at all.
+
+The payload is built from `agent-orchestrator.yaml` — `defaultBranch`,
+`agentConfig`, `symlinks`, `agentRulesFile`, `agentRules`, `worker`,
+`orchestrator`, `trackerIntake` — keeping the yaml as the readable source and
+the database as what actually runs. `reactions`, `runtime`, `workspace` and the
+top-level `agent` have no counterpart in the schema and are dropped in the
+translation; that mismatch is what #19 is for.
+
+The translation is by hand today, which is a step waiting to be automated and
+is tracked in #19 rather than carried here: a plan PR that ships tooling is two
+changes in one diff.
+
+Verify what landed rather than trusting the command:
+
+```bash
+sqlite3 -readonly ~/.ao/data/ao.db "select config from projects where id='sleepnoise'"
+```
 
 ### Task 1 — issue #10, PR #11 (`ao/sleepnoise-5/no-print-stack-trace`)
 
@@ -162,8 +202,10 @@ carrying forward:
    before acting so that the agent's intentions were visible; two tasks made
    them visible and none of the prompts was a surprise. What the waiting cost
    is measured — task 1, 21 minutes of wall time against 2m34s of API time.
-   Reactions are a separate knob and all four stay at `auto: false`, so stage 2
-   still has exactly one key to flip.
+   Permissions and reactions are separate knobs — which turned out to matter
+   less than it reads: the reaction keys this file counted on are not in the
+   build at all, so stage 2 has no key to flip and never had one. See "The
+   config file is not being read" above and the rewritten stage 2 below.
 
    This does not restart the stage 1 count, and the difference from decision 3
    is worth stating rather than assuming. Stage 1 measures the build, not the
@@ -231,9 +273,12 @@ that gets discovered at spawn time rather than now.
 
 ## Stage 1 — observation
 
-**Switched on:** nothing. `agent-orchestrator.yaml` sits in the repository with
-every reaction at `auto: false`. AO only creates the worktree, launches Claude
-Code, and displays state.
+**Switched on:** nothing — deliberately, and in this build also unavoidably.
+`agent-orchestrator.yaml` sits in the repository with every reaction at
+`auto: false`, and those keys turn out to configure nothing. AO creates the
+worktree, launches Claude Code, displays state — and nudges the session on CI
+failure, review feedback and merge conflicts, which is not something this stage
+chose.
 
 **What is actually under test:** whether the build survives a worktree. It is
 the one question whose answer, if it is "no", makes every later stage
@@ -344,12 +389,8 @@ machine can check, and what only prose can say.
   once; the rules are in front of the agent the whole time, which is the better
   place for them anyway.
 
-```bash
-ao project set-config sleepnoise --config-json "$(cat ao-config.json)"
-```
-
-That command, not an edit to `agent-orchestrator.yaml`, is what puts them
-there — see the note at the top of the file and issue #19.
+Getting them there is not an edit to `agent-orchestrator.yaml` — see "How the
+config reaches AO" below, and issue #19.
 
 **What is under test:** whether an unattended repair stays honest. The nudge
 fires whether or not this stage is "reached", so the only question left is
@@ -368,8 +409,12 @@ already loose. Worth knowing before rather than during.
 
 ## Stage 3 — one reviewer
 
-**Switched on:** `reviewers: [claude-code]`. Review runs automatically, but its
-result is still only displayed — `changes-requested` stays at `auto: false`.
+**Switched on:** `reviewers: [claude-code]`. This one is a real switch:
+`ProjectConfig.reviewers[]` exists in the build, unlike the reaction keys. What
+it cannot do is keep the result to itself — the `review:<url>` nudge reaches the
+worker whether or not anyone here has decided stage 5 has started, so "runs but
+is only displayed" is not a state this build has. Read the findings before the
+agent acts on them, or spawn no worker while the review runs.
 
 ```yaml
 reviewers:
@@ -475,17 +520,19 @@ signals, each taken from the project's own rules and each easy to recognise:
 | The change alters public behaviour rather than the shape of the code | Refactoring and behaviour changes do not share a PR |
 | Reviewer and agent have disagreed twice | A human settles an argument between two models faster than a third model does |
 
-The first two rows are backed by `Guardrails` since stage 1a — the only rows a
-machine checks. The next four are visible in a diff and could be, on the same
-terms. The last two live in the rule only.
+`Guardrails` backs the first row outright and the second one only in part: it
+fails an *added* `@Ignore` or `@Disabled` under the test source sets, and
+nothing else in that row. A deleted test is deliberately not covered — a bare
+`@Test` count would fail the `ExampleUnitTest` removal the quality plan
+schedules, which is issue #16 — and a loosened assertion is not checked at all.
+Both of those still depend on someone reading the diff. The next four rows are
+visible in a diff and could be machine-checked on the same terms; the last two
+live in the rule only.
 
 ### The rule, which is the whole configuration
 
-```bash
-ao project set-config sleepnoise --agent-rules "$(cat ao-agent-rules.txt)"
-```
-
-with the paragraph itself:
+The paragraph goes into `agentRules`, through the one command described under
+"How the config reaches AO":
 
 ```
 Work through the unresolved review comments one at a time. For each: verify
@@ -501,9 +548,19 @@ anything to — a bot's review reaches the agent through the same `review:<url>`
 nudge as a person's.
 
 `permissions` stays at `accept-edits` here rather than moving to
-`bypass-permissions`: with shell commands still prompting, the sessions stop
-often enough as it is, and the value of an agent that cannot run anything
-unattended is a separate argument to have once the escalation itself works.
+`bypass-permissions`, and the reason is the signal rather than the safety.
+`needs_input` is the only thing AO raises, and while every `./gradlew` still
+asks for approval that one state means both "waiting for permission" and
+"stopped because a rule said to". This stage measures the second. Telling them
+apart currently means reading the pane, which is exactly the manual step
+escalation exists to remove.
+
+`bypass-permissions` would clean the signal up — almost every stop would then
+be a deliberate one — and that is a real argument for it, not against. It is
+also the last manual brake on a stage that has never once been exercised, so
+the order is: get an escalation to fire and be answered, then decide. **Open
+question, deliberately left open:** move stage 5 to `bypass-permissions` once
+the first correct stop has been seen.
 
 ### What to verify, and it matters more than the rest
 
@@ -515,8 +572,8 @@ of the rules is what needs work.
 
 One measurement already argues both ways. Task 2 produced exactly this
 behaviour unprompted — it refused a review request, showed why the obvious
-check was wrong and opened issue #16 — with no rule telling it to. Task 3, with
-the rules finally reaching the session, opened by trying to create its own
+check was wrong and opened issue #16 — with no rule telling it to. Task 3, the
+first session the rules actually reached, opened by trying to create its own
 branch against a rule that says in plain words not to. A rule that reaches the
 agent is not a rule the agent follows, and this stage is where that difference
 becomes expensive.
@@ -568,11 +625,12 @@ is last for a reason.
 
 ## Stage 7 — the other projects
 
-What is shared moves into `~/.agent-orchestrator/config.yaml` (`defaults`,
-`notificationRouting`, reactions); what is per-project stays in each
-repository's `agent-orchestrator.yaml`. By this point it is visible which is
-which — right now it can only be guessed, which is why the global config stays
-untouched until stage 7.
+What is shared moves into whatever global configuration the build then has —
+the legacy `~/.agent-orchestrator/config.yaml` this line used to name is gone,
+and per-project settings live in AO's database (see "How the config reaches
+AO"). What is per-project stays per-project. By this point it is visible which
+is which — right now it can only be guessed, which is why nothing global is
+touched until stage 7.
 
 Almost certainly per-project: the `symlinks` set (every stack has its own
 mandatory gitignored files), `postCreate` (`npm ci`, `composer install`,
