@@ -1,18 +1,31 @@
 # Agent Orchestrator — stage 1: observation.
 #
-# No reaction here is automatic. AO creates the worktree, launches the agent,
-# and shows PR/CI/review state — but never writes into an agent session on its
-# own. Automation is switched on one piece at a time; the order, the criterion
-# for moving on, and the rollback for each stage live in docs/plans/AO_ROLLOUT.md.
+# The order automation is switched on in, the criterion for moving past each
+# stage, and the rollback for each live in docs/plans/AO_ROLLOUT.md.
 #
 # Project identity (path, projectId, storageKey, originUrl, sessionPrefix)
 # belongs to AO's global registry, not here. This file is behaviour only.
 #
-# CAVEAT, measured rather than assumed: the installed build does not read this
-# file. Its per-project config lives in ~/.ao/data/ao.db, set through
-# `ao project set-config`, and for this project that config is empty — the
-# symlinks below have demonstrably never been applied. Nothing here is in
-# effect until issue #19 settles how the two are connected.
+# HOW THIS FILE RELATES TO WHAT RUNS, measured rather than assumed. The
+# installed build does not read it. Per-project config lives in
+# ~/.ao/data/ao.db and is set with `ao project set-config`; the contents below
+# were translated into that database by hand and are in effect from task 3
+# onwards — session sleepnoise-7 got the symlinks, the model and the permission
+# mode from there, and the rules with them. So this file is the readable source
+# and the database is what runs, with nothing keeping the two in step: edit
+# here and nothing changes until the translation is repeated. Issue #19 is that
+# gap, and "How the config reaches AO" in the plan describes the translation.
+#
+# Four keys below have no field of that name in the schema, and they fare
+# differently: `agent` survives as worker.agent and orchestrator.agent;
+# `runtime` and `workspace` describe what AO does anyway (tmux, and a worktree
+# for a git project) and simply cannot be chosen here; `reactions` is the one
+# loss that changes behaviour — see the note above that block, and "How the
+# config reaches AO" in the plan, which carries the same breakdown.
+#
+# AO is also less passive than this stage assumes: the daemon nudges a worker
+# session on CI failure, review feedback and merge conflicts on its own, and
+# that cannot be switched off.
 
 defaultBranch: main
 
@@ -27,8 +40,8 @@ agentConfig:
   # wall time against 2m34s of API time, almost all of it sitting on approvals.
   #
   # Relaxed ahead of stage 2 on purpose: permissions and reactions are separate
-  # knobs, and every reaction below is still auto: false. Stage 5 relaxes this
-  # further, to bypass-permissions.
+  # knobs, and every reaction below is still auto: false — though those keys
+  # configure nothing in this build, see the note above the reactions block.
   #
   # The value set is the daemon's own: `ao project set-config --permission`
   # takes one of default, accept-edits, auto, bypass-permissions, and anything
@@ -90,8 +103,14 @@ agentRules: |
   CLAUDE.md and README.md describe the same project and go stale silently:
   when one of them stops being true, check the other.
 
-# Everything manual. This is the baseline the later stages count from: each of
-# them flips exactly one of these keys to auto: true.
+# NOT SUPPORTED BY THE INSTALLED BUILD, kept as the record of what was intended.
+# ProjectConfig has no reactions key: auto, retries, priority and escalateAfter
+# have nothing to be written into, and the daemon nudges the worker on CI
+# failure, review feedback and merge conflicts on its own, always, with wording
+# of its own. So none of the keys below turns anything on or off, and the later
+# stages do not flip them. What replaces them is in docs/plans/AO_ROLLOUT.md,
+# stages 2 and 5; whether this block gets translated into something the schema
+# accepts, or deleted, is issue #19.
 reactions:
   ci-failed:
     auto: false

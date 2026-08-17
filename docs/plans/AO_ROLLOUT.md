@@ -22,10 +22,17 @@ nothing.
 
 ## Current state
 
-**Stage 1, two tasks of the three done.** A stage that was not in the original
-list, 1a, was inserted along the way: its job is merged and required, and its
-criterion is not met yet — `Guardrails` has so far only run on PRs that touch
-no baseline, and the `Locale` task is the PR that will test it.
+**Stage 1, two tasks of the three done, the third running.** A stage that was
+not in the original list, 1a, was inserted along the way: its job is merged and
+required, and its criterion is not met yet — `Guardrails` has so far only run on
+PRs that touch no baseline, and the `Locale` task is the PR that will test it.
+
+Task 3 is that `Locale` task, and it is the first to run with the config
+actually applied: it was moved into AO's database before the session was
+spawned, so `app/google-services.json` and `.claude` are symlinks AO created,
+the model and permission mode came from that config, and the rules reached the
+agent. Its PR is #21 and is not reviewed yet, so the write-up of the task —
+including what it says about stage 1's criteria — waits for that to finish.
 
 ### What stage 1 has already proved
 
@@ -74,6 +81,50 @@ under the rules in `agentRules`. Issue #19 carries the repair — either the
 config moves into `ao project set-config`, or the file is confirmed as the input
 of a build that reads it. Until then, decisions 3 and 4 below are decisions
 about what the config should say, not about what any session has run under.
+
+### How the config reaches AO
+
+One command, and it replaces the whole object:
+
+```bash
+ao project set-config sleepnoise --config-json "$(cat <built ProjectConfig>.json)"
+```
+
+`set-config` **replaces** a project's config rather than merging into it. Its
+own help says so — "Set fields via flags, pass the whole object with
+`--config-json`, or `--clear` to remove all config" — and that is the trap
+worth naming: a later `--agent-rules "…"` on its own leaves the other fields
+alone, but a later `--config-json` that omits a field drops it, silently and
+without a diff to notice. So every field this file describes travels together,
+in one payload, or not at all.
+
+The payload is built from `agent-orchestrator.yaml` — `defaultBranch`,
+`agentConfig`, `symlinks`, `agentRulesFile`, `agentRules`, `worker`,
+`orchestrator`, `trackerIntake` — keeping the yaml as the readable source and
+the database as what actually runs.
+
+Four of the file's keys have no field of that name in the schema, and they are
+not equally lost:
+
+- **`agent`** survives, renamed. It becomes `worker.agent` and
+  `orchestrator.agent`, which is where the schema keeps a harness. The stored
+  config for this project carries `claude-code` in both.
+- **`runtime` and `workspace`** have no counterpart and need none: the daemon
+  runs sessions under tmux, and a git project gets a worktree — `ao spawn`
+  states it plainly ("Git projects use worktrees; Scratch uses an AO-managed
+  directory"). The file names what happens anyway; it just does not choose it.
+- **`reactions`** is the only loss that changes behaviour, and it is what #19
+  is for.
+
+The translation is by hand today, which is a step waiting to be automated and
+is tracked in #19 rather than carried here: a plan PR that ships tooling is two
+changes in one diff.
+
+Verify what landed rather than trusting the command:
+
+```bash
+sqlite3 -readonly ~/.ao/data/ao.db "select config from projects where id='sleepnoise'"
+```
 
 ### Task 1 — issue #10, PR #11 (`ao/sleepnoise-5/no-print-stack-trace`)
 
@@ -162,8 +213,10 @@ carrying forward:
    before acting so that the agent's intentions were visible; two tasks made
    them visible and none of the prompts was a surprise. What the waiting cost
    is measured — task 1, 21 minutes of wall time against 2m34s of API time.
-   Reactions are a separate knob and all four stay at `auto: false`, so stage 2
-   still has exactly one key to flip.
+   Permissions and reactions are separate knobs — which turned out to matter
+   less than it reads: the reaction keys this file counted on are not in the
+   build at all, so stage 2 has no key to flip and never had one. See "The
+   config file is not being read" above and the rewritten stage 2 below.
 
    This does not restart the stage 1 count, and the difference from decision 3
    is worth stating rather than assuming. Stage 1 measures the build, not the
@@ -231,9 +284,12 @@ that gets discovered at spawn time rather than now.
 
 ## Stage 1 — observation
 
-**Switched on:** nothing. `agent-orchestrator.yaml` sits in the repository with
-every reaction at `auto: false`. AO only creates the worktree, launches Claude
-Code, and displays state.
+**Switched on:** nothing — deliberately, and in this build also unavoidably.
+`agent-orchestrator.yaml` sits in the repository with every reaction at
+`auto: false`, and those keys turn out to configure nothing. AO creates the
+worktree, launches Claude Code, displays state — and nudges the session on CI
+failure, review feedback and merge conflicts, which is not something this stage
+chose.
 
 **What is actually under test:** whether the build survives a worktree. It is
 the one question whose answer, if it is "no", makes every later stage
@@ -301,50 +357,75 @@ reports without blocking.
 
 ## Stage 2 — CI self-repair
 
-**Switched on:** `ci-failed: auto: true`. Red CI wakes the agent without you.
+**Switched on:** nothing, and that is the whole difference from how this stage
+was written. The reaction it meant to enable is built into the daemon and is
+already running.
 
-This is the first automation not because it is the most useful but because its
-verdict is objective: the build is green or it is not, and the agent cannot
-talk itself into having succeeded. Repairing CI without the right to edit files
-is pointless, so `accept-edits` belongs to this stage — but it was switched on
-early, after task 2, and the stage now switches on one key rather than two.
-Permissions and reactions are separate knobs: two tasks of approval prompts
-held no surprises, while task 1 spent 21 minutes of wall time against 2m34s of
-API time, nearly all of it waiting on those prompts. Nothing became automatic
-by relaxing them — every reaction stayed at `auto: false`.
+### What the build actually does
 
-```yaml
-agentConfig:
-  permissions: accept-edits   # already in place since task 2
+AO watches every PR it owns and writes what it sees into its own database —
+`ci_state`, `review_decision`, `mergeability`. When one of those turns bad it
+sends the worker session a message on its own. The daemon calls them nudges,
+keys them `ci:<url>:<check>`, `review:<url>` and `merge-conflict:<url>`, and
+remembers what it already said in `pr.last_nudge_signature`, a small JSON
+document of `{"seen": …, "attempts": …}` so a daemon restart does not re-fire
+the lot.
 
-reactions:
-  ci-failed:
-    auto: true
-    retries: 2
-    message: |
-      CI is red. Read the failing check logs, reproduce locally, fix the
-      smallest cause, and push.
-      Do not touch the baselines: lint-baseline.xml and detekt/baseline.xml
-      only ever shrink. Do not weaken a test — not by deleting it, not with
-      @Ignore, not by loosening an assertion. If that is the only available
-      fix, stop and ask.
-```
+Three things follow, and they are what this stage has to be rewritten around:
 
-`retries: 2` matters more than it looks: an agent that cannot fix the build in
-two attempts will not fix it in five, but will have made a lot of edits trying.
+- **There is no switch.** `ProjectConfig` has no `reactions` key at all, so
+  `auto: true`, `retries`, `priority` and `escalateAfter` have nothing to be
+  written into. The nudges are on for every session, including the two that
+  ran before any of this was understood.
+- **The message is not ours.** The CI nudge ships its own wording — use the log
+  tail and the failure URL first, fetch full logs only if needed, fix and push
+  again. The paragraph this stage used to put in `message:` cannot be delivered
+  that way.
+- **`retries: 2` does not exist.** The daemon counts attempts per nudge key but
+  exposes no cap, so "two tries and stop" is a rule the agent follows or does
+  not, not a limit the machine enforces.
+
+### Where the constraints go instead
+
+Two places, and the split is the same one the rest of this file uses — what a
+machine can check, and what only prose can say.
+
+- **The machine-checkable half is already CI.** Stage 1a's `Guardrails` job
+  fails a PR that grows either baseline or adds an `@Ignore`/`@Disabled` under
+  the test source sets. An agent repairing a red build cannot quietly take the
+  cheap way out of those two, because the way out is itself a red build.
+- **The rest is `agentRules`,** now that the rules actually reach a session:
+  do not touch the baselines, do not weaken a test, and if the only available
+  fix is one of those, stop and ask. A reaction `message` would have been seen
+  once; the rules are in front of the agent the whole time, which is the better
+  place for them anyway.
+
+Getting them there is not an edit to `agent-orchestrator.yaml` — see "How the
+config reaches AO", and issue #19.
+
+**What is under test:** whether an unattended repair stays honest. The nudge
+fires whether or not this stage is "reached", so the only question left is
+whether the rules and `Guardrails` are enough to keep a red build from being
+fixed by lowering the bar.
 
 **Criterion to move on:** three red builds repaired by the agent alone, none of
-which came down to weakening a check. The last part is verified by reading the
-diff; nothing catches it automatically.
+which came down to weakening a check. `Guardrails` now catches two of the ways
+that could happen; the rest is still verified by reading the diff.
 
-**Rollback:** `ci-failed: auto: false`.
+**Rollback:** there is no key to flip back. What is left is to stop leaving a
+session alive while its PR is in CI, and `ao session kill <id>` if one is
+already loose. Worth knowing before rather than during.
 
 ---
 
 ## Stage 3 — one reviewer
 
-**Switched on:** `reviewers: [claude-code]`. Review runs automatically, but its
-result is still only displayed — `changes-requested` stays at `auto: false`.
+**Switched on:** `reviewers: [claude-code]`. This one is a real switch:
+`ProjectConfig.reviewers[]` exists in the build, unlike the reaction keys. What
+it cannot do is keep the result to itself — the `review:<url>` nudge reaches the
+worker whether or not anyone here has decided stage 5 has started, so "runs but
+is only displayed" is not a state this build has. Read the findings before the
+agent acts on them, or spawn no worker while the review runs.
 
 ```yaml
 reviewers:
@@ -393,19 +474,40 @@ list of findings got fuller.
 
 ## Stage 5 — the review loop, with escalation
 
-The substantial stage. `changes-requested` goes to `auto: true` here, and this
-is exactly where a working stop mechanism is needed — otherwise the agent
-starts making the decisions currently made by hand through
-`ali-process-pr-comments`.
+The substantial stage, and like stage 2 it switches nothing on: the
+review-feedback nudge is built into the daemon too, keyed `review:<url>`, with
+its own wording — address the requested changes and push, no need to re-fetch
+the review. It fires when a review lands, whether or not anyone here decided
+the stage had started.
+
+So what is left to build is the half AO does not provide: the stop. Without it
+the agent quietly makes the decisions that `ali-process-pr-comments` currently
+puts to a human one at a time.
 
 ### How escalation is built
 
-AO has no notion of "the agent is unsure". Three usable parts exist: the
-`agent-needs-input` reaction (an urgent notification when a session waits for
-input), `retries`, and `escalateAfter`. So the signal has to be produced by the
-agent, and AO carries it. The mechanics: a rule forces the agent to stop and
-wait → AO sees `session.needs_input` → urgent notification → the answer goes
-back via `ao send`.
+AO has no notion of "the agent is unsure", and the three parts the plan
+expected to lean on — `retries`, `escalateAfter`, a configurable
+`agent-needs-input` reaction — are not in this build. What is in it is the
+session state machine and one notification type: an agent that stops and waits
+moves to `needs_input`/`blocked`, and AO raises a `needs_input` notification
+for it. That is the whole carrier.
+
+So the mechanics are: a rule in `agentRules` forces the agent to stop and wait
+→ the session goes to `needs_input` → the notification lands → the answer goes
+back with `ao send --session <id> --message '…'`.
+
+Two things measured while setting this up, both of which bite exactly here:
+
+- **`ao send` refuses while the session sits on a permission prompt** —
+  `SESSION_AWAITING_DECISION`. The answer has to be typed in the session
+  terminal instead. An escalation that arrives while the agent is also waiting
+  for a command approval is therefore not answerable through the CLI.
+- **`accept-edits` covers file edits, not shell commands.** Every `./gradlew`
+  invocation still asks, so a session left alone stops on its own regularly
+  without any escalation being involved. Distinguishing "stopped because it was
+  told to" from "stopped because it wants to run a command" is a matter of
+  reading the pane, not of reading a status.
 
 The stop should be formatted the way `ali-one-by-one` already formats one:
 context, two or three options with their trade-offs, a recommendation. The
@@ -429,37 +531,47 @@ signals, each taken from the project's own rules and each easy to recognise:
 | The change alters public behaviour rather than the shape of the code | Refactoring and behaviour changes do not share a PR |
 | Reviewer and agent have disagreed twice | A human settles an argument between two models faster than a third model does |
 
-The first six rows are visible in the diff, which means they can later be
-backed by a check in CI. The last two live in the rule only.
+`Guardrails` backs the first row outright and the second one only in part: it
+fails an *added* `@Ignore` or `@Disabled` under the test source sets, and
+nothing else in that row. A deleted test is deliberately not covered — a bare
+`@Test` count would fail the `ExampleUnitTest` removal the quality plan
+schedules, which is issue #16 — and a loosened assertion is not checked at all.
+Both of those still depend on someone reading the diff. The next four rows are
+visible in a diff and could be machine-checked on the same terms; the last two
+live in the rule only.
 
-### Config
+### The rule, which is the whole configuration
 
-```yaml
-agentConfig:
-  permissions: bypass-permissions
+The paragraph goes into `agentRules`, through the one command described under
+"How the config reaches AO":
 
-reactions:
-  changes-requested:
-    auto: true
-    retries: 2
-    escalateAfter: "30m"
-    message: |
-      Work through the unresolved review comments one at a time.
-      For each: verify the claim rather than taking it on trust.
-      If the fix is obvious and does not hit the stop list in
-      docs/plans/AO_ROLLOUT.md, apply it and resolve the thread.
-      If it does hit the list, or if there is more than one reasonable
-      answer, stop: write an ESCALATION block (context, options with
-      trade-offs, your recommendation) and wait. Do not push before
-      the answer arrives.
-
-  bugbot-comments:
-    auto: true
-    priority: info
+```
+Work through the unresolved review comments one at a time. For each: verify
+the claim rather than taking it on trust. If the fix is obvious and does not
+hit the stop list in docs/plans/AO_ROLLOUT.md, apply it and resolve the
+thread. If it does hit the list, or if there is more than one reasonable
+answer, stop: write an ESCALATION block (context, options with trade-offs,
+your recommendation) and wait. Do not push before the answer arrives.
 ```
 
-The same paragraph belongs in `agentRules` as well, because a reaction
-`message` is seen once while the rules are seen always.
+There is no `message:` to put it in and no `bugbot-comments` channel to route
+anything to — a bot's review reaches the agent through the same `review:<url>`
+nudge as a person's.
+
+`permissions` stays at `accept-edits` here rather than moving to
+`bypass-permissions`, and the reason is the signal rather than the safety.
+`needs_input` is the only thing AO raises, and while every `./gradlew` still
+asks for approval that one state means both "waiting for permission" and
+"stopped because a rule said to". This stage measures the second. Telling them
+apart currently means reading the pane, which is exactly the manual step
+escalation exists to remove.
+
+`bypass-permissions` would clean the signal up — almost every stop would then
+be a deliberate one — and that is a real argument for it, not against. It is
+also the last manual brake on a stage that has never once been exercised, so
+the order is: get an escalation to fire and be answered, then decide. **Open
+question, deliberately left open:** move stage 5 to `bypass-permissions` once
+the first correct stop has been seen.
 
 ### What to verify, and it matters more than the rest
 
@@ -469,10 +581,20 @@ can be satisfied either by fixing the code or by growing a baseline. The agent
 must stop. If it silently picks one, the stage has not passed and the wording
 of the rules is what needs work.
 
-**Criterion to move on:** three PRs where the obvious comments were handled
-without you, and at least one correct stop on a contested one.
+One measurement already argues both ways. Task 2 produced exactly this
+behaviour unprompted — it refused a review request, showed why the obvious
+check was wrong and opened issue #16 — with no rule telling it to. Task 3, the
+first session the rules actually reached, opened by trying to create its own
+branch against a rule that says in plain words not to. A rule that reaches the
+agent is not a rule the agent follows, and this stage is where that difference
+becomes expensive.
 
-**Rollback:** `changes-requested: auto: false`, back to running
+**Criterion to move on:** three PRs where the obvious comments were handled
+without you, and at least one correct stop on a contested one, answered through
+`ao send`.
+
+**Rollback:** the nudge cannot be turned off, so the rollback is to stop
+leaving sessions alive on PRs under review, and to go back to running
 `ali-process-pr-comments` by hand.
 
 ---
@@ -514,11 +636,12 @@ is last for a reason.
 
 ## Stage 7 — the other projects
 
-What is shared moves into `~/.agent-orchestrator/config.yaml` (`defaults`,
-`notificationRouting`, reactions); what is per-project stays in each
-repository's `agent-orchestrator.yaml`. By this point it is visible which is
-which — right now it can only be guessed, which is why the global config stays
-untouched until stage 7.
+What is shared moves into whatever global configuration the build then has —
+the legacy `~/.agent-orchestrator/config.yaml` this line used to name is gone,
+and per-project settings live in AO's database (see "How the config reaches
+AO"). What is per-project stays per-project. By this point it is visible which
+is which — right now it can only be guessed, which is why nothing global is
+touched until stage 7.
 
 Almost certainly per-project: the `symlinks` set (every stack has its own
 mandatory gitignored files), `postCreate` (`npm ci`, `composer install`,
@@ -530,14 +653,17 @@ mandatory gitignored files), `postCreate` (`npm ci`, `composer install`,
 
 Worth knowing, so no one goes looking for settings that do not exist.
 
-- **AO does not merge.** `approved-and-green` only notifies, and `auto-merge`
-  is an intent flag rather than a way around branch protection. A human presses
-  the button, and that is correct.
-- **Up to a two-minute delay.** Review-comment polling is throttled to once
-  every two minutes per session. When it needs to be immediate: `ao review-check`.
-- **The bot list is hardcoded** in the SCM plugin and cannot be configured from
-  the project file. A reviewer posting from an account outside that list has
-  its comments routed to `changes-requested` rather than `bugbot-comments`.
+- **AO does not merge.** An approved, green PR raises a `ready_to_merge`
+  notification and nothing else — the notification types in this build are
+  `needs_input`, `ready_to_merge`, `pr_merged` and `pr_closed_unmerged`. A human
+  presses the button, and that is correct.
+- **Polling has a delay.** AO observes PR state on its own schedule, so a nudge
+  arrives after the event rather than with it. A review pass can be forced with
+  `ao review trigger <session>`; there is no such command for CI, whose state is
+  read from the PR.
+- **There is no separate channel for bot comments.** Every review reaches the
+  agent through the same `review:<url>` nudge, whoever posted it, so "route
+  bugbot to info" is not a setting that exists.
 - **`bypass-permissions` is not a sandbox.** The agent gets to run commands on the
   machine. The isolation here is the worktree — repository files — and nothing
   beyond that.
