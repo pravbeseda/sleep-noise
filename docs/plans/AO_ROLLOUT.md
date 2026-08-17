@@ -390,7 +390,7 @@ machine can check, and what only prose can say.
   place for them anyway.
 
 Getting them there is not an edit to `agent-orchestrator.yaml` — see "How the
-config reaches AO" below, and issue #19.
+config reaches AO", and issue #19.
 
 **What is under test:** whether an unattended repair stays honest. The nudge
 fires whether or not this stage is "reached", so the only question left is
