@@ -422,10 +422,11 @@ volumes, theme, language, and timer.
 
 ## Phase 6 — Cleanup
 
-Lint reports 40 findings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`). 29 of them are real and parked in
+Lint reports 36 findings (`./gradlew lint`, report at
+`app/build/reports/lint-results-debug.html`). 25 of them are real and parked in
 `app/lint-baseline.xml`; the other 11 are version-currency checks marked informational in
-`app/build.gradle.kts`, so this phase is measured by emptying the baseline.
+`app/build.gradle.kts`, so this phase is measured by emptying the baseline. It started at 29
+real findings; the four `DefaultLocale` entries were the first to go.
 
 ### Deadline: targetSdk
 
@@ -442,7 +443,7 @@ present requirement; the lint finding is about the cycle after it.
 
 ### Tasks
 
-- [ ] `DefaultLocale` (4 hits, `TimerController.kt:18,20` and `TimerView.kt`): pass
+- [x] `DefaultLocale` (4 hits, `TimerController.kt:18,20` and `TimerView.kt`): pass
       `Locale.getDefault()` explicitly. The decision was taken on 8 August 2026 and is written
       into CLAUDE.md — localized digits stay, so an Arabic device keeps reading `١٢:٣٤` like its
       system clock. That makes this a no-op on output: it silences the check and records the

@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import ru.pravbeseda.sleepnoise.R
+import java.util.Locale
 
 class TimerView(context: Context, attrs: AttributeSet?) : LinearLayout(context, attrs) {
     private lateinit var timerPreferences: TimerPreferences
@@ -40,16 +41,14 @@ class TimerView(context: Context, attrs: AttributeSet?) : LinearLayout(context, 
         timerValueInMinutes = progress * 30
         val hours = timerValueInMinutes / 60
         val minutes = timerValueInMinutes % 60
-        timerTextView.text = String.format("%02d:%02d", hours, minutes)
+        timerTextView.text = String.format(Locale.getDefault(), "%02d:%02d", hours, minutes)
     }
 
     fun showCountdown(time: String) {
         timerTextView.text = time
     }
 
-    fun getTimerValueInMinutes(): Int {
-        return timerValueInMinutes
-    }
+    fun getTimerValueInMinutes(): Int = timerValueInMinutes
 
     fun setPlayingState(isPlaying: Boolean) {
         timerSeekBar.visibility = if (isPlaying) View.INVISIBLE else View.VISIBLE

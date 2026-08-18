@@ -4,9 +4,6 @@
   <CurrentIssues>
     <ID>EmptyFunctionBlock:MainActivity.kt$MainActivity.&lt;no name provided&gt;${}</ID>
     <ID>EmptyFunctionBlock:TimerView.kt$TimerView.&lt;no name provided&gt;${}</ID>
-    <ID>ImplicitDefaultLocale:TimerController.kt$TimerController.&lt;no name provided&gt;$String.format("%02d:%02d", minutes, seconds)</ID>
-    <ID>ImplicitDefaultLocale:TimerController.kt$TimerController.&lt;no name provided&gt;$String.format("%02d:%02d:%02d", hours, minutes, seconds)</ID>
-    <ID>ImplicitDefaultLocale:TimerView.kt$TimerView$String.format("%02d:%02d", hours, minutes)</ID>
     <ID>MagicNumber:BaseNoiseGenerator.kt$BaseNoiseGenerator$44100</ID>
     <ID>MagicNumber:BrownNoiseGenerator.kt$BrownNoiseGenerator$0.02</ID>
     <ID>MagicNumber:LanguagesArrayAdapter.kt$LanguagesArrayAdapter$12f</ID>

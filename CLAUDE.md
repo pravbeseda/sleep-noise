@@ -123,7 +123,7 @@ The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `For
 
 The four Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 29 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 25 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **Both baselines only ever shrink** — `app/lint-baseline.xml` and `config/detekt/baseline.xml` alike. Regenerating one to make a new warning disappear converts a
 five-minute fix into permanent debt, and does it invisibly — the build goes green and the count goes
@@ -183,16 +183,17 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **19 entries covering 36 findings** —
-`MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **16 entries covering 33 findings** —
+`MagicNumber` 26, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
 
-`ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form;
-`PrintStackTrace` did the same until its two call sites were fixed and the entry dropped. The
-remaining `MagicNumber` findings are concentrated in `media/` and are what phase 1 of the
-refactoring plan turns into named constants.
+`ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form, and is no
+longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
+the build. `PrintStackTrace` went the same way when its two call sites were fixed. The remaining
+`MagicNumber` findings are concentrated in `media/` and are what phase 1 of the refactoring plan
+turns into named constants.
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
@@ -206,9 +207,9 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
   no output — naming it makes the choice deliberate and reviewable instead of accidental.
   Locale-native digits are the intended behaviour, not the bug: on an Arabic device the timer reads
   `١٢:٣٤`, the same as the system clock, because someone who picked Arabic picked all of it.
-  `Locale.ROOT` is for strings a machine parses, never for strings a person reads. The four
-  `DefaultLocale` entries in the baseline come from three call sites in `timer/`; phase 6 makes
-  them explicit without changing what they render.
+  `Locale.ROOT` is for strings a machine parses, never for strings a person reads. The three call
+  sites in `timer/` name it, and their four `DefaultLocale` baseline entries are gone with them, so
+  a new implicit locale fails the build.
 - **No `e.printStackTrace()`.** Crashlytics is wired up; a stack trace printed to logcat in a release
   build goes nowhere at all. Use `Log` for the expected case, Crashlytics for the unexpected one.
   There is not one left in the project, and the detekt rule is no longer baselined, so a new one
