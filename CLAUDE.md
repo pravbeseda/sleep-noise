@@ -183,16 +183,17 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **19 entries covering 36 findings** —
-`MagicNumber` 26, `EmptyFunctionBlock` 6, `ImplicitDefaultLocale` 3, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **16 entries covering 33 findings** —
+`MagicNumber` 26, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
 
-`ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form;
-`PrintStackTrace` did the same until its two call sites were fixed and the entry dropped. The
-remaining `MagicNumber` findings are concentrated in `media/` and are what phase 1 of the
-refactoring plan turns into named constants.
+`ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form, and is no
+longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
+the build. `PrintStackTrace` went the same way when its two call sites were fixed. The remaining
+`MagicNumber` findings are concentrated in `media/` and are what phase 1 of the refactoring plan
+turns into named constants.
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
