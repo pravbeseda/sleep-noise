@@ -45,7 +45,7 @@ already runs and this repository does not.
       `app/build.gradle.kts` — lenses: security — done when: `./gradlew assembleRelease` signs an APK
       against a throwaway keystore passed through `-PSN_*`, and `./gradlew testDebugUnitTest` still
       configures with no `SN_*` property set at all.
-- [ ] 3. Add the `alpha` job to `ci.yml`: push to `main` only, `needs: [unit-tests]`,
+- [x] 3. Add the `alpha` job to `ci.yml`: push to `main` only, `needs: [unit-tests]`,
       `concurrency: alpha`, `fetch-depth: 0`, keystore decoded from the secret, the real
       `google-services.json` asserted rather than the stub, `assembleRelease`, upload to Firebase
       App Distribution group `qa` — files: `.github/workflows/ci.yml` — lenses: security —
@@ -94,3 +94,11 @@ Step 1:
   bookkeeping this run requires of every step.
 
 ## Parked
+
+Step 2:
+
+- The review gate could not run: all three reviewers died on the account's session limit. The diff
+  was checked by hand instead — the four verification commands were run and their output read, and
+  the security questions the lens would have asked were answered against the code. The gate is
+  re-run over the whole branch before the pull request opens; if it still cannot run, the pull
+  request says so.
