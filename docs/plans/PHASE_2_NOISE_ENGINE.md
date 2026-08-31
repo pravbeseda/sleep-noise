@@ -34,7 +34,7 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
 - [x] 1. `NoiseMixer`, test-first — files: `app/src/main/java/ru/pravbeseda/sleepnoise/media/NoiseMixer.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/NoiseMixerTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*NoiseMixerTest"` is green on assertions that two sources are summed by their volumes, that the result clamps at `[-1, 1]` instead of wrapping the `Short` conversion, and that a channel at volume 0 is not generated at all, and the file imports no `android.*`.
 - [x] 2. `NoiseEngine` — files: `media/NoiseEngine.kt` — lenses: none — done when: `./gradlew assembleDebug detekt` is green, the writer thread is the only code that creates or releases the `AudioTrack`, `stop()` is a `@Volatile` flag plus `join()` with no second flag, volume reaches the thread without the UI thread touching the track, the thread priority comes from `Process.setThreadPriority(THREAD_PRIORITY_URGENT_AUDIO)`, and byte counts and sample counts are named apart (issue #24).
 - [x] 3. Rewire `MainActivity` and delete the old hierarchy — files: `MainActivity.kt`, `media/BaseNoiseGenerator.kt`, `media/WhiteNoiseGenerator.kt`, `media/BrownNoiseGenerator.kt` (all three deleted) — lenses: none — done when: `./gradlew assembleDebug detekt testDebugUnitTest lint` is green, no `*NoiseGenerator` class is left in the repository, and the two volume sliders and the play button drive the engine through the same five call sites they drive the generators through today.
-- [ ] 4. The hammer test — files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/media/NoiseEngineHammerTest.kt` — lenses: none — done when: the test runs 100 start/stop cycles against a real `AudioTrack` and passes on the `Medium_Phone_API_36.0` emulator, with the run's output read in this session.
+- [x] 4. The hammer test — files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/media/NoiseEngineHammerTest.kt` — lenses: none — done when: the test runs 100 start/stop cycles against a real `AudioTrack` and passes on the `Medium_Phone_API_36.0` emulator, with the run's output read in this session.
 - [ ] 5. Documentation — files: `CLAUDE.md`, `README.md`, `docs/code-quality-suggestions.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: the Architecture section describes one engine rather than two generators mixed by the OS, none of those four documents describes the deleted hierarchy as present, and phase 2's task list carries the state this run left behind. `README.md` and `docs/code-quality-suggestions.md` joined this step in step 3, where the implementer found both still describing it. The plan files under `docs/plans/` that name `BaseNoiseGenerator` in a problem statement are records of what was true when they were written and are left alone.
 
 ## Rulings
@@ -60,4 +60,19 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
   done-criterion is about the five call sites, which are intact, and a one-line private wrapper
   around `noiseEngine.start()` is the kind of indirection the repository's own rules cut.
 
+- Step 4, own measurement: `WRITES_PER_BUFFER` was raised from 2 to 8 after the hammer test showed
+  `stop()` blocking its caller for ~190 ms. The constant did not move that number on the emulator —
+  probing the engine put `stop()` at 2 ms, `release()` at 1 ms and one `write()` at up to 195 ms for
+  a chunk holding 46 ms of audio, so the emulator's sink simply does not drain in real time. The
+  smaller chunk is kept anyway: on a device the caller waits out one chunk, and an eighth of the
+  buffer is 46 ms where a half was 186 ms. Cost if wrong: about twenty writer wakeups a second
+  instead of five, which is ordinary for an audio loop.
+
 ## Parked
+
+- `NoiseEngine.stop()` blocks its caller while the writer finishes the `write()` in flight, and
+  `MainActivity` calls it from the main thread on the play button, on the timer's `onTime` and in
+  `onDestroy` (`app/src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt:190`, `:240`). Measured on
+  the API 36 emulator over 100 cycles: 162-208 ms. Today's code blocks the main thread there too — it
+  calls `AudioTrack.stop()` and `release()` on it — so this is not a regression, but the phase that
+  moves playback into a service is where the stop should stop being synchronous.

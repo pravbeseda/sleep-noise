@@ -107,7 +107,11 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         /** How many minimum buffers the track holds. */
         const val BUFFERS_AHEAD = 4
 
-        /** How many writes fill that track buffer. */
-        const val WRITES_PER_BUFFER = 2
+        /**
+         * How many writes fill that track buffer. One write is what `stop()` waits out, so this is the
+         * knob between a responsive stop and the number of wakeups over a night: at 8 the caller blocks
+         * for about 45 ms and the thread wakes some twenty times a second.
+         */
+        const val WRITES_PER_BUFFER = 8
     }
 }
