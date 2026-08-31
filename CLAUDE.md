@@ -68,7 +68,7 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 Single unit test:
 
 ```bash
-./gradlew testDebugUnitTest --tests "ru.pravbeseda.sleepnoise.ExampleUnitTest.addition_isCorrect"
+./gradlew testDebugUnitTest --tests "ru.pravbeseda.sleepnoise.media.BrownNoiseTest.resetReturnsTheIntegratorToZero"
 ```
 
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
@@ -117,7 +117,7 @@ The command grows as tooling lands (Kover next); when it does, update it here.
 
 Four of them — unit tests, lint, detekt and format — run on every PR and push to `main`. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
 
-It enforces two rules this file states in prose, and only the half of each that a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/`. Removing one passes — that direction is a test coming back. Deleting a test outright is not caught by either rule and stays a matter for review — a bare `@Test` count would fail the `ExampleUnitTest` removal the quality plan schedules, so that half needs its own design (issue #16).
+It enforces two rules this file states in prose, and only the half of each that a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/`. Removing one passes — that direction is a test coming back. Deleting a test outright is not caught by either rule and stays a matter for review — a bare `@Test` count would have failed the `ExampleUnitTest` removal the quality plan scheduled, so that half needs its own design (issue #16).
 
 The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
 
@@ -183,17 +183,17 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **16 entries covering 33 findings** —
-`MagicNumber` 26, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **14 entries covering 31 findings** —
+`MagicNumber` 24, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
 
 `ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form, and is no
 longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
-the build. `PrintStackTrace` went the same way when its two call sites were fixed. The remaining
-`MagicNumber` findings are concentrated in `media/` and are what phase 1 of the refactoring plan
-turns into named constants.
+the build. `PrintStackTrace` went the same way when its two call sites were fixed. `media/` is clear of `MagicNumber` too: phase 1 of the refactoring plan
+moved the sample math into named constants and both of its entries went with it. The 24 that remain
+sit in `timer/` and `MainActivity`.
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
@@ -229,7 +229,9 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 ### Audio: two independent generators, mixed by the OS
 
-`media/BaseNoiseGenerator` owns one `AudioTrack` (44.1 kHz, mono, PCM 16-bit, `MODE_STREAM`) plus a dedicated `Thread.MAX_PRIORITY` thread that loops calling the subclass's `generateNoiseData(bufferSize)` and writing into the track. Subclasses supply only the sample math: `WhiteNoiseGenerator` (uniform random) and `BrownNoiseGenerator` (integrates white noise via `lastOut + 0.02 * white`, clamped).
+`media/BaseNoiseGenerator` owns one `AudioTrack` (44.1 kHz, mono, PCM 16-bit, `MODE_STREAM`) plus a dedicated `Thread.MAX_PRIORITY` thread that loops filling a `FloatArray` from a `NoiseSource`, converting it to PCM 16-bit and writing into the track. The sample math lives behind that seam, in plain Kotlin that imports nothing from `android.*` and is tested on the JVM: `media/WhiteNoise` (uniform random) and `media/BrownNoise` (integrates white noise via `lastOut + 0.02 * white`, clamped). `WhiteNoiseGenerator` and `BrownNoiseGenerator` are one-line subclasses that pick a source and nothing else; phase 2 of the refactoring plan deletes all three classes in favour of a single mixing engine.
+
+`NoiseSource.reset()` has no production caller yet. Zeroing the brown integrator on every `startNoise()` would change what the app does — today a stop/start cycle resumes it where it left off — and that belongs to the phase that rewrites playback, not to the move that created the seam.
 
 `MainActivity` holds one instance of each and **always starts and stops both together**. There is no software mixer — the two `AudioTrack`s play simultaneously and the platform mixes them. The volume sliders call `setVolume` on each track independently, so "white noise only" is really "brown noise at volume 0". Keep this in mind when changing playback: muting is not stopping.
 
