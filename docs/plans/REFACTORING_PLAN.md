@@ -241,22 +241,22 @@ nothing verifies it.
 
 ### Tasks
 
-- [ ] Add `media/NoiseSource.kt`:
+- [x] Add `media/NoiseSource.kt`:
       `interface NoiseSource { fun fill(buffer: FloatArray); fun reset() }`.
       Use `FloatArray` in `[-1, 1]` — phase 2 needs float samples to mix before clipping.
-- [ ] Add `media/WhiteNoise.kt` and `media/BrownNoise.kt` implementing it. Move the math
+- [x] Add `media/WhiteNoise.kt` and `media/BrownNoise.kt` implementing it. Move the math
       out of `WhiteNoiseGenerator` / `BrownNoiseGenerator` unchanged.
-- [ ] Inject randomness: `class WhiteNoise(private val random: Random = Random.Default)`,
+- [x] Inject randomness: `class WhiteNoise(private val random: Random = Random.Default)`,
       so tests can seed it and assert exact output.
-- [ ] Make `BaseNoiseGenerator` delegate to a `NoiseSource` (keep the existing public API
+- [x] Make `BaseNoiseGenerator` delegate to a `NoiseSource` (keep the existing public API
       of `startNoise` / `stopNoise` / `setVolume` for now — no behaviour change yet).
-- [ ] Write unit tests in `app/src/test/`:
+- [x] Write unit tests in `app/src/test/`:
   - every sample stays within `[-1, 1]` for both sources;
   - `BrownNoise` step size never exceeds `0.02` between consecutive samples;
   - `BrownNoise` saturates at the clamp instead of running away, when fed a biased random;
   - `reset()` returns `BrownNoise.lastOut` to zero;
   - seeded `WhiteNoise` is reproducible.
-- [ ] Delete `ExampleUnitTest`.
+- [x] Delete `ExampleUnitTest`.
 
 ### Done when
 
