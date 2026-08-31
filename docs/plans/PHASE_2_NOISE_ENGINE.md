@@ -35,7 +35,7 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
 - [x] 2. `NoiseEngine` — files: `media/NoiseEngine.kt` — lenses: none — done when: `./gradlew assembleDebug detekt` is green, the writer thread is the only code that creates or releases the `AudioTrack`, `stop()` is a `@Volatile` flag plus `join()` with no second flag, volume reaches the thread without the UI thread touching the track, the thread priority comes from `Process.setThreadPriority(THREAD_PRIORITY_URGENT_AUDIO)`, and byte counts and sample counts are named apart (issue #24).
 - [x] 3. Rewire `MainActivity` and delete the old hierarchy — files: `MainActivity.kt`, `media/BaseNoiseGenerator.kt`, `media/WhiteNoiseGenerator.kt`, `media/BrownNoiseGenerator.kt` (all three deleted) — lenses: none — done when: `./gradlew assembleDebug detekt testDebugUnitTest lint` is green, no `*NoiseGenerator` class is left in the repository, and the two volume sliders and the play button drive the engine through the same five call sites they drive the generators through today.
 - [x] 4. The hammer test — files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/media/NoiseEngineHammerTest.kt` — lenses: none — done when: the test runs 100 start/stop cycles against a real `AudioTrack` and passes on the `Medium_Phone_API_36.0` emulator, with the run's output read in this session.
-- [ ] 5. Documentation — files: `CLAUDE.md`, `README.md`, `docs/code-quality-suggestions.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: the Architecture section describes one engine rather than two generators mixed by the OS, none of those four documents describes the deleted hierarchy as present, and phase 2's task list carries the state this run left behind. `README.md` and `docs/code-quality-suggestions.md` joined this step in step 3, where the implementer found both still describing it. The plan files under `docs/plans/` that name `BaseNoiseGenerator` in a problem statement are records of what was true when they were written and are left alone.
+- [x] 5. Documentation — files: `CLAUDE.md`, `README.md`, `docs/code-quality-suggestions.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: the Architecture section describes one engine rather than two generators mixed by the OS, none of those four documents describes the deleted hierarchy as present, and phase 2's task list carries the state this run left behind. `README.md` and `docs/code-quality-suggestions.md` joined this step in step 3, where the implementer found both still describing it. The plan files under `docs/plans/` that name `BaseNoiseGenerator` in a problem statement are records of what was true when they were written and are left alone.
 
 ## Rulings
 
@@ -73,6 +73,11 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
   than kept. With one `write()` running longer than the dwell that was supposed to separate the two
   paths, the split measured the same path twice under two bounds. One measurement, one bound, and
   the number in the log line.
+
+- Step 5, own finding: `docs/code-quality-suggestions.md` is gitignored (`.gitignore:23`), so the
+  edits it needed — the line-count table and the fixed `AudioTrack` race item — exist on this
+  machine only and reach no reviewer. It is a dated working note rather than repository
+  documentation, so nothing is lost; the step's file list named it before that was noticed.
 
 ## Parked
 
