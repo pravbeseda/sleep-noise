@@ -9,4 +9,7 @@ package ru.pravbeseda.sleepnoise.media
 class NoiseChannel(internal val source: NoiseSource) {
     @Volatile
     var volume: Float = 0.0f
+        set(value) {
+            field = value.coerceIn(0.0f, 1.0f)
+        }
 }

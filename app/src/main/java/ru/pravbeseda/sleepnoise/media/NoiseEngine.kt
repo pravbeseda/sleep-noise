@@ -21,7 +21,6 @@ import android.util.Log
  */
 class NoiseEngine(private val channels: List<NoiseChannel>) {
     private val mixer = NoiseMixer(channels.map { it.source })
-    private val volumes = FloatArray(channels.size)
 
     @Volatile
     private var running = false
@@ -45,6 +44,7 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         val minBufferSizeBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE_HZ, CHANNEL_MASK, ENCODING)
         if (minBufferSizeBytes <= 0) {
             Log.e(TAG, "AudioTrack reports no usable buffer size ($minBufferSizeBytes); not playing.")
+            running = false
             return
         }
         // A track buffer of several minimum buffers keeps the hardware fed across a scheduling hiccup;
@@ -52,6 +52,7 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         val bufferSizeBytes = minBufferSizeBytes * BUFFERS_AHEAD
         val chunkSamples = bufferSizeBytes / BYTES_PER_SAMPLE / WRITES_PER_BUFFER
         val chunk = ShortArray(chunkSamples)
+        val volumes = FloatArray(channels.size)
 
         val track = buildTrack(bufferSizeBytes)
         try {
@@ -59,12 +60,18 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
             while (running) {
                 channels.forEachIndexed { index, channel -> volumes[index] = channel.volume }
                 mixer.mix(volumes, chunk)
-                track.write(chunk, 0, chunk.size)
+                val written = track.write(chunk, 0, chunk.size)
+                if (written < 0) {
+                    // A dead track reports itself here rather than by throwing; looping on it would spin.
+                    Log.e(TAG, "AudioTrack.write failed with $written; stopping playback.")
+                    break
+                }
             }
             track.stop()
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Audio playback failed", e)
         } finally {
+            running = false
             track.release()
         }
     }
