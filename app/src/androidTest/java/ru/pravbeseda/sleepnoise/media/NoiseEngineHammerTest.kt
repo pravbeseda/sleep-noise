@@ -26,8 +26,13 @@ class NoiseEngineHammerTest {
     fun captureUncaughtExceptions() {
         replacedHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            // The handler is process-wide, so only the engine's own thread is this test's business.
-            if (thread.name == NoiseEngine.THREAD_NAME) synchronized(uncaught) { uncaught += throwable }
+            // The handler is process-wide: the engine's thread is this test's business, and anything
+            // else goes back to the handler that would otherwise have killed the process over it.
+            if (thread.name == NoiseEngine.THREAD_NAME) {
+                synchronized(uncaught) { uncaught += throwable }
+            } else {
+                replacedHandler?.uncaughtException(thread, throwable)
+            }
         }
     }
 
