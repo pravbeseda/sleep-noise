@@ -64,7 +64,7 @@ secret scanners within hours and stuck in the history for good.
 ./gradlew detekt                 # Kotlin static analysis (baselined)
 ./gradlew spotlessCheck          # ktlint formatting, changed files only
 ./gradlew spotlessApply          # fix what spotlessCheck reports
-./gradlew assembleRelease        # unsigned release APK
+./gradlew assembleRelease        # signed release APK (needs the maintainer's keystore)
 ```
 
 Formatting rules live in `.editorconfig` (ktlint's `intellij_idea` style, 140-column lines), so
@@ -113,7 +113,9 @@ derived from the commit count, so `main` has to stay append-only.
 
 Unit tests, lint, detekt, formatting and Guardrails are required checks: a red run blocks the merge,
 and the branch has to be current with `main` before it can go in. The first four run locally;
-Guardrails compares the PR against its base commit, so it exists only on CI. Before opening a PR:
+Guardrails compares the PR against its base commit, so it exists only on CI. A pull request that
+changes only Markdown skips the four Gradle jobs — they still report green, they just do no work.
+Before opening a PR:
 
 ```bash
 ./gradlew spotlessCheck detekt testDebugUnitTest lint
@@ -144,6 +146,10 @@ build whose version cannot be derived from the repository is rejected outright b
 `fetch-depth: 0`.
 
 Release commits follow the form `Release 1.0.3 (5)`.
+
+Every merge into `main` also builds a signed release APK and sends it to the alpha testers through
+Firebase App Distribution. That build needs the maintainer's upload keystore, which is not in the
+repository, so it runs on CI only — a contribution never has to sign anything.
 
 ## Credits
 

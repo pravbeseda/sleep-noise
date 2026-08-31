@@ -51,7 +51,7 @@ already runs and this repository does not.
       App Distribution group `qa` — files: `.github/workflows/ci.yml` — lenses: security —
       done when: the workflow parses as YAML and the job's gating conditions read as intended;
       the first real run happens on the merge, which is outside this branch.
-- [ ] 4. Bring the documentation back in step: the CI section of `CLAUDE.md`, `README.md` where it
+- [x] 4. Bring the documentation back in step: the CI section of `CLAUDE.md`, `README.md` where it
       describes the pipeline, and the D3 checklist in `docs/plans/REFACTORING_PLAN.md` —
       files: `CLAUDE.md`, `README.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: none —
       done when: every behaviour this branch adds is described in exactly one of them and none

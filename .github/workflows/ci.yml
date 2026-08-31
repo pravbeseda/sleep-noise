@@ -215,7 +215,7 @@ jobs:
 
       - name: Run lint
         if: steps.decide.outputs.run == 'true'
-        # warningsAsErrors is on and the 29 findings this code already carries
+        # warningsAsErrors is on and the 25 findings this code already carries
         # sit in app/lint-baseline.xml, so this fails on new warnings only.
         # Lint reports 40 in total: the other 11 are version-currency checks,
         # marked informational in app/build.gradle.kts because their messages
@@ -264,11 +264,11 @@ jobs:
           # Counts an entry, not a line: one signature per entry in both files.
           #
           # The lint pattern is deliberately '<issue( |$)' and not '<issue'. The
-          # latter also matches the root <issues> element, so it reports 30 where
-          # the file holds 29 — and the first entry a PR adds would slip through
+          # latter also matches the root <issues> element, so it reports 26 where
+          # the file holds 25 — and the first entry a PR adds would slip through
           # unnoticed. Both counts are stated in CLAUDE.md; verify with
-          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 29
-          #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 19
+          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 25
+          #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 14
           count_at() { # <ref-or-empty-for-worktree> <path> <pattern>
             if [ -n "$1" ]; then
               git cat-file -e "$1:$2" 2>/dev/null || { echo 0; return; }
