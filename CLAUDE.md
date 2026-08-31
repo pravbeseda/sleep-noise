@@ -139,7 +139,7 @@ The decision needs the merge base, so **every calling job checks out with `fetch
 
 ### Alpha delivery to Firebase App Distribution
 
-The `alpha` job builds a signed release APK on every push to `main` and uploads it to the `qa` tester group. It is **not** a required check — it runs after the merge, so there is nothing left for it to block — and it is gated `needs: [unit-tests]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`, with `concurrency: alpha, cancel-in-progress: true` so two quick merges leave the tester with the later build.
+The `alpha` job builds a signed release APK on every push to `main` and uploads it to the `qa` tester group. It is **not** a required check — it runs after the merge, so there is nothing left for it to block — and it is gated `needs: [unit-tests]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`. It carries no concurrency group of its own: the workflow-level key cancels a superseded run whole, which is why that key is unconditional now that a push to `main` runs nothing but this delivery — of two quick merges the tester wants the later build, not both in turn.
 
 It checks out with `fetch-depth: 0` because `versionCode` is the commit count and `verifyReleaseVersioning` rejects a shallow clone outright. It asserts `GOOGLE_SERVICES_JSON_B64` is present **before** calling the shared action: that action's stub fallback is right for a fork pull request and wrong here, since a stub ships an app whose Crashlytics reports to nobody.
 

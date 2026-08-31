@@ -12,11 +12,15 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Pull requests only. A superseded PR run tells us nothing, but this key sits
-  # at workflow level and cancels the entire run — so on main it would leave the
-  # first of two quick merges with no completed check, and would cancel the alpha
-  # delivery below with it, that job having its own concurrency group or not.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Unconditional, pushes included, which it was not while the four Gradle jobs
+  # still worked on a push to main: cancelling one then cost a completed check.
+  # They no longer do — decide-work answers false for that event — so the only
+  # thing a run on main carries is the alpha delivery, and of two quick merges
+  # the tester wants the later build, not both in turn. This key sits at
+  # workflow level and takes the whole run with it, which is why the alpha job
+  # needs no concurrency group of its own: one at job level could never fire,
+  # the run around it being cancelled first.
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
@@ -340,20 +344,8 @@ jobs:
     # lands on real phones, and a build from an unmerged branch is not what
     # anyone agreed to test.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # Global, not keyed by ref, because only main reaches this job: two merges in
-    # quick succession should leave the tester with the later build, not queue up
-    # a delivery nobody wants any more.
-    concurrency:
-      group: alpha
-      cancel-in-progress: true
-    env:
-      # The signingConfig in app/build.gradle.kts reads these as SN_* project
-      # properties; the ORG_GRADLE_PROJECT_ prefix is how Gradle maps an
-      # environment variable onto one. SN_STORE_FILE is set on the build step
-      # instead, since the runner context is not available in job-level env.
-      ORG_GRADLE_PROJECT_SN_KEY_ALIAS: ${{ secrets.SN_KEY_ALIAS }}
-      ORG_GRADLE_PROJECT_SN_KEY_PASSWORD: ${{ secrets.SN_KEY_PASSWORD }}
-      ORG_GRADLE_PROJECT_SN_STORE_PASSWORD: ${{ secrets.SN_STORE_PASSWORD }}
+    # A superseded run is cancelled by the workflow-level concurrency key above,
+    # so this job carries no group of its own.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -407,7 +399,16 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
 
       - name: Assemble the signed release APK
+        # All four on this step and not on the job: the signingConfig in
+        # app/build.gradle.kts reads them as SN_* project properties — the
+        # ORG_GRADLE_PROJECT_ prefix is how Gradle maps an environment variable
+        # onto one — and this is the only step that signs anything. At job level
+        # the upload key's passwords would sit in the environment of every third
+        # party action this job runs.
         env:
+          ORG_GRADLE_PROJECT_SN_KEY_ALIAS: ${{ secrets.SN_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_SN_KEY_PASSWORD: ${{ secrets.SN_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_SN_STORE_PASSWORD: ${{ secrets.SN_STORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SN_STORE_FILE: ${{ runner.temp }}/release.keystore
         run: ./gradlew assembleRelease --stacktrace
 
@@ -419,7 +420,10 @@ jobs:
         run: echo "path=$(ls app/build/outputs/apk/release/*.apk | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Distribute to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.1
+        # v1.7.1, pinned to its commit. A tag is mutable and this step is handed
+        # a service account with App Distribution Admin, so whoever could move
+        # the tag would get the credential.
+        uses: wzieba/Firebase-Distribution-Github-Action@bd494989dd4bec0343f78adee87fe66e48279ad6
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}

@@ -102,3 +102,22 @@ Step 2:
   the security questions the lens would have asked were answered against the code. The gate is
   re-run over the whole branch before the pull request opens; if it still cannot run, the pull
   request says so.
+
+Final gate, over the whole branch:
+
+- *The three `SN_*` signing secrets sat in job-level `env`, so every third-party action in the job
+  inherited the upload key's passwords.* Fixed: they moved onto the one step that signs, beside
+  `SN_STORE_FILE`, which also puts the whole "pass the credentials to Gradle" decision in one place.
+- *`wzieba/Firebase-Distribution-Github-Action@v1.7.1` is a mutable tag, and that step is handed a
+  service account with App Distribution Admin.* Fixed: pinned to commit `bd49498`, with the version
+  in a comment beside it.
+- *The alpha job's own `concurrency: alpha` block could never fire, and `CLAUDE.md` claimed it
+  did.* Fixed in the direction that makes the claim true rather than deleting it: the workflow-level
+  key is now `cancel-in-progress: true` unconditionally and the job-level block is gone. That key
+  was conditional because cancelling a run on `main` used to cost a completed check; after step 1
+  the four Gradle jobs do nothing on that event, so the only thing a run on `main` carries is this
+  delivery — and of two quick merges the tester wants the later build.
+- *A pull request can rewrite `decide.sh` and turn the four checks green without running them.*
+  Dropped: `pull_request` workflows already run the pull request's own copy of `ci.yml`, so the same
+  was true before this branch and nothing here widens it.
+
