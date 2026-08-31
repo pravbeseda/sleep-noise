@@ -314,11 +314,14 @@ channel's volume is 0 — all night.
 Start/stop hammered 100 times in a row produces no crash and no `IllegalStateException` in
 logcat; only one `AudioTrack` is alive during playback.
 
-`app/src/androidTest/.../NoiseEngineHammerTest` is that criterion executed: 100 cycles, one writer
-thread while playing and none after, no `IllegalStateException`. It passed on the
-`Medium_Phone_API_36.0` emulator, which is the only hardware this run had, and CI has no device, so
-it runs only when someone runs `connectedAndroidTest`. A real device is still unverified — see the
-risk below.
+`app/src/androidTest/.../NoiseEngineHammerTest` executes as much of that as a test can: 100 cycles,
+no crash, no `IllegalStateException` — neither escaping the writer thread nor logged by it — and
+exactly one writer thread alive on the cycles that dwell long enough to look, none after the last
+`stop()`. The track count is not asserted, because no API lets a process count its own live tracks;
+it follows from the thread count instead, the track being a local of the writer thread and released
+in that thread's own `finally`. It passed on the `Medium_Phone_API_36.0` emulator, which is the only
+hardware this run had, and CI has no device, so it runs only when someone runs
+`connectedAndroidTest`. A real device is still unverified — see the risk below.
 
 ### Risk
 
@@ -332,7 +335,7 @@ Test on a real device, not only the emulator.
 **Goal:** the app actually plays through the night. This is the phase that fixes the
 product, not just the code.
 
-Current state: `MainActivity` owns the generators and the timer, `onDestroy()` stops the
+Current state: `MainActivity` owns the engine and the timer, `onDestroy()` stops the
 noise, and the manifest declares no permissions at all. Consequences:
 
 - backgrounding the app keeps playing only until the system reclaims the process;
