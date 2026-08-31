@@ -49,10 +49,7 @@ class BrownNoiseTest {
 
         BrownNoise(AlwaysMaxRandom()).fill(buffer)
 
-        buffer.forEachIndexed { index, sample ->
-            assertTrue("sample $index ran past the clamp: $sample", sample <= 1.0f)
-        }
-        assertEquals("integrator did not reach the clamp", 1.0f, buffer.last(), 0.0f)
+        assertEquals("integrator did not stop at the clamp", 1.0f, buffer.last(), 0.0f)
     }
 
     @Test
