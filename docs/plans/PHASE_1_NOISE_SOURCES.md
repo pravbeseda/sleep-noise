@@ -32,10 +32,18 @@ dependency.
 ## Steps
 
 - [x] 1. `NoiseSource` interface and `WhiteNoise`, test-first — files: `app/src/main/java/ru/pravbeseda/sleepnoise/media/NoiseSource.kt`, `media/WhiteNoise.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/WhiteNoiseTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*WhiteNoiseTest"` is green on assertions that every sample lies in `[-1, 1]` and that a seeded instance is reproducible, and neither main file imports `android.*`.
-- [ ] 2. `BrownNoise`, test-first — files: `media/BrownNoise.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/BrownNoiseTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*BrownNoiseTest"` is green on four assertions — samples in `[-1, 1]`, consecutive step never above `0.02`, saturation at the clamp under a biased random, `reset()` returning the integrator to zero — and the file imports no `android.*`.
+- [x] 2. `BrownNoise`, test-first — files: `media/BrownNoise.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/BrownNoiseTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*BrownNoiseTest"` is green on four assertions — samples in `[-1, 1]`, consecutive step never above `0.02`, saturation at the clamp under a biased random, `reset()` returning the integrator to zero — and the file imports no `android.*`.
 - [ ] 3. `BaseNoiseGenerator` delegates to a `NoiseSource` — files: `media/BaseNoiseGenerator.kt`, `media/WhiteNoiseGenerator.kt`, `media/BrownNoiseGenerator.kt`, `config/detekt/baseline.xml` — lenses: none — done when: `./gradlew assembleDebug detekt` is green, no sample math is left in the three generator files, `MainActivity` is untouched, and the two now-dead `media/` `MagicNumber` baseline entries are gone (16 entries → 14).
 - [ ] 4. Drop `ExampleUnitTest` and close the phase — files: `app/src/test/java/ru/pravbeseda/sleepnoise/ExampleUnitTest.kt` (deleted), `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: `./gradlew spotlessCheck detekt testDebugUnitTest lint` is green and the phase's task list carries the state this run left behind.
 
 ## Rulings
+
+- Step 2, spec reviewer, `BrownNoiseTest.kt:28`: the `[-1, 1]` assertion stays green if the
+  `coerceIn` is deleted, because an unbiased 0.02 walk over 1024 samples essentially never
+  reaches the clamp — so the first criterion is carried by the saturation test. Dropped: the
+  fix (a second biased random, or a walk long enough to drift out) only adds code, the clamp
+  is already load-bearing in `biasedRandomSaturatesAtTheClamp`, and the finding is a
+  suggestion. Cost if wrong: the lower clamp has no test of its own, so a one-sided clamp
+  regression would be caught only by the upper-bound assertions.
 
 ## Parked

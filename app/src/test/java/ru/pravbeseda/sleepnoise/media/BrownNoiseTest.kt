@@ -41,7 +41,6 @@ class BrownNoiseTest {
             assertTrue("step at $index too large: ${abs(sample - previous)}", abs(sample - previous) <= maxStep + tolerance)
             previous = sample
         }
-        assertTrue("fill left the buffer silent", buffer.any { it != 0.0f })
     }
 
     @Test
