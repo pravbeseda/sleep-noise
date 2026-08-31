@@ -193,7 +193,7 @@ an already-baselined expression is suppressed silently. Detekt is a floor, not a
 longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
 the build. `PrintStackTrace` went the same way when its two call sites were fixed. `media/` is clear of `MagicNumber` too: phase 1 of the refactoring plan
 moved the sample math into named constants and both of its entries went with it. The 24 that remain
-sit in `timer/` and `MainActivity`.
+sit in `timer/` (16), `MainActivity` (7) and `adapters/LanguagesArrayAdapter` (1).
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
