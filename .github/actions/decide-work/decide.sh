@@ -16,12 +16,15 @@ set -euo pipefail
 # and the empty result reads as "no work" — every gate skipped, green and
 # silent.
 #
+# One glob, because one covers the tree: every file under docs/ is Markdown, so
+# a `docs/**` beside it would be a rule no test could tell apart from this one.
+# Add it back the day docs/ carries something that is not prose.
+#
 # `.github/**` is deliberately absent, unlike SpendControl. A workflow is build
 # configuration, not prose: a pull request that rewrites ci.yml has to run
 # ci.yml, or a broken step lands behind five green checks that executed none of
 # it.
 ignored_globs=(
-  'docs/**'
   '*.md'
 )
 

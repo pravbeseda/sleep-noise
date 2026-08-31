@@ -81,8 +81,9 @@ Step 1:
   branch, the `lines_to_array` helper and its two tests. D4 can bring it back with the caller that
   needs it; keeping it now was speculation with a test suite attached.
 - *`test.sh` never exercised the `refs/heads/main` half of the push condition.* Fixed: a case for a
-  push to another branch. Both this and the `*.md` glob were mutation-checked — deleting either
-  from `decide.sh` now turns a test red.
+  push to another branch. Mutation-checked, and the check caught a second thing: `docs/**` beside
+  `*.md` was a glob no test could fail on, since every file under `docs/` is Markdown. It is gone,
+  and deleting either the ref condition or the surviving glob now turns a test red.
 - *The `BASE` guard has no test.* Dropped: a case for it would assert bash's own `${x:?}` behaviour,
   not this repository's decision.
 - *The plan file was edited by a step that does not list it.* Dropped: ticking the checkbox is
