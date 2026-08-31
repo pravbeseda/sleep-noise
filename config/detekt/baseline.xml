@@ -4,8 +4,6 @@
   <CurrentIssues>
     <ID>EmptyFunctionBlock:MainActivity.kt$MainActivity.&lt;no name provided&gt;${}</ID>
     <ID>EmptyFunctionBlock:TimerView.kt$TimerView.&lt;no name provided&gt;${}</ID>
-    <ID>MagicNumber:BaseNoiseGenerator.kt$BaseNoiseGenerator$44100</ID>
-    <ID>MagicNumber:BrownNoiseGenerator.kt$BrownNoiseGenerator$0.02</ID>
     <ID>MagicNumber:LanguagesArrayAdapter.kt$LanguagesArrayAdapter$12f</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$0.5f</ID>
     <ID>MagicNumber:MainActivity.kt$MainActivity$100</ID>

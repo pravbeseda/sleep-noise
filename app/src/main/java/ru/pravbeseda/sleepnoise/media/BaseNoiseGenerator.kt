@@ -6,14 +6,11 @@ import android.media.AudioTrack
 import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
 
-abstract class BaseNoiseGenerator {
+abstract class BaseNoiseGenerator(private val source: NoiseSource) {
     private var audioTrack: AudioTrack? = null
-    private val sampleRate = 44100
     private var volume: Float = 1.0f
     private val isPlaying = AtomicBoolean(false)
     private val isStopped = AtomicBoolean(false)
-
-    abstract fun generateNoiseData(bufferSize: Int): ShortArray
 
     fun setVolume(volume: Float) {
         this.volume = volume.coerceIn(0.0f, 1.0f)
@@ -27,11 +24,12 @@ abstract class BaseNoiseGenerator {
 
         isPlaying.set(true)
         isStopped.set(false)
+        source.reset()
 
         val minBufferSize = AudioTrack.getMinBufferSize(
-            sampleRate,
+            SAMPLE_RATE_HZ,
             AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
+            AudioFormat.ENCODING_PCM_16BIT,
         )
 
         val bufferSize = minBufferSize * 2
@@ -41,14 +39,14 @@ abstract class BaseNoiseGenerator {
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
+                    .build(),
             )
             .setAudioFormat(
                 AudioFormat.Builder()
-                    .setSampleRate(sampleRate)
+                    .setSampleRate(SAMPLE_RATE_HZ)
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build()
+                    .build(),
             )
             .setBufferSizeInBytes(bufferSize)
             .setTransferMode(AudioTrack.MODE_STREAM)
@@ -60,10 +58,15 @@ abstract class BaseNoiseGenerator {
         }
 
         Thread {
+            val samples = FloatArray(bufferSize)
+            val noiseData = ShortArray(bufferSize)
             try {
                 Log.d("NoiseGenerator", "Thread started for noise playback.")
                 while (isPlaying.get()) {
-                    val noiseData = generateNoiseData(bufferSize)
+                    source.fill(samples)
+                    for (i in samples.indices) {
+                        noiseData[i] = (samples[i] * Short.MAX_VALUE).toInt().toShort()
+                    }
                     audioTrack?.let {
                         if (it.state == AudioTrack.STATE_INITIALIZED && !isStopped.get()) {
                             it.write(noiseData, 0, noiseData.size)
@@ -111,5 +114,9 @@ abstract class BaseNoiseGenerator {
                 Log.d("NoiseGenerator", "AudioTrack released.")
             }
         }
+    }
+
+    private companion object {
+        const val SAMPLE_RATE_HZ = 44100
     }
 }
