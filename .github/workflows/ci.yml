@@ -25,33 +25,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        # Default shallow checkout is fine: the release gate in
-        # app/build.gradle.kts only guards tasks that package an artifact, and
-        # this job packages nothing. Release jobs need fetch-depth: 0.
         uses: actions/checkout@v4
+        with:
+          # The decision below diffs against the pull request's merge base, so
+          # the history has to reach it. A shallow checkout would otherwise do:
+          # the release gate in app/build.gradle.kts only guards tasks that
+          # package an artifact, and this job packages nothing.
+          fetch-depth: 0
+
+      # The if: goes on every step below, never on the job. All five jobs are
+      # required status checks, and a job skipped at job level never reports its
+      # context — which blocks the merge button rather than freeing it.
+      - name: Decide whether there is work
+        id: decide
+        uses: ./.github/actions/decide-work
+        with:
+          ignore: |
+            docs/**
+            *.md
+            .github/**
 
       - name: Set up JDK 17
+        if: steps.decide.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
+        if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
+        if: steps.decide.outputs.run == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - name: Run unit tests
+        if: steps.decide.outputs.run == 'true'
         run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Upload test report
-        if: always()
+        # always() alone would upload nothing from a skipped job and hide the
+        # decision behind a missing artifact.
+        if: always() && steps.decide.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
@@ -74,19 +96,32 @@ jobs:
           # every spotless task fails outright rather than checking nothing.
           fetch-depth: 0
 
+      - name: Decide whether there is work
+        id: decide
+        uses: ./.github/actions/decide-work
+        with:
+          ignore: |
+            docs/**
+            *.md
+            .github/**
+
       - name: Set up JDK 17
+        if: steps.decide.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
+        if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
+        if: steps.decide.outputs.run == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
@@ -94,6 +129,7 @@ jobs:
       - name: Check formatting
         # Only files this branch changed relative to main are checked. On a
         # push to main the diff is empty, so this job passes without work.
+        if: steps.decide.outputs.run == 'true'
         run: ./gradlew spotlessCheck --stacktrace
 
   detekt:
@@ -104,33 +140,49 @@ jobs:
     # hide the other.
     steps:
       - name: Checkout
-        # No fetch-depth: 0 here. Unlike Format, detekt has no ratchet — it
-        # analyses the whole source tree every run and the historical findings
-        # sit in config/detekt/baseline.xml instead.
         uses: actions/checkout@v4
+        with:
+          # For the decision below, not for detekt: unlike Format, detekt has no
+          # ratchet — it analyses the whole source tree every run and the
+          # historical findings sit in config/detekt/baseline.xml instead.
+          fetch-depth: 0
+
+      - name: Decide whether there is work
+        id: decide
+        uses: ./.github/actions/decide-work
+        with:
+          ignore: |
+            docs/**
+            *.md
+            .github/**
 
       - name: Set up JDK 17
+        if: steps.decide.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
+        if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
+        if: steps.decide.outputs.run == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - name: Run detekt
+        if: steps.decide.outputs.run == 'true'
         run: ./gradlew detekt --stacktrace
 
       - name: Upload detekt report
-        if: always()
+        if: always() && steps.decide.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: detekt-report
@@ -147,25 +199,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The decision below diffs against the pull request's merge base; lint
+          # itself needs no history.
+          fetch-depth: 0
+
+      - name: Decide whether there is work
+        id: decide
+        uses: ./.github/actions/decide-work
+        with:
+          ignore: |
+            docs/**
+            *.md
+            .github/**
 
       - name: Set up JDK 17
+        if: steps.decide.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
+        if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
+        if: steps.decide.outputs.run == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Provide google-services.json
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - name: Run lint
+        if: steps.decide.outputs.run == 'true'
         # warningsAsErrors is on and the 29 findings this code already carries
         # sit in app/lint-baseline.xml, so this fails on new warnings only.
         # Lint reports 40 in total: the other 11 are version-currency checks,
@@ -174,7 +244,7 @@ jobs:
         run: ./gradlew lint --stacktrace
 
       - name: Upload lint report
-        if: always()
+        if: always() && steps.decide.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: lint-report

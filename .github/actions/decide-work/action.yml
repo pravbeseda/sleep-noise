@@ -1,0 +1,43 @@
+name: Decide whether this job has work
+description: >-
+  Reports whether the calling job needs to run its steps for this event and
+  diff. Requires a checkout with fetch-depth 0 to have run first: the decision
+  is a diff against the pull request's merge base.
+
+inputs:
+  ignore:
+    description: >-
+      Path globs, one per line, whose changes mean this job has no work. Plain
+      globs — the `:!` that makes them exclusions is added by the action, and a
+      caller must never write pathspec or shell syntax here.
+    required: true
+  count-anyway:
+    description: >-
+      Path globs, one per line, that sit inside `ignore` but do mean work.
+      Empty by default, and empty means no second diff at all.
+    required: false
+    default: ''
+
+outputs:
+  run:
+    description: "'true' when this job has work, 'false' when it does not."
+    value: ${{ steps.decide.outputs.run }}
+
+runs:
+  using: composite
+  steps:
+    # Before the decision, not beside it: a pull request that edits .github/**
+    # is one every caller skips, so tests placed there would be absent exactly
+    # when this action changes.
+    - name: Test the decision
+      shell: bash
+      run: ${{ github.action_path }}/test.sh
+
+    - name: Decide
+      id: decide
+      shell: bash
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        IGNORE: ${{ inputs.ignore }}
+        COUNT_ANYWAY: ${{ inputs.count-anyway }}
+      run: ${{ github.action_path }}/decide.sh >> "$GITHUB_OUTPUT"

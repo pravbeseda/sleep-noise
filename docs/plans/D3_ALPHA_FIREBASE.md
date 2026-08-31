@@ -31,7 +31,7 @@ already runs and this repository does not.
 
 ## Steps
 
-- [ ] 1. Port the `decide-work` composite action from SpendControl and wire it into the four
+- [x] 1. Port the `decide-work` composite action from SpendControl and wire it into the four
       Gradle jobs of `ci.yml` with step-level `if:` — files: `.github/actions/decide-work/action.yml`,
       `.github/actions/decide-work/decide.sh`, `.github/actions/decide-work/test.sh`,
       `.github/workflows/ci.yml` — lenses: none — done when: `bash .github/actions/decide-work/test.sh`
