@@ -79,6 +79,11 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
   machine only and reach no reviewer. It is a dated working note rather than repository
   documentation, so nothing is lost; the step's file list named it before that was noticed.
 
+- Final gate, `NoiseEngine.kt:44-49`: the `getMinBufferSize <= 0` guard is gone. It gave one of the
+  two ways a device can refuse this format a different policy from the other — a log, no sound, and
+  a UI still showing playback — where the builder on the next line simply fails. One policy now,
+  five lines fewer, and the same one the step 2 ruling already accepted.
+
 ## Parked
 
 - `NoiseEngine.stop()` blocks its caller while the writer finishes the `write()` in flight, and

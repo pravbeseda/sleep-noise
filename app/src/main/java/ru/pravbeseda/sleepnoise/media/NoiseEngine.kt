@@ -41,12 +41,9 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
     private fun writeUntilStopped() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
+        // A device that cannot serve this format fails here or in the builder below, and is left to fail:
+        // the alternative is a logged silence with the UI still showing playback.
         val minBufferSizeBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE_HZ, CHANNEL_MASK, ENCODING)
-        if (minBufferSizeBytes <= 0) {
-            Log.e(TAG, "AudioTrack reports no usable buffer size ($minBufferSizeBytes); not playing.")
-            running = false
-            return
-        }
         // A track buffer of several minimum buffers keeps the hardware fed across a scheduling hiccup;
         // one write covers a fraction of it, so stop() never waits for a whole buffer to drain.
         val bufferSizeBytes = minBufferSizeBytes * BUFFERS_AHEAD
