@@ -20,6 +20,10 @@ already runs and this repository does not.
   local `.key/Drevo.Keystore`) and `FIREBASE_APP_ID` (from the Firebase project). The maintainer
   sets `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD` and `FIREBASE_SERVICE_ACCOUNT_JSON`,
   which this run has no access to.
+- What happens to an unsigned local release build? → `./gradlew assembleRelease` without the `SN_*`
+  credentials now **fails** where it used to produce an unsigned APK. Accepted deliberately: a
+  release that quietly comes out unsigned is worse than one that stops. `CLAUDE.md` describes that
+  command as "unsigned release APK" and step 4 corrects it.
 - Which jobs get the filter? → The four Gradle jobs. `Guardrails` needs no JDK and no Gradle and
   finishes in seconds, so filtering it would add a moving part to save nothing.
 - Job-level `if:` or step-level? → **Step level.** All five jobs are required status checks with
@@ -36,7 +40,7 @@ already runs and this repository does not.
       `.github/actions/decide-work/decide.sh`, `.github/actions/decide-work/test.sh`,
       `.github/workflows/ci.yml` — lenses: none — done when: `bash .github/actions/decide-work/test.sh`
       prints `all tests passed` locally, with a case per branch of the decision.
-- [ ] 2. Add a `signingConfig` to `app/build.gradle.kts` reading the `SN_*` project properties, with
+- [x] 2. Add a `signingConfig` to `app/build.gradle.kts` reading the `SN_*` project properties, with
       a non-null default `storeFile` so configuration still succeeds without them — files:
       `app/build.gradle.kts` — lenses: security — done when: `./gradlew assembleRelease` signs an APK
       against a throwaway keystore passed through `-PSN_*`, and `./gradlew testDebugUnitTest` still

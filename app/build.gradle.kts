@@ -103,7 +103,7 @@ val verifyReleaseVersioning = tasks.register("verifyReleaseVersioning") {
                     separator = "\n  - ",
                     postfix = "\nCI must check out with fetch-depth: 0 and keep " +
                         "app/version.properties in place.",
-                )
+                ),
             )
         }
     }
@@ -159,13 +159,30 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Credentials come from -PSN_* project properties; CI passes them as
+    // ORG_GRADLE_PROJECT_SN_* environment variables, which Gradle maps onto
+    // properties of the same name.
+    signingConfigs {
+        create("release") {
+            keyAlias = project.findProperty("SN_KEY_ALIAS")?.toString()
+            keyPassword = project.findProperty("SN_KEY_PASSWORD")?.toString()
+            // storeFile must never be null: file(null) throws at configuration time
+            // and takes the whole project down, including the CI jobs that sign
+            // nothing. The default keeps configuration valid when SN_STORE_FILE is
+            // absent; the path is gitignored, not secret.
+            storeFile = file(project.findProperty("SN_STORE_FILE") ?: "../.key/Drevo.Keystore")
+            storePassword = project.findProperty("SN_STORE_PASSWORD")?.toString()
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
