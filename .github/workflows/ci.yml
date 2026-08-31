@@ -39,11 +39,6 @@ jobs:
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work
-        with:
-          ignore: |
-            docs/**
-            *.md
-            .github/**
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
@@ -99,11 +94,6 @@ jobs:
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work
-        with:
-          ignore: |
-            docs/**
-            *.md
-            .github/**
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
@@ -150,11 +140,6 @@ jobs:
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work
-        with:
-          ignore: |
-            docs/**
-            *.md
-            .github/**
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
@@ -207,11 +192,6 @@ jobs:
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work
-        with:
-          ignore: |
-            docs/**
-            *.md
-            .github/**
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'

@@ -64,4 +64,28 @@ Not code, so not steps; done at the end of the run and reported.
 
 ## Rulings
 
+Step 1:
+
+- *The four Gradle jobs now do nothing on a push to `main`.* Dropped as a behaviour concern: the
+  ported branch is deliberate and branch protection is `strict: true`, so the pull request already
+  ran against the very tree being merged, and `workflow_dispatch` still forces a full run on
+  demand. What was real in the finding is the sentence in `CLAUDE.md` claiming those four run on
+  every push to `main` — that is step 4's work, and no pull request lands with the contradiction.
+- *The ignore list was written in five places.* Fixed: it is now one array at the top of
+  `decide.sh`, the four `with:` blocks are gone and the `ignore` input with them. Four copies of
+  one decision drift silently — the repository states that rule about `.github/actions/google-services`.
+- *`.github/**` in the ignore list let a workflow-only pull request merge behind five green checks
+  that executed none of it.* Fixed by dropping that glob: a workflow is build configuration, not
+  prose. Cost accepted: a pull request touching only `ci.yml` now pays for four Gradle jobs.
+- *`count-anyway` was a parameter no caller passed.* Fixed by removing it, along with the carve-out
+  branch, the `lines_to_array` helper and its two tests. D4 can bring it back with the caller that
+  needs it; keeping it now was speculation with a test suite attached.
+- *`test.sh` never exercised the `refs/heads/main` half of the push condition.* Fixed: a case for a
+  push to another branch. Both this and the `*.md` glob were mutation-checked — deleting either
+  from `decide.sh` now turns a test red.
+- *The `BASE` guard has no test.* Dropped: a case for it would assert bash's own `${x:?}` behaviour,
+  not this repository's decision.
+- *The plan file was edited by a step that does not list it.* Dropped: ticking the checkbox is
+  bookkeeping this run requires of every step.
+
 ## Parked

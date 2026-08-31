@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Tests for decide.sh. Runs from the action itself, before it decides anything:
-# a pull request that edits .github/** is one CI skips every Gradle job for, so
-# tests living there would be absent exactly when this action changes.
+# Tests for decide.sh, run by the action itself before it decides anything.
+# Nothing else on CI exercises them, and the decision they cover fails silently:
+# a wrong answer skips every gate and still reports green.
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
@@ -43,7 +43,6 @@ check() {
   local out
   out=$(cd "$dir" && \
     GITHUB_EVENT_NAME="$event" GITHUB_REF="$ref" BASE="$base" \
-    IGNORE="$IGNORE" COUNT_ANYWAY="${COUNT_ANYWAY:-}" \
     bash "$decide" 2>/dev/null | sed -n 's/^run=//p')
 
   if [ "$out" = "$expected" ]; then
@@ -56,24 +55,19 @@ check() {
 }
 
 app=app/src/main/java/ru/pravbeseda/sleepnoise/media/NoiseEngine.kt
+plan=docs/plans/REFACTORING_PLAN.md
 
-# Every caller in this repository passes exactly this, and no carve-out.
-IGNORE=$'docs/**\n*.md\n.github/**'
-COUNT_ANYWAY=''
-
-check "push to main does no work"                false push refs/heads/main "$app"
-check "manual dispatch always works"             true  workflow_dispatch refs/heads/main docs/plans/REFACTORING_PLAN.md
-check "app code means work"                      true  pull_request refs/pull/1/merge "$app"
-check "ignored paths only mean no work"          false pull_request refs/pull/1/merge docs/plans/REFACTORING_PLAN.md .github/workflows/ci.yml
-check "prose alone is not app code"              false pull_request refs/pull/1/merge README.md CLAUDE.md
-check "a mixed diff means work"                  true  pull_request refs/pull/1/merge docs/plans/REFACTORING_PLAN.md "$app"
-
-# No caller passes count-anyway today, but the input is part of the ported
-# interface and a later one will: cover the carve-out so it cannot rot.
-COUNT_ANYWAY=$'README.md'
-
-check "a carved-out path means work"             true  pull_request refs/pull/1/merge README.md
-check "prose beside the carve-out is not work"   false pull_request refs/pull/1/merge docs/plans/REFACTORING_PLAN.md
+check "push to main does no work"          false push refs/heads/main "$app"
+# The ref half of that condition, which the case above cannot fail on: without
+# it every push would be waved through as already tested.
+check "push to another branch works"       true  push refs/heads/ci/alpha-firebase "$app"
+check "manual dispatch always works"       true  workflow_dispatch refs/heads/main "$plan"
+check "app code means work"                true  pull_request refs/pull/1/merge "$app"
+check "prose alone is not work"            false pull_request refs/pull/1/merge "$plan" README.md CLAUDE.md
+check "a mixed diff means work"            true  pull_request refs/pull/1/merge "$plan" "$app"
+# The workflow is build configuration, not prose: the diff that changes what CI
+# does is the one CI must run in full.
+check "the workflow itself means work"     true  pull_request refs/pull/1/merge .github/workflows/ci.yml
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures test(s) failed"

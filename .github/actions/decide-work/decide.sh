@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
 # Decides whether the calling job has any work for this event and diff.
 #
-# Reads GITHUB_EVENT_NAME, GITHUB_REF, BASE, IGNORE and COUNT_ANYWAY from the
-# environment; prints `run=true` or `run=false` on stdout and its reasoning on
-# stderr, so the caller can append the former to $GITHUB_OUTPUT and read the
-# latter in the log.
-#
-# IGNORE and COUNT_ANYWAY are plain path globs, one per line. The `:!` prefix
-# that turns a glob into an exclusion is added here and never by the caller: a
-# caller passing quoted pathspecs in one string expands unquoted, git reads
-# ':!docs/**' as a positive path matching nothing, and an empty result reads as
-# "no work" — every gate skipped, green and silent.
+# Reads GITHUB_EVENT_NAME, GITHUB_REF and BASE from the environment; prints
+# `run=true` or `run=false` on stdout and its reasoning on stderr, so the caller
+# can append the former to $GITHUB_OUTPUT and read the latter in the log.
 set -euo pipefail
 
-lines_to_array() {
-  local line
-  while IFS= read -r line; do
-    [ -n "$line" ] && printf '%s\n' "$line"
-  done <<<"${1:-}"
-}
+# The single copy of the rule. It lives here and not in the four call sites
+# because four copies of one decision drift into four different decisions, and
+# the drift is silent: a job whose list is stale simply answers differently.
+#
+# Plain globs. The `:!` prefix that turns each into a git exclusion is added
+# below and never written here: a pathspec handed over as one quoted string
+# expands unquoted, git reads ':!docs/**' as a positive path matching nothing,
+# and the empty result reads as "no work" — every gate skipped, green and
+# silent.
+#
+# `.github/**` is deliberately absent, unlike SpendControl. A workflow is build
+# configuration, not prose: a pull request that rewrites ci.yml has to run
+# ci.yml, or a broken step lands behind five green checks that executed none of
+# it.
+ignored_globs=(
+  'docs/**'
+  '*.md'
+)
 
 if [ "${GITHUB_EVENT_NAME:-}" = push ] && [ "${GITHUB_REF:-}" = refs/heads/main ]; then
   echo "push to main: the pull request that landed this commit ran everything" >&2
@@ -36,36 +41,12 @@ fi
 # and the whole script stops parsing.
 : "${BASE:?BASE, the base commit of the pull request, is required}"
 
-ignore=()
-while IFS= read -r pattern; do
-  ignore+=(":!$pattern")
-done < <(lines_to_array "${IGNORE:-}")
+exclusions=()
+for glob in "${ignored_globs[@]}"; do
+  exclusions+=(":!$glob")
+done
 
-count_anyway=()
-while IFS= read -r pattern; do
-  count_anyway+=("$pattern")
-done < <(lines_to_array "${COUNT_ANYWAY:-}")
-
-if [ ${#ignore[@]} -eq 0 ]; then
-  changed=$(git diff --name-only "$BASE"...HEAD)
-else
-  changed=$(git diff --name-only "$BASE"...HEAD -- "${ignore[@]}")
-fi
-
-# A second call, not a longer first one: a positive pathspec beside exclusions
-# replaces the result instead of adding to it, and an empty pathspec list after
-# `--` filters nothing at all.
-if [ ${#count_anyway[@]} -gt 0 ]; then
-  carved=$(git diff --name-only "$BASE"...HEAD -- "${count_anyway[@]}")
-  if [ -n "$carved" ]; then
-    if [ -n "$changed" ]; then
-      changed="$changed
-$carved"
-    else
-      changed="$carved"
-    fi
-  fi
-fi
+changed=$(git diff --name-only "$BASE"...HEAD -- "${exclusions[@]}")
 
 if [ -n "$changed" ]; then
   echo "work to do — changed outside the ignored set:" >&2
