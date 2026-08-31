@@ -39,4 +39,13 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
 
 ## Rulings
 
+- Step 2, round two, `NoiseEngine.kt:57`: `buildTrack` sits outside the `try`, so an
+  `UnsupportedOperationException` from `AudioTrack.Builder.build()` kills the process instead of
+  being logged like the two sibling error exits. Dropped: the old `BaseNoiseGenerator` built its
+  track outside any catch as well, on the UI thread, so this is today's behaviour rather than a
+  regression; the fix only adds a catch clause for a device failure nobody here can reproduce, and
+  the finding is a suggestion raised in the round that was only meant to check the fixes. Cost if
+  wrong: on a device that cannot open a 44.1 kHz mono PCM track the app crashes rather than
+  starting silently — which is arguably the better of the two anyway.
+
 ## Parked
