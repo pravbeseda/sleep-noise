@@ -24,8 +24,10 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
-import ru.pravbeseda.sleepnoise.media.BrownNoiseGenerator
-import ru.pravbeseda.sleepnoise.media.WhiteNoiseGenerator
+import ru.pravbeseda.sleepnoise.media.BrownNoise
+import ru.pravbeseda.sleepnoise.media.NoiseChannel
+import ru.pravbeseda.sleepnoise.media.NoiseEngine
+import ru.pravbeseda.sleepnoise.media.WhiteNoise
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.timer.TimerController
 import ru.pravbeseda.sleepnoise.timer.TimerView
@@ -37,8 +39,9 @@ const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
 
 class MainActivity : AppCompatActivity() {
-    private val whiteNoiseGenerator = WhiteNoiseGenerator()
-    private val brownNoiseGenerator = BrownNoiseGenerator()
+    private val whiteChannel = NoiseChannel(WhiteNoise())
+    private val brownChannel = NoiseChannel(BrownNoise())
+    private val noiseEngine = NoiseEngine(listOf(whiteChannel, brownChannel))
     private lateinit var playButton: Button
     private lateinit var timerView: TimerView
     private lateinit var timerController: TimerController
@@ -175,7 +178,7 @@ class MainActivity : AppCompatActivity() {
             timerController.startTimer(timerValue)
         }
 
-        startNoise()
+        noiseEngine.start()
     }
 
     private fun stopPlayback() {
@@ -184,7 +187,7 @@ class MainActivity : AppCompatActivity() {
         timerController.stopTimer()
         timerView.setPlayingState(false)
 
-        stopNoise()
+        noiseEngine.stop()
     }
 
     private fun showThemePopup(anchor: View) {
@@ -232,19 +235,9 @@ class MainActivity : AppCompatActivity() {
         preferences.edit().putFloat(key, volume).apply()
     }
 
-    private fun startNoise() {
-        whiteNoiseGenerator.startNoise()
-        brownNoiseGenerator.startNoise()
-    }
-
-    private fun stopNoise() {
-        whiteNoiseGenerator.stopNoise()
-        brownNoiseGenerator.stopNoise()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
-        stopNoise()
+        noiseEngine.stop()
     }
 
     private fun applyTheme(theme: String) {
@@ -278,12 +271,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setWhiteNoiseVolume(volume: Float) {
-        whiteNoiseGenerator.setVolume(volume)
+        whiteChannel.volume = volume
         whiteNoiseLabel.text = getString(R.string.white_noise_volume, (volume * 100).toInt())
     }
 
     private fun setBrownNoiseVolume(volume: Float) {
-        brownNoiseGenerator.setVolume(volume)
+        brownChannel.volume = volume
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
     }
 
