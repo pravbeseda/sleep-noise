@@ -22,6 +22,11 @@ path and needs that safety net before it starts.
   test needs a biased random, which is not reachable without the seam.
 - Sample type at the seam → `FloatArray` in `[-1, 1]`, as the phase specifies; the short
   conversion stays in `BaseNoiseGenerator`, unchanged from today's expression.
+- Does `startNoise()` call `source.reset()`? → no, removed on a blocking review finding. Today
+  a stop/start cycle on the same instance resumes the brown integrator where it left off, and
+  reinstating it from zero is a behaviour change; phase 1 is a refactor and this repository does
+  not mix the two in one PR. `reset()` stays part of the interface, tested, and phase 2's
+  `NoiseEngine` is where it gets wired into playback.
 - New `media/` constants → named, not literals: detekt has no baseline entry for the new files,
   and a new `MagicNumber` finding fails the build.
 
@@ -33,7 +38,7 @@ dependency.
 
 - [x] 1. `NoiseSource` interface and `WhiteNoise`, test-first — files: `app/src/main/java/ru/pravbeseda/sleepnoise/media/NoiseSource.kt`, `media/WhiteNoise.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/WhiteNoiseTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*WhiteNoiseTest"` is green on assertions that every sample lies in `[-1, 1]` and that a seeded instance is reproducible, and neither main file imports `android.*`.
 - [x] 2. `BrownNoise`, test-first — files: `media/BrownNoise.kt`, `app/src/test/java/ru/pravbeseda/sleepnoise/media/BrownNoiseTest.kt` — lenses: none — done when: `./gradlew testDebugUnitTest --tests "*BrownNoiseTest"` is green on four assertions — samples in `[-1, 1]`, consecutive step never above `0.02`, saturation at the clamp under a biased random, `reset()` returning the integrator to zero — and the file imports no `android.*`.
-- [ ] 3. `BaseNoiseGenerator` delegates to a `NoiseSource` — files: `media/BaseNoiseGenerator.kt`, `media/WhiteNoiseGenerator.kt`, `media/BrownNoiseGenerator.kt`, `config/detekt/baseline.xml` — lenses: none — done when: `./gradlew assembleDebug detekt` is green, no sample math is left in the three generator files, `MainActivity` is untouched, and the two now-dead `media/` `MagicNumber` baseline entries are gone (16 entries → 14).
+- [x] 3. `BaseNoiseGenerator` delegates to a `NoiseSource` — files: `media/BaseNoiseGenerator.kt`, `media/WhiteNoiseGenerator.kt`, `media/BrownNoiseGenerator.kt`, `config/detekt/baseline.xml` — lenses: none — done when: `./gradlew assembleDebug detekt` is green, no sample math is left in the three generator files, `MainActivity` is untouched, and the two now-dead `media/` `MagicNumber` baseline entries are gone (16 entries → 14).
 - [ ] 4. Drop `ExampleUnitTest` and close the phase — files: `app/src/test/java/ru/pravbeseda/sleepnoise/ExampleUnitTest.kt` (deleted), `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: `./gradlew spotlessCheck detekt testDebugUnitTest lint` is green and the phase's task list carries the state this run left behind.
 
 ## Rulings

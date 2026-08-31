@@ -24,7 +24,6 @@ abstract class BaseNoiseGenerator(private val source: NoiseSource) {
 
         isPlaying.set(true)
         isStopped.set(false)
-        source.reset()
 
         val minBufferSize = AudioTrack.getMinBufferSize(
             SAMPLE_RATE_HZ,
@@ -58,9 +57,9 @@ abstract class BaseNoiseGenerator(private val source: NoiseSource) {
         }
 
         Thread {
-            val samples = FloatArray(bufferSize)
-            val noiseData = ShortArray(bufferSize)
             try {
+                val samples = FloatArray(bufferSize)
+                val noiseData = ShortArray(bufferSize)
                 Log.d("NoiseGenerator", "Thread started for noise playback.")
                 while (isPlaying.get()) {
                     source.fill(samples)
