@@ -34,8 +34,6 @@ Being honest about the current state — all of these are tracked in
   theme or language restarts it (phase 3 adds a foreground service).
 - No audio focus handling: an incoming call plays on top of the noise, and unplugging headphones
   does not stop it (phase 3).
-- Each channel drives its own `AudioTrack`, mixed by the platform rather than in software
-  (phase 2).
 
 ## Building from source
 
@@ -80,7 +78,7 @@ spotless task fails instead of silently checking nothing.
 app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
-├── media/                   # BaseNoiseGenerator + White/Brown implementations
+├── media/                   # NoiseEngine + NoiseMixer + White/Brown noise sources
 ├── timer/                   # TimerView, TimerController, TimerPreferences
 ├── models/ · adapters/
 ```

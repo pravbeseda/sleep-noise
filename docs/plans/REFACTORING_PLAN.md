@@ -292,27 +292,36 @@ channel's volume is 0 — all night.
 
 ### Tasks
 
-- [ ] Add `media/NoiseEngine.kt`: one `AudioTrack`, one writer thread, a list of
+- [x] Add `media/NoiseEngine.kt`: one `AudioTrack`, one writer thread, a list of
       `(NoiseSource, volume)` channels mixed in software.
-- [ ] Make the writer thread the sole owner of the `AudioTrack` lifecycle: it creates the
+- [x] Make the writer thread the sole owner of the `AudioTrack` lifecycle: it creates the
       track, and it releases it in its own `finally`. No other thread ever touches the track.
-- [ ] `stop()` becomes: set a `@Volatile` flag, then `join()` the thread. Remove `isStopped`;
+- [x] `stop()` becomes: set a `@Volatile` flag, then `join()` the thread. Remove `isStopped`;
       one flag is enough.
-- [ ] Mix as `sum = white * wVol + brown * bVol`, then clamp to `[-1, 1]` before converting
+- [x] Mix as `sum = white * wVol + brown * bVol`, then clamp to `[-1, 1]` before converting
       to `Short`, so raising both sliders cannot clip.
-- [ ] Skip generation entirely for channels at volume 0.
-- [ ] Publish volume changes through `@Volatile` fields (or `AtomicInteger` bits) read by
+- [x] Skip generation entirely for channels at volume 0.
+- [x] Publish volume changes through `@Volatile` fields (or `AtomicInteger` bits) read by
       the writer thread — do not call into the track from the UI thread.
-- [ ] Replace `Thread.MAX_PRIORITY` with
+- [x] Replace `Thread.MAX_PRIORITY` with
       `Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)`; Java thread
       priorities map poorly onto Linux nice values.
-- [ ] Raise the buffer to about `minBufferSize * 4` to reduce wakeups over a long session.
-- [ ] Delete `BaseNoiseGenerator`, `WhiteNoiseGenerator`, `BrownNoiseGenerator`.
+- [x] Raise the buffer to about `minBufferSize * 4` to reduce wakeups over a long session.
+- [x] Delete `BaseNoiseGenerator`, `WhiteNoiseGenerator`, `BrownNoiseGenerator`.
 
 ### Done when
 
 Start/stop hammered 100 times in a row produces no crash and no `IllegalStateException` in
 logcat; only one `AudioTrack` is alive during playback.
+
+`app/src/androidTest/.../NoiseEngineHammerTest` executes as much of that as a test can: 100 cycles,
+no crash, no `IllegalStateException` — neither escaping the writer thread nor logged by it — and
+exactly one writer thread alive on the cycles that dwell long enough to look, none after the last
+`stop()`. The track count is not asserted, because no API lets a process count its own live tracks;
+it follows from the thread count instead, the track being a local of the writer thread and released
+in that thread's own `finally`. It passed on the `Medium_Phone_API_36.0` emulator, which is the only
+hardware this run had, and CI has no device, so it runs only when someone runs
+`connectedAndroidTest`. A real device is still unverified — see the risk below.
 
 ### Risk
 
@@ -326,7 +335,7 @@ Test on a real device, not only the emulator.
 **Goal:** the app actually plays through the night. This is the phase that fixes the
 product, not just the code.
 
-Current state: `MainActivity` owns the generators and the timer, `onDestroy()` stops the
+Current state: `MainActivity` owns the engine and the timer, `onDestroy()` stops the
 noise, and the manifest declares no permissions at all. Consequences:
 
 - backgrounding the app keeps playing only until the system reclaims the process;
