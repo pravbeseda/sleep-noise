@@ -1,6 +1,7 @@
 package ru.pravbeseda.sleepnoise.media
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.random.Random
@@ -11,10 +12,9 @@ class WhiteNoiseTest {
 
     @Test
     fun fillProducesSamplesWithinRange() {
-        val source = WhiteNoise()
         val buffer = FloatArray(bufferSize)
 
-        source.fill(buffer)
+        WhiteNoise().fill(buffer)
 
         buffer.forEachIndexed { index, sample ->
             assertTrue("sample $index out of range: $sample", sample >= -1.0f && sample <= 1.0f)
@@ -29,13 +29,17 @@ class WhiteNoiseTest {
         WhiteNoise(Random(seed)).fill(first)
         WhiteNoise(Random(seed)).fill(second)
 
-        assertArrayEquals(second, first)
+        assertArrayEquals(first, second, 0.0f)
     }
 
-    private fun assertArrayEquals(expected: FloatArray, actual: FloatArray) {
-        assertEquals(expected.size, actual.size)
-        expected.forEachIndexed { index, sample ->
-            assertEquals("sample $index differs", sample, actual[index], 0.0f)
-        }
+    @Test
+    fun differentSeedsProduceDifferentSamples() {
+        val first = FloatArray(bufferSize)
+        val other = FloatArray(bufferSize)
+
+        WhiteNoise(Random(seed)).fill(first)
+        WhiteNoise(Random(seed + 1)).fill(other)
+
+        assertFalse("both seeds produced the same buffer", first.contentEquals(other))
     }
 }
