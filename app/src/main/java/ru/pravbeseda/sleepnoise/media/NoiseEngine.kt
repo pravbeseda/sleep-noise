@@ -41,8 +41,9 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
     private fun writeUntilStopped() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        // A device that cannot serve this format fails here or in the builder below, and is left to fail:
-        // the alternative is a logged silence with the UI still showing playback.
+        // A device that cannot serve this format is left to fail: an error size turns the chunk length
+        // negative and dies allocating it, and a device that refuses the track dies in the builder. The
+        // alternative — logging and returning — is a silence with the UI still showing playback.
         val minBufferSizeBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE_HZ, CHANNEL_MASK, ENCODING)
         // A track buffer of several minimum buffers keeps the hardware fed across a scheduling hiccup;
         // one write covers a fraction of it, so stop() never waits for a whole buffer to drain.
