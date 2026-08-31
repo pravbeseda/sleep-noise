@@ -94,7 +94,7 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         .setTransferMode(AudioTrack.MODE_STREAM)
         .build()
 
-    private companion object {
+    internal companion object {
         const val TAG = "NoiseEngine"
         const val THREAD_NAME = "NoiseEngine"
         const val SAMPLE_RATE_HZ = 44100
@@ -108,10 +108,11 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         const val BUFFERS_AHEAD = 4
 
         /**
-         * How many writes fill that track buffer. One write is what `stop()` waits out, so this is the
-         * knob between a responsive stop and the number of wakeups over a night: at 8 the caller blocks
-         * for about 45 ms and the thread wakes some twenty times a second.
+         * How many writes fill that track buffer. One write is what `stop()` waits out, so this is the knob
+         * between a responsive stop and the number of wakeups over a night. It stays at 2 until there is a
+         * measurement to move it: on the emulator a single `write()` takes far longer than the audio it
+         * carries, so nothing there can tell the two settings apart.
          */
-        const val WRITES_PER_BUFFER = 8
+        const val WRITES_PER_BUFFER = 2
     }
 }

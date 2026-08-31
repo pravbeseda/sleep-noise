@@ -60,19 +60,25 @@ released `AudioTrack` and halves the runtime cost of a night's playback.
   done-criterion is about the five call sites, which are intact, and a one-line private wrapper
   around `noiseEngine.start()` is the kind of indirection the repository's own rules cut.
 
-- Step 4, own measurement: `WRITES_PER_BUFFER` was raised from 2 to 8 after the hammer test showed
-  `stop()` blocking its caller for ~190 ms. The constant did not move that number on the emulator —
-  probing the engine put `stop()` at 2 ms, `release()` at 1 ms and one `write()` at up to 195 ms for
-  a chunk holding 46 ms of audio, so the emulator's sink simply does not drain in real time. The
-  smaller chunk is kept anyway: on a device the caller waits out one chunk, and an eighth of the
-  buffer is 46 ms where a half was 186 ms. Cost if wrong: about twenty writer wakeups a second
-  instead of five, which is ordinary for an audio loop.
+- Step 4, own measurement, then both reviewers: `WRITES_PER_BUFFER` was raised from 2 to 8 when the
+  hammer test showed `stop()` blocking its caller for ~190 ms, and has been put back to 2. The
+  constant did not move that number, and probing the engine said why: `AudioTrack.stop()` takes 2 ms
+  and `release()` 1 ms, while one `write()` takes up to 195 ms for a chunk holding 46 ms of audio —
+  that is the emulator's audio sink, not the chunk size. So the change rested on a device-side
+  prediction nothing here could test, it reversed the step 3 ruling that had already declined it,
+  and it put a production tuning change in the commit that adds a test. Cost if wrong: a device
+  where one write really does hold the caller for a whole chunk keeps the longer stop, which the
+  parked issue below is about.
+- Step 4, spec reviewer, `NoiseEngineHammerTest.kt`: the "settled stop" split was dropped rather
+  than kept. With one `write()` running longer than the dwell that was supposed to separate the two
+  paths, the split measured the same path twice under two bounds. One measurement, one bound, and
+  the number in the log line.
 
 ## Parked
 
 - `NoiseEngine.stop()` blocks its caller while the writer finishes the `write()` in flight, and
   `MainActivity` calls it from the main thread on the play button, on the timer's `onTime` and in
   `onDestroy` (`app/src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt:190`, `:240`). Measured on
-  the API 36 emulator over 100 cycles: 162-208 ms. Today's code blocks the main thread there too — it
+  the API 36 emulator over 100 cycles: 176-208 ms. Today's code blocks the main thread there too — it
   calls `AudioTrack.stop()` and `release()` on it — so this is not a regression, but the phase that
   moves playback into a service is where the stop should stop being synchronous.

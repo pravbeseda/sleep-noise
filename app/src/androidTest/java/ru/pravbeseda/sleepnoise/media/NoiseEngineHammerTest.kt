@@ -11,7 +11,8 @@ import org.junit.runner.RunWith
 
 /**
  * The phase's done-criterion, executed: 100 start/stop cycles against a real [android.media.AudioTrack]
- * leave no writer thread behind, cost the caller a bounded `stop()`, and produce no `IllegalStateException`.
+ * leave exactly one writer thread alive while playing and none afterwards, cost the caller a bounded
+ * `stop()`, and produce no `IllegalStateException`.
  *
  * The dwell between start and stop is varied so the stop lands at different points of the writer's loop —
  * before the track exists, inside a `write()`, and after several buffers have gone out.
@@ -24,8 +25,9 @@ class NoiseEngineHammerTest {
     @Before
     fun captureUncaughtExceptions() {
         replacedHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
-            synchronized(uncaught) { uncaught += throwable }
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            // The handler is process-wide, so only the engine's own thread is this test's business.
+            if (thread.name == NoiseEngine.THREAD_NAME) synchronized(uncaught) { uncaught += throwable }
         }
     }
 
@@ -36,7 +38,7 @@ class NoiseEngineHammerTest {
 
     @Test
     fun hammeredStartStopLeavesNoThreadAndNoError() {
-        val engineErrorsBefore = countEngineErrors(readLogcat())
+        val startMarker = logMarker("start")
         val engine = NoiseEngine(
             listOf(
                 NoiseChannel(WhiteNoise()).apply { volume = WHITE_VOLUME },
@@ -45,18 +47,19 @@ class NoiseEngineHammerTest {
         )
 
         var worstStopMillis = 0L
-        var worstSettledStopMillis = 0L
         repeat(CYCLES) { cycle ->
             val dwell = DWELLS_MILLIS[cycle % DWELLS_MILLIS.size]
             engine.start()
             Thread.sleep(dwell)
+            // While playing there is exactly one writer, and it is the only handle on the one track.
+            if (dwell >= SETTLED_DWELL_MILLIS) {
+                assertEquals("writer threads alive during cycle $cycle", 1, liveWriterThreads().size)
+            }
             val stopStartedAt = System.nanoTime()
             engine.stop()
-            val stopMillis = (System.nanoTime() - stopStartedAt) / NANOS_PER_MILLI
-            worstStopMillis = maxOf(worstStopMillis, stopMillis)
-            if (dwell >= SETTLED_DWELL_MILLIS) worstSettledStopMillis = maxOf(worstSettledStopMillis, stopMillis)
+            worstStopMillis = maxOf(worstStopMillis, (System.nanoTime() - stopStartedAt) / NANOS_PER_MILLI)
         }
-        Log.i(TAG, "$CYCLES cycles done; worst stop() $worstStopMillis ms, worst settled stop() $worstSettledStopMillis ms")
+        Log.i(TAG, "$CYCLES cycles done; worst stop() took $worstStopMillis ms")
 
         assertEquals("writer threads still alive after the last stop()", emptyList<String>(), liveWriterThreads())
         assertEquals("the writer thread died of an uncaught exception: $uncaught", 0, uncaught.size)
@@ -64,25 +67,31 @@ class NoiseEngineHammerTest {
             "worst stop() took $worstStopMillis ms, over the $MAX_STOP_MILLIS ms a caller may block for",
             worstStopMillis <= MAX_STOP_MILLIS,
         )
-        assertTrue(
-            "worst stop() after real playback took $worstSettledStopMillis ms, over $MAX_SETTLED_STOP_MILLIS ms",
-            worstSettledStopMillis <= MAX_SETTLED_STOP_MILLIS,
-        )
-        assertEquals("$ENGINE_TAG logged an error during the run", engineErrorsBefore, countEngineErrors(logcatAfterRun()))
+        assertEquals("${NoiseEngine.TAG} logged an error during the run", 0, engineErrorsSince(startMarker))
     }
 
     private fun liveWriterThreads(): List<String> =
-        Thread.getAllStackTraces().keys.filter { it.name == WRITER_THREAD_NAME && it.isAlive }.map { it.toString() }
+        Thread.getAllStackTraces().keys.filter { it.name == NoiseEngine.THREAD_NAME && it.isAlive }.map { it.toString() }
 
     /**
-     * Logcat as of a marker logged after the last cycle. The marker is what makes the read trustworthy: the
-     * lines of one process reach the buffer in order, so once it is visible every error the engine logged is
-     * visible too, and if it never shows up logcat cannot be read from here and the test says so instead of
-     * asserting against an empty list.
+     * How many errors the engine logged since [startMarker], counted over that slice of logcat rather than over
+     * the whole ring buffer — which also holds earlier runs of this test and drops its oldest lines as it fills.
      */
-    private fun logcatAfterRun(): List<String> {
-        val marker = "hammer-probe-${System.nanoTime()}"
-        Log.e(TAG, marker)
+    private fun engineErrorsSince(startMarker: String): Int {
+        val lines = logcatThrough(logMarker("end"))
+        val from = lines.indexOfFirst { it.contains(startMarker) }
+        if (from < 0) throw AssertionError("logcat rotated past this run's start marker; the count would be meaningless")
+        return lines.drop(from).count { it.contains(NoiseEngine.TAG) }
+    }
+
+    private fun logMarker(name: String): String = "hammer-$name-${System.nanoTime()}".also { Log.e(TAG, it) }
+
+    /**
+     * Logcat as of [marker]. The marker is what makes the read trustworthy: the lines of one process reach the
+     * buffer in order, so once it is visible every error the engine logged is visible too, and if it never shows
+     * up logcat cannot be read from here and the test says so instead of counting an empty list.
+     */
+    private fun logcatThrough(marker: String): List<String> {
         repeat(PROBE_ATTEMPTS) {
             val lines = readLogcat()
             if (lines.any { it.contains(marker) }) return lines
@@ -91,17 +100,15 @@ class NoiseEngineHammerTest {
         throw AssertionError("logcat is unreadable from the test process: the probe line never appeared")
     }
 
-    /** Error-level lines of the engine's tag and of this test's own probe tag; everything else is silenced. */
+    /** Error-level lines of the engine's tag and of this test's own marker tag; everything else is silenced. */
     private fun readLogcat(): List<String> {
-        val process = ProcessBuilder("logcat", "-d", "-s", "$ENGINE_TAG:E", "$TAG:E").redirectErrorStream(true).start()
+        val process = ProcessBuilder("logcat", "-d", "-s", "${NoiseEngine.TAG}:E", "$TAG:E").redirectErrorStream(true).start()
         return try {
             process.inputStream.bufferedReader().use { it.readLines() }
         } finally {
             process.destroy()
         }
     }
-
-    private fun countEngineErrors(lines: List<String>): Int = lines.count { it.contains(ENGINE_TAG) }
 
     private companion object {
         const val CYCLES = 100
@@ -116,29 +123,20 @@ class NoiseEngineHammerTest {
          */
         val DWELLS_MILLIS = longArrayOf(0, 1, 2, 3, 5, 8, 0, 1, 40, 120)
 
-        /**
-         * `stop()` joins the writer, so the caller blocks for the write in flight and nothing else: probing the
-         * engine on the API 36 emulator put `AudioTrack.stop()` at 2 ms, `release()` at 1 ms and a single
-         * `write()` at up to 195 ms — for a chunk holding 46 ms of audio, so that emulator's audio sink does not
-         * drain in real time. On a device the bound is the chunk's own duration. Measured worst over 100 cycles
-         * here: 176-208 ms; the bound keeps a wide margin over that rather than pinning an emulator artifact.
-         */
-        const val MAX_STOP_MILLIS = 1000L
+        /** Long enough that the writer is certainly running, so the live count can be asserted at all. */
+        const val SETTLED_DWELL_MILLIS = 40L
 
         /**
-         * Measured apart because the two stops are different paths: after real playback the caller waits out a
-         * write, while a stop that follows `start()` by nothing at all waits for the track to be built and torn
-         * down — the slower path, and not one a finger can produce.
+         * `stop()` joins the writer, so the caller waits out the `write()` in flight and nothing else — probing
+         * the engine put `AudioTrack.stop()` at 2 ms and `release()` at 1 ms against a `write()` of up to 195 ms.
+         * That 195 ms is the API 36 emulator's audio sink, not the chunk, which held 46 ms of audio. So the bound
+         * is not a claim about what a device costs its caller: it catches a `join()` that stops returning.
+         * Measured worst over 100 cycles on that emulator: 176-208 ms.
          */
-        const val SETTLED_DWELL_MILLIS = 40L
-        const val MAX_SETTLED_STOP_MILLIS = 600L
+        const val MAX_STOP_MILLIS = 1000L
         const val NANOS_PER_MILLI = 1_000_000
 
         const val TAG = "NoiseHammer"
-
-        /** The engine's log tag, and separately the name it gives its writer thread. */
-        const val ENGINE_TAG = "NoiseEngine"
-        const val WRITER_THREAD_NAME = "NoiseEngine"
 
         const val PROBE_ATTEMPTS = 20
         const val PROBE_POLL_MILLIS = 50L
