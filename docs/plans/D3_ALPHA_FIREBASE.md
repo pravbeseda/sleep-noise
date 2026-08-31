@@ -112,11 +112,15 @@ Final gate, over the whole branch:
   service account with App Distribution Admin.* Fixed: pinned to commit `bd49498`, with the version
   in a comment beside it.
 - *The alpha job's own `concurrency: alpha` block could never fire, and `CLAUDE.md` claimed it
-  did.* Fixed in the direction that makes the claim true rather than deleting it: the workflow-level
-  key is now `cancel-in-progress: true` unconditionally and the job-level block is gone. That key
-  was conditional because cancelling a run on `main` used to cost a completed check; after step 1
-  the four Gradle jobs do nothing on that event, so the only thing a run on `main` carries is this
-  delivery — and of two quick merges the tester wants the later build.
+  did.* Fixed, in two passes. The first made the workflow-level key unconditional so the claim would
+  come true; the re-review killed that: `workflow_dispatch` shares the group `ci-refs/heads/main`
+  and, unlike a push, does full work, so an unconditional key has a manual run cancel a delivery
+  mid-upload and a merge cancel a manual run. The second pass took the boring configuration instead
+  — the workflow-level key stays pull-requests-only, the dead job-level block stays deleted, and
+  both `ci.yml` and `CLAUDE.md` now say what actually happens: **two merges a minute apart deliver
+  two builds, in order, and the tester installs the later one.** D3 asked for cancellation here;
+  it is not available at a price worth paying, and the cost of not having it is one extra
+  notification in a case that is rare in a single-maintainer repository.
 - *A pull request can rewrite `decide.sh` and turn the four checks green without running them.*
   Dropped: `pull_request` workflows already run the pull request's own copy of `ci.yml`, so the same
   was true before this branch and nothing here widens it.

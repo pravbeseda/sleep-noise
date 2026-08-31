@@ -12,15 +12,18 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Unconditional, pushes included, which it was not while the four Gradle jobs
-  # still worked on a push to main: cancelling one then cost a completed check.
-  # They no longer do — decide-work answers false for that event — so the only
-  # thing a run on main carries is the alpha delivery, and of two quick merges
-  # the tester wants the later build, not both in turn. This key sits at
-  # workflow level and takes the whole run with it, which is why the alpha job
-  # needs no concurrency group of its own: one at job level could never fire,
-  # the run around it being cancelled first.
-  cancel-in-progress: true
+  # Pull requests only. A superseded PR run tells us nothing, but this key sits
+  # at workflow level and takes the whole run with it, and on main a run carries
+  # the alpha delivery: cancelling it drops a build the merge is entitled to.
+  # workflow_dispatch shares this group and, unlike a push, does full work, so
+  # an unconditional key would also have a manual run and a merge killing each
+  # other. Two merges a minute apart therefore deliver twice, in order — the
+  # tester installs the later one.
+  #
+  # It also means a group at job level cannot help the alpha job: runs on main
+  # are already serialised here, so two alpha jobs never overlap and there is
+  # nothing for such a group to cancel.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unit-tests:
@@ -344,8 +347,8 @@ jobs:
     # lands on real phones, and a build from an unmerged branch is not what
     # anyone agreed to test.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # A superseded run is cancelled by the workflow-level concurrency key above,
-    # so this job carries no group of its own.
+    # No concurrency group of its own: the workflow-level key above already
+    # serialises runs on main, so two of these never overlap.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
