@@ -19,6 +19,11 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 - **Two independent noise channels** — white and brown, each with its own volume slider. Set one
   to 0 % to hear only the other.
 - **Sleep timer** — up to several hours in 30-minute steps; playback stops when it runs out.
+- **Plays through the night** — the noise and the timer live in a foreground service, so leaving
+  the app, locking the screen or switching theme does not stop them. The ongoing notification
+  counts the timer down and carries a Stop action.
+- **Gets out of the way** — an incoming call silences the noise and it comes back afterwards;
+  unplugging the headphones stops it instead of moving it to the speaker.
 - **Three themes** — system, light, dark (dark by default).
 - **Six languages** — English, Arabic, German, Spanish, Russian, Ukrainian, with full RTL support.
 - **No ads, no accounts, no audio files.**
@@ -27,17 +32,18 @@ Volumes, theme, language, and the last timer value are remembered between launch
 
 ## Known limitations
 
-Being honest about the current state — all of these are tracked in
-[`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md):
+Being honest about the current state. The roadmap lives in
+[`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
+in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
 
-- Playback lives in the Activity, so it does not survive the app being killed, and changing the
-  theme or language restarts it (phase 3 adds a foreground service).
-- No audio focus handling: an incoming call plays on top of the noise, and unplugging headphones
-  does not stop it (phase 3).
+- The playback service has no automated tests: Robolectric is not on the classpath, so its
+  lifecycle, notification and audio-focus handling are verified by hand on a device.
+- No lock-screen or headset-button controls — the ongoing notification's Stop action is the only
+  control outside the app.
 
 ## Building from source
 
-Requires JDK 17 and the Android SDK (compileSdk 36, minSdk 24).
+Requires JDK 17 and the Android SDK (compileSdk 36, minSdk 26).
 
 ```bash
 git clone git@github.com:pravbeseda/sleep-noise.git
@@ -79,7 +85,8 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
 ├── media/                   # NoiseEngine + NoiseMixer + White/Brown noise sources
-├── timer/                   # TimerView, TimerController, TimerPreferences
+├── playback/                # PlaybackService (foreground) + AudioFocus
+├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── models/ · adapters/
 ```
 

@@ -16,9 +16,12 @@
     <string name="cancel">Cancel</string>
     <string name="mail">Email to developer</string>
     <string name="mail_choose">Select mail app</string>
-    <string name="version">Version %1$s</string>
+    <string name="version">Version %1$s (%2$d)</string>
     <string name="timer">Timer</string>
     <string name="credits">Credits</string>
+    <string name="notification_channel_playback">Playback</string>
+    <string name="notification_playing">Playing</string>
+    <string name="notification_stop">Stop</string>
 
     <!-- Just add your language -->
     <string name="russian" translatable="false">Русский</string>

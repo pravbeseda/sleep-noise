@@ -151,7 +151,7 @@ android {
 
     defaultConfig {
         applicationId = "ru.pravbeseda.sleepnoise"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName

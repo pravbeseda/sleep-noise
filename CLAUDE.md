@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 24 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -205,8 +205,8 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **14 entries covering 31 findings** —
-`MagicNumber` 24, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **9 entries covering 19 findings** —
+`MagicNumber` 12, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
@@ -214,8 +214,8 @@ an already-baselined expression is suppressed silently. Detekt is a floor, not a
 `ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form, and is no
 longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
 the build. `PrintStackTrace` went the same way when its two call sites were fixed. `media/` is clear of `MagicNumber` too: phase 1 of the refactoring plan
-moved the sample math into named constants and both of its entries went with it. The 24 that remain
-sit in `timer/` (16), `MainActivity` (7) and `adapters/LanguagesArrayAdapter` (1).
+moved the sample math into named constants and both of its entries went with it. The 12 that remain
+sit in `MainActivity` (6), `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1).
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
@@ -257,16 +257,30 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
-`MainActivity` holds two `NoiseChannel`s (white and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "white noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
+`playback/PlaybackService` holds two `NoiseChannel`s (white and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "white noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
 
-`start()` and `stop()` are expected on the main thread and are each a no-op when the engine is already in the state they ask for; `stop()` is one `@Volatile` flag plus `join()`. Playback runs entirely in the Activity — no foreground service, no media session, and `onDestroy` stops the noise, so audio does not survive the app being killed or (currently) backgrounded for long. `app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI has no device, so it runs only when someone runs `connectedAndroidTest`.
+`start()` and `stop()` are expected on the main thread and are each a no-op when the engine is already in the state they ask for; `stop()` is one `@Volatile` flag plus `join()` — an unbounded one, which now matters because the audio-focus callback can drive it too (issue #26). `app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI has no device, so it runs only when someone runs `connectedAndroidTest`.
+
+### Playback: a foreground service, not the Activity
+
+`playback/PlaybackService` owns the engine, the sleep timer and the ongoing notification, so a session outlives the Activity — backgrounding the app, or the `recreate()` a theme or language change triggers, no longer stops the noise. It is a plain `Service` with `foregroundServiceType="mediaPlayback"`, deliberately not a media3 `MediaSessionService`: media3 wants a `Player` implementation and this app plays a generated track, not a media item. There are no lock-screen or headset-button controls, and adding them is its own decision.
+
+It is driven two ways at once. `ACTION_START` (carrying `EXTRA_TIMER_MINUTES`) and `ACTION_STOP` drive playback; the `LocalBinder` lets a visible Activity read `isPlaying` and `remainingMillis`, push volume changes, and receive `onTick` / `onPlaybackStopped`. `MainActivity` binds in `onStart`, unbinds in `onStop`, and reflects the service's state rather than holding its own — the listener is cleared on both sides so a destroyed Activity cannot be reached from a service that outlives it.
+
+Two rules are easy to break here. **Every `startForegroundService()` has to be answered by a `startForeground()`**, including one that arrives while playback is already running — an unanswered start crashes the app five seconds later, which is why the notification is posted before the "already playing" guard. And the **volumes are read from preferences at start**, not pushed by the Activity: the sliders persist on every move, so preferences are the single source and the binder setters carry only live changes.
+
+`playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
+
+None of the service is covered by tests: Robolectric is not on the classpath and adding it is a dependency decision nobody has taken. Its behaviour is verified by hand on a device.
 
 ### Timer
 
 Three pieces in `timer/`:
-- `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing.
+- `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing.
 - `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one.
-- `TimerController` — wraps `CountDownTimer` with `onTick(formattedTime)` / `onTime()` callbacks. `MainActivity` wires `onTick` to `timerView.showCountdown` and `onTime` to `stopPlayback()`.
+- `SleepTimer` — the arithmetic only: a deadline on a clock the caller supplies, the milliseconds left on it, and the `mm:ss` / `hh:mm:ss` formatting. It imports nothing from `android.*` and is tested on the JVM. The service passes `SystemClock.elapsedRealtime()`; a `CountDownTimer` would have died with the Activity, which is what the deadline replaced.
+
+The countdown itself runs in `playback/PlaybackService`, once a second, into the notification and into whatever Activity is bound.
 
 ### Preferences
 
