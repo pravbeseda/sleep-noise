@@ -57,7 +57,7 @@ issue #1.
       `AndroidManifest.xml` — lenses: security — done when: the permission is requested on the
       first play, a denial still starts playback, and no code path treats the permission as
       required.
-- [ ] 5. Move the sleep timer into the service — files: `playback/PlaybackService.kt`,
+- [x] 5. Move the sleep timer into the service — files: `playback/PlaybackService.kt`,
       `MainActivity.kt`, `timer/TimerController.kt` (deleted), `timer/TimerView.kt` — lenses:
       none — done when: the service computes its own deadline with `SleepTimer`, stops itself
       when it expires, updates the notification with the remaining time, pushes ticks to a bound
@@ -136,3 +136,13 @@ issue #1.
 - Step 4, spec: "requested on the first play, not on every play" — dropped. Android caps the
   prompt after two denials, so the repeat is invisible, and tracking a first-play flag would add
   state to save a call that does nothing.
+- Step 5, spec: `TimerView` was in the step's file list but untouched, and the Activity imported
+  `SleepTimer` only to format a string for that view. Fixed: `showCountdown` takes the remaining
+  milliseconds and formats them itself, next to the idle time it already formats.
+- Step 5, quality: `buildNotification()` rebuilt both `PendingIntent`s on every one-second tick —
+  two binder round-trips to system_server per tick, 72 000 of them over a ten-hour timer. Fixed:
+  both are `by lazy` fields, since neither ever changes.
+- Step 5, quality: `binder.isPlaying && binder.remainingMillis > 0` had an unreachable half —
+  `remainingMillis` is non-zero only while playing. Fixed: the guard is the remaining time alone.
+- Step 5, spec: the ruling above predicted two stale detekt entries and four were removed
+  (14 → 10). The PR description states both counts, as `CLAUDE.md` requires of any baseline edit.

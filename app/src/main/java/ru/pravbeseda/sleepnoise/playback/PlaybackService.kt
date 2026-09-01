@@ -42,6 +42,27 @@ class PlaybackService : Service() {
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
 
+    // Constant for the service's lifetime, and the notification is rebuilt once a second: building
+    // them there would cost two binder round-trips per tick.
+    private val contentIntent: PendingIntent by lazy {
+        PendingIntent.getActivity(
+            this,
+            0,
+            // Without SINGLE_TOP the tap stacks a second MainActivity on the task the user already has open.
+            Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private val stopIntent: PendingIntent by lazy {
+        PendingIntent.getService(
+            this,
+            0,
+            Intent(this, PlaybackService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     private var playing = false
     private var sleepTimer: SleepTimer? = null
     private var listener: Listener? = null
@@ -171,19 +192,6 @@ class PlaybackService : Service() {
     }
 
     private fun buildNotification(): Notification {
-        val contentIntent = PendingIntent.getActivity(
-            this,
-            0,
-            // Without SINGLE_TOP the tap stacks a second MainActivity on the task the user already has open.
-            Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE,
-        )
-        val stopIntent = PendingIntent.getService(
-            this,
-            0,
-            Intent(this, PlaybackService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_IMMUTABLE,
-        )
         val text = if (sleepTimer == null) {
             getString(R.string.notification_playing)
         } else {

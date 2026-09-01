@@ -44,8 +44,8 @@ class TimerView(context: Context, attrs: AttributeSet?) : LinearLayout(context, 
         timerTextView.text = String.format(Locale.getDefault(), "%02d:%02d", hours, minutes)
     }
 
-    fun showCountdown(time: String) {
-        timerTextView.text = time
+    fun showCountdown(remainingMillis: Long) {
+        timerTextView.text = SleepTimer.formatRemaining(remainingMillis)
     }
 
     fun getTimerValueInMinutes(): Int = timerValueInMinutes

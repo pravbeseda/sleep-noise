@@ -32,7 +32,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
-import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import ru.pravbeseda.sleepnoise.timer.TimerView
 
 const val APP_PREFS = "AppPreferences"
@@ -58,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private val playbackListener = object : PlaybackService.Listener {
         override fun onTick(remainingMillis: Long) {
-            showCountdown(remainingMillis)
+            timerView.showCountdown(remainingMillis)
         }
 
         /** Every stop: the notification's Stop action, the sleep timer expiring, or the ACTION_STOP sent here. */
@@ -73,8 +72,9 @@ class MainActivity : AppCompatActivity() {
             playbackBinder = binder
             binder.listener = playbackListener
             showPlayingState(binder.isPlaying)
-            if (binder.isPlaying && binder.remainingMillis > 0) {
-                showCountdown(binder.remainingMillis)
+            // Non-zero only while the service is playing with a timer, so it needs no further guard.
+            if (binder.remainingMillis > 0) {
+                timerView.showCountdown(binder.remainingMillis)
             }
         }
 
@@ -221,10 +221,6 @@ class MainActivity : AppCompatActivity() {
         showPlayingState(false)
 
         startService(playbackIntent(PlaybackService.ACTION_STOP))
-    }
-
-    private fun showCountdown(remainingMillis: Long) {
-        timerView.showCountdown(SleepTimer.formatRemaining(remainingMillis))
     }
 
     private fun showPlayingState(playing: Boolean) {
