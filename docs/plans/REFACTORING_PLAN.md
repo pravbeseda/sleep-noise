@@ -151,22 +151,25 @@ Everything that has to be true before a runner can build this project at all.
 
 ### D3 — Alpha: signed APK to Firebase App Distribution
 
-- [ ] **Add a `signingConfig`** to `app/build.gradle.kts` reading `SN_*` project properties
+- [x] **Add a `signingConfig`** to `app/build.gradle.kts` reading `SN_*` project properties
       (`SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `SN_STORE_FILE`). None exists
       today. Give `storeFile` a non-null default path: `file(null)` throws at configuration
       time and breaks the whole project, including CI jobs that never sign anything.
       SpendControl hit exactly this and documents it in its `signingConfigs` block.
-- [ ] **Keystore into secrets.** `.key/Drevo.Keystore` is gitignored; base64-encode it into
+- [x] **Keystore into secrets.** `.key/Drevo.Keystore` is gitignored; base64-encode it into
       `ANDROID_KEYSTORE_B64` and decode into `$RUNNER_TEMP` at build time.
-- [ ] Job gated on `needs: unit-tests`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`.
-- [ ] `concurrency: { group: alpha, cancel-in-progress: true }` so rapid merges do not queue up.
-- [ ] Check out with `fetch-depth: 0`. Any shallow clone truncates the commit-count versionCode
+- [x] Job gated on `needs: unit-tests`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`.
+- [ ] ~~`concurrency: { group: alpha, cancel-in-progress: true }` so rapid merges do not queue
+      up.~~ **Rejected, not pending** — the third departure below says why. Left unticked so the
+      plan does not claim a de-duplication the workflow does not do, and struck through so nobody
+      picks it up as unfinished work.
+- [x] Check out with `fetch-depth: 0`. Any shallow clone truncates the commit-count versionCode
       from D1, and the release gate rejects the build outright rather than letting a stale code
       through — so this is not optional for a job that packages a release.
-- [ ] Decode the keystore, then `./gradlew assembleRelease`.
-- [ ] Deliver with `wzieba/Firebase-Distribution-Github-Action` to the `qa` group. Firebase is
+- [x] Decode the keystore, then `./gradlew assembleRelease`.
+- [x] Deliver with `wzieba/Firebase-Distribution-Github-Action` to the `qa` group. Firebase is
       already wired into the app (analytics + Crashlytics), so the Firebase project exists.
-- [ ] APK, not AAB: App Distribution only accepts AAB when the app is linked to Play and the
+- [x] APK, not AAB: App Distribution only accepts AAB when the app is linked to Play and the
       bundle has been processed, whereas an APK installs on the phone immediately.
 
 The `applicationVariants` block renames outputs to
@@ -181,6 +184,23 @@ and 9.0.1 — so AGP 9 removes the API without replacing what it is used for. Re
 the modern API means a `Copy` task wired to `SingleArtifact.APK`, which also changes where the
 artifact lands. Settle that here, when the upload path that consumes the name is being written,
 rather than guessing at it beforehand.
+
+Landed on branch `ci/alpha-firebase`; the step-by-step record is in
+[`D3_ALPHA_FIREBASE.md`](D3_ALPHA_FIREBASE.md). Three things came out differently from the sketch
+above:
+
+- `SN_STORE_FILE` defaults to `../.key/Drevo.Keystore` rather than SpendControl's path outside the
+  repository, since this project keeps its keystore in `.key/`.
+- Path filtering arrived with this deliverable although D3 never asked for it: a composite action,
+  `.github/actions/decide-work`, lets the four Gradle jobs skip their steps on a Markdown-only pull
+  request. It is SpendControl's mechanism minus the `.github/**` glob — a workflow is build
+  configuration, and the diff that changes what CI does is the one CI must run in full.
+- The alpha job has **no concurrency group**, where D3 asked for one. A group at job level cannot
+  fire here: the workflow-level key already serialises runs on `main`, so two alpha jobs never
+  overlap and there is nothing to cancel. Making that key unconditional instead would have a
+  `workflow_dispatch` — same group, and unlike a push it does full work — cancel a delivery
+  mid-upload, and a merge cancel a manual run. So two merges a minute apart deliver two builds, in
+  order, and the tester installs the later one.
 
 ### D4 — Beta: AAB to Google Play internal
 

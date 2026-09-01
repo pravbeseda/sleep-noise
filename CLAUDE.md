@@ -62,7 +62,7 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 ./gradlew detekt                         # Kotlin static analysis (baselined)
 ./gradlew spotlessCheck                  # ktlint formatting, changed files only
 ./gradlew spotlessApply                  # rewrite those files in place
-./gradlew assembleRelease                # unsigned release APK
+./gradlew assembleRelease                # signed release APK (needs the SN_* credentials)
 ```
 
 Single unit test:
@@ -73,7 +73,11 @@ Single unit test:
 
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
-Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`. There is no `signingConfig` in the build script yet; release signing happens through Android Studio, and `.key/create_sign.sh` wraps `pepk.jar` to export the upload key for Play App Signing.
+Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`.
+
+The `release` build type is signed by a `signingConfig` reading four project properties — `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD` and `SN_STORE_FILE` — so `assembleRelease` **fails without them** rather than producing an unsigned APK, which is the point: a release that quietly comes out unsigned is worse than one that stops. `SN_STORE_FILE` defaults to `../.key/Drevo.Keystore`, the maintainer's gitignored copy; the default exists because `file(null)` throws at configuration time and would take down every Gradle task in the project, tests included. The other three have no default. CI passes all four as `ORG_GRADLE_PROJECT_SN_*` environment variables, which Gradle maps onto properties of the same name.
+
+`Drevo.Keystore` is the *upload* key — `.key/create_sign.sh` wraps `pepk.jar`, which exists only to hand a key to Play App Signing, and Google re-signs what it distributes.
 
 ## Tests are mandatory
 
@@ -113,15 +117,33 @@ The command grows as tooling lands (Kover next); when it does, update it here.
 
 ## CI
 
-`.github/workflows/ci.yml` runs five independent jobs, and all five are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on.
+`.github/workflows/ci.yml` runs six jobs. Five of them are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on. The sixth, **alpha**, delivers and is deliberately not required — see the delivery section below.
 
-Four of them — unit tests, lint, detekt and format — run on every PR and push to `main`. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
+Four of the five — unit tests, lint, detekt and format — are triggered on every PR and push to `main`, but each one first asks `.github/actions/decide-work` whether it has anything to do. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
 
 It enforces two rules this file states in prose, and only the half of each that a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/`. Removing one passes — that direction is a test coming back. Deleting a test outright is not caught by either rule and stays a matter for review — a bare `@Test` count would have failed the `ExampleUnitTest` removal the quality plan scheduled, so that half needs its own design (issue #16).
 
 The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
 
 The four Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
+
+### Which jobs have work: `.github/actions/decide-work`
+
+A pull request that only edits prose does not need four Gradle jobs, so the composite action answers `run=true` / `run=false` and every subsequent step in the four carries `if: steps.decide.outputs.run == 'true'`. **The condition never moves to job level**: all five required contexts are matched by job name, and a job skipped at job level reports nothing at all, which blocks the merge button permanently instead of freeing it. A skipped job here still reports green in seconds.
+
+The rule lives in exactly one place, the `ignored_globs` array at the top of `decide.sh`, and it is one glob: `*.md`. `docs/**` is not beside it because every file under `docs/` is Markdown — a second glob no test could tell from the first. `.github/**` is not there either, unlike SpendControl: a workflow is build configuration, not prose, and a PR that rewrites `ci.yml` has to run `ci.yml` or a broken step lands behind five green checks that executed none of it.
+
+A push to `main` answers `false` on its own, whatever changed: branch protection is `strict: true`, so the pull request already ran against the very tree being merged. `workflow_dispatch` answers `true` and is how a full run is forced on demand.
+
+The decision needs the merge base, so **every calling job checks out with `fetch-depth: 0`** — that, and not the Spotless ratchet, is now why three of the four do. `decide.sh` has its own tests in `test.sh`, and the action runs them before it decides: nothing else on CI exercises them, and a wrong decision is the one failure that reports green.
+
+### Alpha delivery to Firebase App Distribution
+
+The `alpha` job builds a signed release APK on every push to `main` and uploads it to the `qa` tester group. It is **not** a required check — it runs after the merge, so there is nothing left for it to block — and it is gated `needs: [unit-tests]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`. It carries no concurrency group of its own, and one would do nothing if it had: the workflow-level key already serialises runs on `main`, so two alpha jobs never overlap. That key cancels superseded runs on pull requests only — on `main` it would drop a build the merge is entitled to, and `workflow_dispatch` shares the group while doing full work. Two merges a minute apart therefore deliver twice, in order.
+
+It checks out with `fetch-depth: 0` because `versionCode` is the commit count and `verifyReleaseVersioning` rejects a shallow clone outright. It asserts `GOOGLE_SERVICES_JSON_B64` is present **before** calling the shared action: that action's stub fallback is right for a fork pull request and wrong here, since a stub ships an app whose Crashlytics reports to nobody.
+
+Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
 Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 25 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
