@@ -96,12 +96,15 @@ class PlaybackService : Service() {
     }
 
     private fun startPlayback() {
+        // Every startForegroundService() has to be answered with a startForeground(), including the
+        // one that arrives while playback is already running: an unanswered start crashes the app
+        // five seconds later.
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceType())
         if (playing) return
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
         whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
         brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
 
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceType())
         noiseEngine.start()
         playing = true
     }
@@ -114,6 +117,8 @@ class PlaybackService : Service() {
         listener?.onPlaybackStopped()
     }
 
+    // The constant itself is API 29, so lint rejects naming it below that even though ServiceCompat
+    // would ignore the argument there.
     private fun foregroundServiceType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
     } else {
@@ -124,7 +129,8 @@ class PlaybackService : Service() {
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java),
+            // Without SINGLE_TOP the tap stacks a second MainActivity on the task the user already has open.
+            Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
         val stopIntent = PendingIntent.getService(

@@ -47,13 +47,13 @@ issue #1.
       `timer/TimerController.kt` — lenses: none — done when: `SleepTimerTest` covers remaining
       time from a deadline, expiry, and both `mm:ss` / `hh:mm:ss` formats, and passes; nothing
       in `SleepTimer` imports `android.*`.
-- [ ] 3. Add `PlaybackService` that owns the engine, and make `MainActivity` a client of it —
+- [x] 3. Add `PlaybackService` that owns the engine, and make `MainActivity` a client of it —
       files: `playback/PlaybackService.kt`, `AndroidManifest.xml`, `MainActivity.kt`,
       `res/drawable/ic_notification.xml`, `res/values*/strings.xml` — lenses: none — done when:
       the service holds the two `NoiseChannel`s and the `NoiseEngine`, runs in the foreground
       with an ongoing notification carrying a Stop action, `MainActivity.onDestroy` no longer
       stops the noise, and the four-command definition of done is green.
-- [ ] 4. Request `POST_NOTIFICATIONS` on API 33+ — files: `MainActivity.kt`,
+- [x] 4. Request `POST_NOTIFICATIONS` on API 33+ — files: `MainActivity.kt`,
       `AndroidManifest.xml` — lenses: security — done when: the permission is requested on the
       first play, a denial still starts playback, and no code path treats the permission as
       required.
@@ -101,3 +101,37 @@ issue #1.
 - Step 2, spec: the two `MagicNumber` baseline entries for `TimerController` are stale. Step 5
   deletes the file, so they are removed there — a baseline shrinking by two, which the project
   rule welcomes.
+- Step 3, quality (blocking): `startPlayback()` returned early when already playing, leaving a
+  `startForegroundService()` unanswered by a `startForeground()` — a crash five seconds later,
+  reachable by tapping play in the window after `recreate()` before the service state arrives.
+  Fixed: the foreground notification is posted before the guard, so every start request is
+  answered.
+- Step 3, quality: the notification's content intent stacked a second `MainActivity` on the task.
+  Fixed with `FLAG_ACTIVITY_SINGLE_TOP`.
+- Step 3, quality: "`foregroundServiceType()` duplicates what `ServiceCompat` already does" —
+  tried and reverted. Lint rejects naming `FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK` at minSdk 26
+  (`InlinedApi`), so the version branch is what keeps the build green; the reason is now a
+  comment on the method.
+- Step 3, quality and spec (blocking): the sleep timer stayed in the Activity while playback left
+  it, so a `recreate()` orphaned the countdown and a Stop from the notification could crash a
+  backgrounded app through `startService`. Not fixed in place: step 5 deletes `TimerController`
+  and moves the deadline into the service, which removes both paths rather than guarding them.
+  The state exists only between two commits of one branch, never in a release, and the final gate
+  re-checks it.
+- Step 3, quality: no Robolectric test for the service. Dropped — Robolectric is a new test
+  dependency and was ruled out above; the PR description states what is uncovered, which is what
+  `CLAUDE.md` requires in that case.
+- Step 3, quality: "POST_NOTIFICATIONS is missing" — dropped, the reviewer only saw step 3. Step 4
+  adds it in the next commit.
+- Step 3, spec: the `onPlaybackStoppedByService` comment claimed the callback only fires for the
+  notification's Stop action, while the service fires it on every stop. Fixed: the comment now
+  says what the code does.
+- Step 3, spec: the volumes had two owners — pushed by the Activity on connect and re-read from
+  preferences by the service on start. Fixed: preferences are the single source at start (the
+  sliders persist on every move), the binder setters carry only live changes, and the two mirror
+  fields in the Activity are gone.
+- Step 4, spec: the `checkSelfPermission` gate duplicated what `ActivityResultContracts.RequestPermission`
+  already does. Fixed: the helper is the version check and the launch.
+- Step 4, spec: "requested on the first play, not on every play" — dropped. Android caps the
+  prompt after two denials, so the repeat is invisible, and tracking a first-play flag would add
+  state to save a call that does nothing.

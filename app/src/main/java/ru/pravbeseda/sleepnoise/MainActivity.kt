@@ -51,8 +51,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
     private lateinit var whiteNoiseLabel: TextView
     private lateinit var brownNoiseLabel: TextView
-    private var whiteVolume = DEFAULT_WHITE_NOISE_VOLUME
-    private var brownVolume = DEFAULT_BROWN_NOISE_VOLUME
     private var playbackBinder: PlaybackService.LocalBinder? = null
 
     // The answer is not read: the foreground service plays either way, a denial only costs the
@@ -64,8 +62,6 @@ class MainActivity : AppCompatActivity() {
             val binder = service as? PlaybackService.LocalBinder ?: return
             playbackBinder = binder
             binder.listener = PlaybackService.Listener { onPlaybackStoppedByService() }
-            binder.setWhiteVolume(whiteVolume)
-            binder.setBrownVolume(brownVolume)
             showPlayingState(binder.isPlaying)
         }
 
@@ -223,7 +219,7 @@ class MainActivity : AppCompatActivity() {
         startService(playbackIntent(PlaybackService.ACTION_STOP))
     }
 
-    /** The service stopped itself — the notification's Stop action — so only the UI is left to catch up. */
+    /** Playback stopped: either the notification's Stop action or the ACTION_STOP this Activity sent. */
     private fun onPlaybackStoppedByService() {
         timerController.stopTimer()
         showPlayingState(false)
@@ -236,11 +232,9 @@ class MainActivity : AppCompatActivity() {
         timerView.setPlayingState(playing)
     }
 
+    // The contract itself short-circuits when the permission is already held, so there is nothing to check first.
     private fun askForNotificationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (!granted) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
@@ -323,13 +317,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setWhiteNoiseVolume(volume: Float) {
-        whiteVolume = volume
         playbackBinder?.setWhiteVolume(volume)
         whiteNoiseLabel.text = getString(R.string.white_noise_volume, (volume * 100).toInt())
     }
 
     private fun setBrownNoiseVolume(volume: Float) {
-        brownVolume = volume
         playbackBinder?.setBrownVolume(volume)
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
     }
