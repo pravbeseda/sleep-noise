@@ -67,10 +67,11 @@ issue #1.
       `AUDIOFOCUS_LOSS`, pauses on `LOSS_TRANSIENT` and resumes after, ducks on
       `LOSS_TRANSIENT_CAN_DUCK`, and a context-registered (never manifest-registered) receiver
       stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
-- [ ] 7. Version 1.0.4 with the build number beside it — files: `app/version.properties`,
-      `res/values/strings.xml`, `MainActivity.kt` — lenses: compatibility — done when
-      `version.properties` reads 1.0.4 and the main screen shows `Version 1.0.4 (<versionCode>)`
-      from `BuildConfig`.
+- [ ] 7. Version 1.0.4 with the build number beside it, and the documentation caught up — files:
+      `app/version.properties`, `res/values/strings.xml`, `MainActivity.kt`, `CLAUDE.md`,
+      `README.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: compatibility — done when
+      `version.properties` reads 1.0.4, the main screen shows `Version 1.0.4 (<versionCode>)` from
+      `BuildConfig`, and no document still describes playback as living in the Activity.
 
 ## Rulings
 
