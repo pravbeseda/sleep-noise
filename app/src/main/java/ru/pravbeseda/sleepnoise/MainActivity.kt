@@ -1,5 +1,6 @@
 package ru.pravbeseda.sleepnoise
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.DialogInterface
@@ -18,6 +19,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -52,6 +54,10 @@ class MainActivity : AppCompatActivity() {
     private var whiteVolume = DEFAULT_WHITE_NOISE_VOLUME
     private var brownVolume = DEFAULT_BROWN_NOISE_VOLUME
     private var playbackBinder: PlaybackService.LocalBinder? = null
+
+    // The answer is not read: the foreground service plays either way, a denial only costs the
+    // user the ongoing notification and its Stop action.
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     private val playbackConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -199,6 +205,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPlayback() {
+        askForNotificationPermission()
         showPlayingState(true)
 
         val timerValue = timerView.getTimerValueInMinutes()
@@ -227,6 +234,15 @@ class MainActivity : AppCompatActivity() {
         val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
         playButton.setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
         timerView.setPlayingState(playing)
+    }
+
+    private fun askForNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
