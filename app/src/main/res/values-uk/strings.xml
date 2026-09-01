@@ -16,7 +16,7 @@
     <string name="cancel">Скасувати</string>
     <string name="mail">Надіслати листа розробнику</string>
     <string name="mail_choose">Оберіть поштову програму</string>
-    <string name="version">Версія %1$s</string>
+    <string name="version">Версія %1$s (%2$d)</string>
     <string name="timer">Таймер</string>
     <string name="credits">Подяки</string>
     <string name="notification_channel_playback">Відтворення</string>

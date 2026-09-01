@@ -67,7 +67,7 @@ issue #1.
       `AUDIOFOCUS_LOSS`, pauses on `LOSS_TRANSIENT` and resumes after, ducks on
       `LOSS_TRANSIENT_CAN_DUCK`, and a context-registered (never manifest-registered) receiver
       stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
-- [ ] 7. Version 1.0.4 with the build number beside it, and the documentation caught up — files:
+- [x] 7. Version 1.0.4 with the build number beside it, and the documentation caught up — files:
       `app/version.properties`, `res/values/strings.xml`, `MainActivity.kt`, `CLAUDE.md`,
       `README.md`, `docs/plans/REFACTORING_PLAN.md` — lenses: compatibility — done when
       `version.properties` reads 1.0.4, the main screen shows `Version 1.0.4 (<versionCode>)` from
@@ -92,7 +92,9 @@ issue #1.
   the focus callback now calls it on the main thread. Any app on the device can drive that by
   taking and abandoning transient focus in a loop, stalling this app's main thread for up to one
   write each time — roughly 160 ms at the current buffer settings — and churning a thread and an
-  `AudioTrack` per cycle. Bounding the join belongs in `media/`, not in this step.
+  `AudioTrack` per cycle. Bounding the join belongs in `media/`, not in this step. **Issue #26
+  already covers the blocking join**, so this run added the new caller to that issue rather than
+  filing a second one.
 - Step 2, quality (blocking) and spec: the format tests depended on the machine's default locale
   and would have passed against a `Locale.ROOT` implementation — the exact regression the
   project's Locale convention exists to prevent. Fixed: the tests pin the default locale around
@@ -170,3 +172,20 @@ issue #1.
   where it reads no instance state, and the PR description says so.
 - Step 6, security: `NoiseEngine.stop()` blocks the main thread on an unbounded join, which the
   focus callback can now trigger repeatedly. Parked above — the fix belongs to `media/`, not here.
+- Step 6, quality: the guard around registering the noisy receiver could never be false. Fixed:
+  the registration is unconditional; the flag stays, because unregistering runs from two places
+  and one of them can run with nothing registered.
+- Step 7, spec (blocking): the receiver-registration fix from step 6 rode into the release commit.
+  Fixed: it is its own commit, with its own subject, ahead of the version bump.
+- Step 7, spec (blocking): `CLAUDE.md` still quoted the pre-branch detekt baseline. Fixed and
+  re-measured — 10 entries covering 19 findings (`MagicNumber` 12, `EmptyFunctionBlock` 6,
+  `TooManyFunctions` 1), against 14 entries covering 31 before.
+- Step 7, spec (blocking): the refactoring plan still described phase 3's starting state in the
+  present tense, including "the manifest declares no permissions at all". Fixed: that paragraph is
+  past tense, like the tasks under it.
+- Step 7, spec: "25 lint findings parked but 26 entries in the file" — dropped, the two count
+  different things. `./gradlew lint` reports "25 errors filtered by baseline", which is the number
+  the documentation quotes; the 26th entry matches nothing in the current tree and predates this
+  branch.
+- Step 7, spec: the commit message quoted the build number 150, which the commit count moves.
+  Fixed by rewording it out.

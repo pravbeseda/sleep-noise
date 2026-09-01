@@ -355,33 +355,35 @@ Test on a real device, not only the emulator.
 **Goal:** the app actually plays through the night. This is the phase that fixes the
 product, not just the code.
 
-Current state: `MainActivity` owns the engine and the timer, `onDestroy()` stops the
-noise, and the manifest declares no permissions at all. Consequences:
+The state this phase started from: `MainActivity` owned the engine and the timer, `onDestroy()`
+stopped the noise, and the manifest declared no permissions at all. The consequences it fixed:
 
-- backgrounding the app keeps playing only until the system reclaims the process;
-- changing theme or language calls `recreate()`, which stops playback outright;
-- an incoming call plays on top of the noise (no audio focus);
-- unplugging headphones blasts the speaker (no `ACTION_AUDIO_BECOMING_NOISY`);
-- the countdown timer lives in the Activity and dies with it.
+- backgrounding the app kept playing only until the system reclaimed the process;
+- changing theme or language calls `recreate()`, which stopped playback outright;
+- an incoming call played on top of the noise (no audio focus);
+- unplugging headphones blasted the speaker (no `ACTION_AUDIO_BECOMING_NOISY`);
+- the countdown timer lived in the Activity and died with it.
 
 ### Tasks
 
-- [ ] Add `playback/PlaybackService.kt` (`MediaSessionService`, or a plain `Service` plus a
-      `MediaSessionCompat` if the media3 dependency is unwanted). It owns `NoiseEngine`.
-- [ ] Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (API 34+),
+- [x] Add `playback/PlaybackService.kt` — a plain `Service`; media3 wants a `Player` implementation
+      and this app plays a generated track. It owns `NoiseEngine`.
+- [x] Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (API 34+),
       `POST_NOTIFICATIONS` (API 33+), and
       `android:foregroundServiceType="mediaPlayback"` on the service.
-- [ ] Request the notification permission at runtime on API 33+; playback must still work
+- [x] Request the notification permission at runtime on API 33+; playback must still work
       if the user denies it.
-- [ ] Ongoing notification with a stop action and the remaining timer.
-- [ ] Audio focus via `AudioFocusRequest`, which minSdk 26 makes available without the
+- [x] Ongoing notification with a stop action and the remaining timer.
+- [x] Audio focus via `AudioFocusRequest`, which minSdk 26 makes available without the
       `androidx.media:media` compatibility wrapper.
-      Handle `LOSS` (stop), `LOSS_TRANSIENT` (pause), `LOSS_TRANSIENT_CAN_DUCK` (lower volume).
-- [ ] Register a `BroadcastReceiver` for `ACTION_AUDIO_BECOMING_NOISY` and stop on it.
-- [ ] Move the timer into the service. Replace `CountDownTimer` with a deadline computed
-      from `SystemClock.elapsedRealtime()`, and schedule the stop with `AlarmManager`
-      (`setExactAndAllowWhileIdle`) so an 8-hour timer survives Doze instead of drifting.
-- [ ] `MainActivity` binds to the service and only reflects its state.
+      Handle `LOSS` (stop) and `LOSS_TRANSIENT` (pause). Ducking is the framework's from API 26 on:
+      it attenuates the app's own track and sends no `LOSS_TRANSIENT_CAN_DUCK` at all.
+- [x] Register a `BroadcastReceiver` for `ACTION_AUDIO_BECOMING_NOISY` and stop on it.
+- [x] Move the timer into the service. `CountDownTimer` gave way to a deadline computed from
+      `SystemClock.elapsedRealtime()`, ticked by a handler. No `AlarmManager`: an exact alarm needs
+      `SCHEDULE_EXACT_ALARM`, which Android 14 does not grant on install, and the case it would
+      rescue cannot happen — if the process dies, so does the noise the timer exists to stop.
+- [x] `MainActivity` binds to the service and only reflects its state.
 
 ### Done when
 
@@ -392,9 +394,10 @@ swiped away; a phone call interrupts the noise; unplugging headphones stops it.
 
 ## Phase 4 — ViewModel and state hoisting
 
-**Goal:** break up the 384-line `MainActivity` and stop losing state on recreate.
+**Goal:** break up the 422-line `MainActivity` and stop losing state on recreate.
 
-`isPlaying` is a plain field, so it does not survive configuration changes;
+`isPlaying` is a plain field. Phase 3 made it survivable — the Activity re-reads it from the
+service on every bind — but everything else in the Activity still does not survive;
 `android:configChanges="orientation|screenSize"` only covers rotation, not system language,
 font size, or theme changes.
 
@@ -472,7 +475,8 @@ present requirement; the lint finding is about the cycle after it.
 
 ### Tasks
 
-- [x] `DefaultLocale` (4 hits, `TimerController.kt:18,20` and `TimerView.kt`): pass
+- [x] `DefaultLocale` (4 hits, then in `TimerController.kt` and `TimerView.kt`; phase 3 moved the
+      formatting into `SleepTimer.kt` and `TimerView.kt`): pass
       `Locale.getDefault()` explicitly. The decision was taken on 8 August 2026 and is written
       into CLAUDE.md — localized digits stay, so an Arabic device keeps reading `١٢:٣٤` like its
       system clock. That makes this a no-op on output: it silences the check and records the

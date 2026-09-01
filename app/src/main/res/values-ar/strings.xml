@@ -16,7 +16,7 @@
     <string name="cancel">إلغاء</string>
     <string name="mail">أرسل بريدًا للمطوّر</string>
     <string name="mail_choose">اختر تطبيق البريد</string>
-    <string name="version">الإصدار %1$s</string>
+    <string name="version">الإصدار %1$s (%2$d)</string>
     <string name="timer">مؤقّت</string>
     <string name="credits">الشكر والتقدير</string>
     <string name="notification_channel_playback">التشغيل</string>

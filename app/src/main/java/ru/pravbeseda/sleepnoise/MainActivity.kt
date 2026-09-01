@@ -98,9 +98,7 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.title = getString(R.string.app_name)
 
         val versionTextView: TextView = findViewById(R.id.version_text)
-        val versionName = BuildConfig.VERSION_NAME
-        val versionString = getString(R.string.version, versionName)
-        versionTextView.text = versionString
+        versionTextView.text = getString(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
 
         playButton = findViewById(R.id.playButton)
 
