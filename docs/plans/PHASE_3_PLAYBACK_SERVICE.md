@@ -189,3 +189,30 @@ issue #1.
   branch.
 - Step 7, spec: the commit message quoted the build number 150, which the commit count moves.
   Fixed by rewording it out.
+
+## Final gate
+
+- Compatibility and quality, independently (blocking): the notification's channel name, title, text
+  and Stop label were resolved with the service's own resources, while the app's language is set
+  with `AppCompatDelegate.setApplicationLocales` — which below API 33 reaches Activities only. A
+  Russian-configured app on an English Android 8-12 device would show an English notification and
+  create the channel as "Playback". Fixed: those four strings resolve through
+  `ContextCompat.getContextForLanguage`, which is also the form lint's `AppBundleLocaleChanges`
+  accepts — building the configuration context by hand fails the build.
+- Compatibility (blocking, and not fixable in the diff): **an app targeting API 34+ that declares
+  `FOREGROUND_SERVICE_MEDIA_PLAYBACK` needs a Foreground Service Permissions declaration in the
+  Play Console** — a description and a video of the flow — before 1.0.4 can be rolled out. 1.0.3
+  declared no foreground service, so nothing is on file. Every check here stays green while the
+  release is held in review. Stated in the PR description.
+- Compatibility: the Stop action carried icon resource `0`, which is invisible on phones but has
+  no drawable to load where actions are rendered from the icon (Wear, Auto). Fixed: it points at
+  `ic_notification`.
+- Compatibility: "minSdk 26 buys nothing `AudioFocusRequestCompat` would not". Dropped — dropping
+  the dependency was the point, and the maintainer took that decision at the top of this file. The
+  install-base check before rollout is in the report.
+- Quality: `CLAUDE.md` quoted the pre-branch detekt counts. Already fixed in the release commit.
+- Quality: the resume-on-start branch is unreachable while the play button shows "pause", so a
+  long transient focus loss still ends in stop-then-play. Kept as written: it is four lines, it is
+  correct if a start does arrive, and the alternative — surfacing a paused state through the
+  binder and giving the button a third face — is a UI change this run was not asked for.
+- Quality: the Activity cleared the service listener that `onUnbind` clears anyway. Fixed.

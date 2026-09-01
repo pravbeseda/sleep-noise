@@ -201,7 +201,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        playbackBinder?.listener = null
+        // The service clears the listener in onUnbind, which is the only way out of a binding.
         playbackBinder = null
         unbindService(playbackConnection)
     }

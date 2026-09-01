@@ -10,11 +10,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.LocaleList
 import android.os.Looper
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
@@ -105,6 +107,14 @@ class PlaybackService : Service() {
     }
     private var noisyReceiverRegistered = false
 
+    /**
+     * The app's own language, which a service does not otherwise get: below API 33
+     * `AppCompatDelegate.setApplicationLocales` reaches Activities only, so `getString` here would
+     * answer in the device's language while the screen answers in the chosen one.
+     */
+    private val localized: Context
+        get() = ContextCompat.getContextForLanguage(this)
+
     private val remainingMillis: Long
         get() = sleepTimer?.remaining(SystemClock.elapsedRealtime()) ?: 0
 
@@ -157,7 +167,7 @@ class PlaybackService : Service() {
         super.onCreate()
         val channel = NotificationChannel(
             CHANNEL_ID,
-            getString(R.string.notification_channel_playback),
+            localized.getString(R.string.notification_channel_playback),
             NotificationManager.IMPORTANCE_LOW,
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -260,18 +270,18 @@ class PlaybackService : Service() {
 
     private fun buildNotification(): Notification {
         val text = if (sleepTimer == null) {
-            getString(R.string.notification_playing)
+            localized.getString(R.string.notification_playing)
         } else {
             SleepTimer.formatRemaining(remainingMillis)
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.app_name))
+            .setContentTitle(localized.getString(R.string.app_name))
             .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setSilent(true)
-            .addAction(0, getString(R.string.notification_stop), stopIntent)
+            .addAction(R.drawable.ic_notification, localized.getString(R.string.notification_stop), stopIntent)
             .build()
     }
 
