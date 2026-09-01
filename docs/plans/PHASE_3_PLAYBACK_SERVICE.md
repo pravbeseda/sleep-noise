@@ -211,8 +211,14 @@ issue #1.
   the dependency was the point, and the maintainer took that decision at the top of this file. The
   install-base check before rollout is in the report.
 - Quality: `CLAUDE.md` quoted the pre-branch detekt counts. Already fixed in the release commit.
-- Quality: the resume-on-start branch is unreachable while the play button shows "pause", so a
-  long transient focus loss still ends in stop-then-play. Kept as written: it is four lines, it is
-  correct if a start does arrive, and the alternative — surfacing a paused state through the
-  binder and giving the button a third face — is a UI change this run was not asked for.
+- Quality (suggestion) and security (blocking), the same finding twice: the resume-on-start branch
+  was unreachable, because the play button shows "pause" throughout a focus pause and therefore
+  sends a stop. An app that takes transient focus and never gives it back left this one silent for
+  the night behind a notification that said it was playing — the core failure mode for a sleep app.
+  The first ruling kept the branch as insurance; the second reviewer showed that it insures
+  nothing, so it is now reached: the service reports `onPaused` and `isPaused` over the binder, and
+  the Activity turns the button back into play while leaving the countdown and the hidden seekbar
+  alone. Pressing it resumes; the automatic resume on regained focus is unchanged.
 - Quality: the Activity cleared the service listener that `onUnbind` clears anyway. Fixed.
+- Security: `localized` built a configuration context on each of the three strings in a
+  notification rebuilt once a second. Fixed: one context per notification.

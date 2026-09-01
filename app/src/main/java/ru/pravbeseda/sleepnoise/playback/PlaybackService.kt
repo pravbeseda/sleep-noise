@@ -89,11 +89,13 @@ class PlaybackService : Service() {
                 AudioFocus.Change.PAUSE -> {
                     noiseEngine.stop()
                     pausedByFocusLoss = true
+                    listener?.onPaused(true)
                 }
 
                 AudioFocus.Change.REGAINED -> if (pausedByFocusLoss) {
                     pausedByFocusLoss = false
                     noiseEngine.start()
+                    listener?.onPaused(false)
                 }
             }
         }
@@ -133,9 +135,12 @@ class PlaybackService : Service() {
         }
     }
 
-    /** What a bound Activity is told: how long the sleep timer has left, and that playback stopped. */
+    /** What a bound Activity is told: the sleep timer's remaining time, and every change of state. */
     interface Listener {
         fun onTick(remainingMillis: Long)
+
+        /** Another app took the output for a while, or gave it back. Playback is silent meanwhile. */
+        fun onPaused(paused: Boolean)
 
         fun onPlaybackStopped()
     }
@@ -143,6 +148,10 @@ class PlaybackService : Service() {
     inner class LocalBinder : Binder() {
         val isPlaying: Boolean
             get() = playing
+
+        /** Silent because another app holds the output. An Activity binding mid-pause starts here. */
+        val isPaused: Boolean
+            get() = pausedByFocusLoss
 
         /** Milliseconds left on the sleep timer, 0 when there is none — an Activity binding mid-session starts here. */
         val remainingMillis: Long
@@ -214,7 +223,12 @@ class PlaybackService : Service() {
             // the focus keeps it, with the notification counting down over silence.
             if (pausedByFocusLoss) {
                 pausedByFocusLoss = false
-                if (audioFocus.request()) noiseEngine.start() else stopPlayback()
+                if (audioFocus.request()) {
+                    noiseEngine.start()
+                    listener?.onPaused(false)
+                } else {
+                    stopPlayback()
+                }
             }
             return
         }
@@ -269,19 +283,20 @@ class PlaybackService : Service() {
     }
 
     private fun buildNotification(): Notification {
+        val strings = localized
         val text = if (sleepTimer == null) {
-            localized.getString(R.string.notification_playing)
+            strings.getString(R.string.notification_playing)
         } else {
             SleepTimer.formatRemaining(remainingMillis)
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(localized.getString(R.string.app_name))
+            .setContentTitle(strings.getString(R.string.app_name))
             .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setSilent(true)
-            .addAction(R.drawable.ic_notification, localized.getString(R.string.notification_stop), stopIntent)
+            .addAction(R.drawable.ic_notification, strings.getString(R.string.notification_stop), stopIntent)
             .build()
     }
 

@@ -60,6 +60,11 @@ class MainActivity : AppCompatActivity() {
             timerView.showCountdown(remainingMillis)
         }
 
+        /** Silent while another app holds the output: the button offers to start it again. */
+        override fun onPaused(paused: Boolean) {
+            showPausedState(paused)
+        }
+
         /** Every stop: the notification's Stop action, the sleep timer expiring, or the ACTION_STOP sent here. */
         override fun onPlaybackStopped() {
             showPlayingState(false)
@@ -72,6 +77,8 @@ class MainActivity : AppCompatActivity() {
             playbackBinder = binder
             binder.listener = playbackListener
             showPlayingState(binder.isPlaying)
+            // Only when true: showPausedState(false) means "playing again", which a stopped service is not.
+            if (binder.isPaused) showPausedState(true)
             // Non-zero only while the service is playing with a timer, so it needs no further guard.
             if (binder.remainingMillis > 0) {
                 timerView.showCountdown(binder.remainingMillis)
@@ -223,9 +230,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPlayingState(playing: Boolean) {
         isPlaying = playing
+        showPlayButtonIcon(playing)
+        timerView.setPlayingState(playing)
+    }
+
+    /**
+     * A paused session is still a session: the countdown stays on screen and the seekbar stays
+     * hidden, and only the button changes, so that pressing it asks the service to resume rather
+     * than to stop.
+     */
+    private fun showPausedState(paused: Boolean) {
+        isPlaying = !paused
+        showPlayButtonIcon(!paused)
+    }
+
+    private fun showPlayButtonIcon(playing: Boolean) {
         val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
         playButton.setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
-        timerView.setPlayingState(playing)
     }
 
     // The contract itself short-circuits when the permission is already held, so there is nothing to check first.
