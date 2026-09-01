@@ -218,15 +218,14 @@ class PlaybackService : Service() {
         whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
         brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
         pausedByFocusLoss = false
-        if (!noisyReceiverRegistered) {
-            ContextCompat.registerReceiver(
-                this,
-                noisyReceiver,
-                IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),
-                ContextCompat.RECEIVER_NOT_EXPORTED,
-            )
-            noisyReceiverRegistered = true
-        }
+        // Reached only when playback was stopped, and a stop always unregisters, so this is never a double.
+        ContextCompat.registerReceiver(
+            this,
+            noisyReceiver,
+            IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        noisyReceiverRegistered = true
 
         noiseEngine.start()
         playing = true
