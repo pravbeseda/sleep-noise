@@ -86,3 +86,18 @@ issue #1.
   here as well as Kotlin.
 
 ## Parked
+- Step 2, quality (blocking) and spec: the format tests depended on the machine's default locale
+  and would have passed against a `Locale.ROOT` implementation — the exact regression the
+  project's Locale convention exists to prevent. Fixed: the tests pin the default locale around
+  every assertion and one case asserts that an Arabic-digit locale really changes the output.
+- Step 2, spec and quality: `SleepTimer`'s instance API has no production caller yet, and
+  `TimerController` still converts minutes to milliseconds inline. Dropped: step 5 moves the
+  timer into the service, which calls exactly that API, and deletes `TimerController` along with
+  its inline conversion. Removing the class's other half now to re-add it two steps later is
+  churn, not simplicity.
+- Step 2, spec: `CLAUDE.md` still describes `timer/` as three pieces. Deferred to step 5, where
+  `timer/` takes its final shape — the documentation has to be right at the end of the branch,
+  and rewriting the same paragraph twice is waste.
+- Step 2, spec: the two `MagicNumber` baseline entries for `TimerController` are stale. Step 5
+  deletes the file, so they are removed there — a baseline shrinking by two, which the project
+  rule welcomes.
