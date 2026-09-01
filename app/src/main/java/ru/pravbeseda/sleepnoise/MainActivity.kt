@@ -1,13 +1,16 @@
 package ru.pravbeseda.sleepnoise
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
@@ -20,15 +23,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
-import ru.pravbeseda.sleepnoise.media.BrownNoise
-import ru.pravbeseda.sleepnoise.media.NoiseChannel
-import ru.pravbeseda.sleepnoise.media.NoiseEngine
-import ru.pravbeseda.sleepnoise.media.WhiteNoise
 import ru.pravbeseda.sleepnoise.models.Language
+import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.timer.TimerController
 import ru.pravbeseda.sleepnoise.timer.TimerView
 
@@ -37,11 +38,10 @@ const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
+const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
+const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
 class MainActivity : AppCompatActivity() {
-    private val whiteChannel = NoiseChannel(WhiteNoise())
-    private val brownChannel = NoiseChannel(BrownNoise())
-    private val noiseEngine = NoiseEngine(listOf(whiteChannel, brownChannel))
     private lateinit var playButton: Button
     private lateinit var timerView: TimerView
     private lateinit var timerController: TimerController
@@ -49,6 +49,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
     private lateinit var whiteNoiseLabel: TextView
     private lateinit var brownNoiseLabel: TextView
+    private var whiteVolume = DEFAULT_WHITE_NOISE_VOLUME
+    private var brownVolume = DEFAULT_BROWN_NOISE_VOLUME
+    private var playbackBinder: PlaybackService.LocalBinder? = null
+
+    private val playbackConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as? PlaybackService.LocalBinder ?: return
+            playbackBinder = binder
+            binder.listener = PlaybackService.Listener { onPlaybackStoppedByService() }
+            binder.setWhiteVolume(whiteVolume)
+            binder.setBrownVolume(brownVolume)
+            showPlayingState(binder.isPlaying)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            playbackBinder = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
@@ -83,13 +101,13 @@ class MainActivity : AppCompatActivity() {
         whiteNoiseLabel = findViewById(R.id.whiteNoiseLabel)
         brownNoiseLabel = findViewById(R.id.brownNoiseLabel)
 
-        val whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, 0.0f)
-        val brownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, 0.5f)
+        val savedWhiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
+        val savedBrownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
 
-        whiteNoiseVolume.progress = (whiteVolume * 100).toInt()
-        brownNoiseVolume.progress = (brownVolume * 100).toInt()
-        setWhiteNoiseVolume(whiteVolume)
-        setBrownNoiseVolume(brownVolume)
+        whiteNoiseVolume.progress = (savedWhiteVolume * 100).toInt()
+        brownNoiseVolume.progress = (savedBrownVolume * 100).toInt()
+        setWhiteNoiseVolume(savedWhiteVolume)
+        setBrownNoiseVolume(savedBrownVolume)
 
         playButton.setOnClickListener {
             if (isPlaying) {
@@ -168,27 +186,50 @@ class MainActivity : AppCompatActivity() {
         else -> super.onOptionsItemSelected(item)
     }
 
+    override fun onStart() {
+        super.onStart()
+        bindService(Intent(this, PlaybackService::class.java), playbackConnection, BIND_AUTO_CREATE)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        playbackBinder?.listener = null
+        playbackBinder = null
+        unbindService(playbackConnection)
+    }
+
     private fun startPlayback() {
-        isPlaying = true
-        playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_pause, 0, 0)
-        timerView.setPlayingState(true)
+        showPlayingState(true)
 
         val timerValue = timerView.getTimerValueInMinutes()
         if (timerValue > 0) {
             timerController.startTimer(timerValue)
         }
 
-        noiseEngine.start()
+        ContextCompat.startForegroundService(this, playbackIntent(PlaybackService.ACTION_START))
     }
 
     private fun stopPlayback() {
-        isPlaying = false
-        playButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_play, 0, 0)
         timerController.stopTimer()
-        timerView.setPlayingState(false)
+        showPlayingState(false)
 
-        noiseEngine.stop()
+        startService(playbackIntent(PlaybackService.ACTION_STOP))
     }
+
+    /** The service stopped itself — the notification's Stop action — so only the UI is left to catch up. */
+    private fun onPlaybackStoppedByService() {
+        timerController.stopTimer()
+        showPlayingState(false)
+    }
+
+    private fun showPlayingState(playing: Boolean) {
+        isPlaying = playing
+        val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
+        playButton.setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
+        timerView.setPlayingState(playing)
+    }
+
+    private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
 
     private fun showThemePopup(anchor: View) {
         val popup = PopupMenu(this, anchor)
@@ -235,11 +276,6 @@ class MainActivity : AppCompatActivity() {
         preferences.edit().putFloat(key, volume).apply()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        noiseEngine.stop()
-    }
-
     private fun applyTheme(theme: String) {
         when (theme) {
             "system" -> {
@@ -271,12 +307,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setWhiteNoiseVolume(volume: Float) {
-        whiteChannel.volume = volume
+        whiteVolume = volume
+        playbackBinder?.setWhiteVolume(volume)
         whiteNoiseLabel.text = getString(R.string.white_noise_volume, (volume * 100).toInt())
     }
 
     private fun setBrownNoiseVolume(volume: Float) {
-        brownChannel.volume = volume
+        brownVolume = volume
+        playbackBinder?.setBrownVolume(volume)
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
     }
 

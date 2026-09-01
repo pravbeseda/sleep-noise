@@ -19,6 +19,9 @@
     <string name="version">Версія %1$s</string>
     <string name="timer">Таймер</string>
     <string name="credits">Подяки</string>
+    <string name="notification_channel_playback">Відтворення</string>
+    <string name="notification_playing">Грає</string>
+    <string name="notification_stop">Стоп</string>
 
     <!-- Just add your language -->
     <string name="russian" translatable="false">Русский</string>

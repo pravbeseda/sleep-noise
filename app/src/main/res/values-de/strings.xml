@@ -19,4 +19,7 @@
     <string name="version">Version %1$s</string>
     <string name="timer">Timer</string>
     <string name="credits">Credits</string>
+    <string name="notification_channel_playback">Wiedergabe</string>
+    <string name="notification_playing">Läuft</string>
+    <string name="notification_stop">Stopp</string>
 </resources>
