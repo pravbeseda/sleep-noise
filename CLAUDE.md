@@ -205,7 +205,7 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **10 entries covering 19 findings** —
+`config/detekt/baseline.xml` holds the debt this landed on: **9 entries covering 19 findings** —
 `MagicNumber` 12, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
