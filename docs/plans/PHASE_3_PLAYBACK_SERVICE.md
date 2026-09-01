@@ -38,10 +38,10 @@ issue #1.
 
 ## Steps
 
-- [ ] 1. Raise `minSdk` 24 → 26 — files: `app/build.gradle.kts`, `README.md`, `CLAUDE.md`,
+- [x] 1. Raise `minSdk` 24 → 26 — files: `app/build.gradle.kts`, `README.md`, `CLAUDE.md`,
       `docs/plans/REFACTORING_PLAN.md` — lenses: compatibility — done when: no `minSdk = 24`
       anywhere, the three documents say 26, and `./gradlew assembleDebug lint` is green.
-- [ ] 2. Extract the countdown arithmetic as pure logic, test-first — files:
+- [x] 2. Extract the countdown arithmetic as pure logic, test-first — files:
       `app/src/main/java/ru/pravbeseda/sleepnoise/timer/SleepTimer.kt`,
       `app/src/test/java/ru/pravbeseda/sleepnoise/timer/SleepTimerTest.kt`,
       `timer/TimerController.kt` — lenses: none — done when: `SleepTimerTest` covers remaining
@@ -73,5 +73,16 @@ issue #1.
       from `BuildConfig`.
 
 ## Rulings
+
+- Step 1, spec: the diff touched `app/lint-baseline.xml` and renamed `mipmap-anydpi-v26/`, both
+  outside the step's file list. Accepted as unavoidable — at minSdk 26 lint's `ObsoleteSdkInt`
+  rejects the `-v26` qualifier and `warningsAsErrors` turns that into a failed build, so the
+  step's own "lint is green" criterion cannot be met without it. The baseline entries only
+  followed the files; the count is unchanged at 26. The PR description states this, because
+  `CLAUDE.md` reserves baseline edits for PRs about reducing them.
+- Step 1, spec: "the trailing newline added to the two renamed XML files traces to nothing in the
+  toolchain" — dropped, the claim is wrong. `./gradlew spotlessCheck` failed on exactly those two
+  files (`:spotlessXmlCheck`, "format violations") until the newline was added; Spotless owns XML
+  here as well as Kotlin.
 
 ## Parked
