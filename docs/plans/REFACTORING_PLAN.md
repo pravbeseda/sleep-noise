@@ -185,9 +185,8 @@ the modern API means a `Copy` task wired to `SingleArtifact.APK`, which also cha
 artifact lands. Settle that here, when the upload path that consumes the name is being written,
 rather than guessing at it beforehand.
 
-
 Landed on branch `ci/alpha-firebase`; the step-by-step record is in
-[`D3_ALPHA_FIREBASE.md`](D3_ALPHA_FIREBASE.md). Two things came out differently from the sketch
+[`D3_ALPHA_FIREBASE.md`](D3_ALPHA_FIREBASE.md). Three things came out differently from the sketch
 above:
 
 - `SN_STORE_FILE` defaults to `../.key/Drevo.Keystore` rather than SpendControl's path outside the
