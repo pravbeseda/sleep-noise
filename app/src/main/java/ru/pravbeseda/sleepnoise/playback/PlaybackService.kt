@@ -5,8 +5,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -15,6 +19,7 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import ru.pravbeseda.sleepnoise.APP_PREFS
 import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.DEFAULT_BROWN_NOISE_VOLUME
@@ -34,6 +39,9 @@ import ru.pravbeseda.sleepnoise.timer.SleepTimer
  * Started with [ACTION_START] / [ACTION_STOP] and bound at the same time: the intents drive
  * playback, the binder lets a visible Activity read the state, move the volumes, follow the
  * countdown and hear that playback stopped without it.
+ *
+ * It also owns the audio focus the noise plays under: playback starts only once focus is granted,
+ * and stops, pauses or ducks when the system says something else needs the output.
  */
 class PlaybackService : Service() {
     private val whiteChannel = NoiseChannel(WhiteNoise())
@@ -67,6 +75,49 @@ class PlaybackService : Service() {
     private var sleepTimer: SleepTimer? = null
     private var listener: Listener? = null
 
+    // The volumes the user chose, kept here because the channels also carry the duck factor.
+    private var whiteVolume = DEFAULT_WHITE_NOISE_VOLUME
+    private var brownVolume = DEFAULT_BROWN_NOISE_VOLUME
+    private var ducking = false
+    private var pausedByFocusLoss = false
+
+    // Lazy, like the intents: a Service has no context to ask for a system service until it is created.
+    private val audioFocus: AudioFocus by lazy {
+        AudioFocus(getSystemService(AudioManager::class.java)) { change ->
+            when (change) {
+                AudioFocus.Change.LOST -> stopPlayback()
+
+                // The session goes on without sound: a phone call must not extend the sleep timer.
+                AudioFocus.Change.PAUSE -> {
+                    noiseEngine.stop()
+                    pausedByFocusLoss = true
+                }
+
+                AudioFocus.Change.DUCK -> {
+                    ducking = true
+                    applyVolumes()
+                }
+
+                AudioFocus.Change.REGAINED -> {
+                    ducking = false
+                    applyVolumes()
+                    if (pausedByFocusLoss) {
+                        pausedByFocusLoss = false
+                        noiseEngine.start()
+                    }
+                }
+            }
+        }
+    }
+
+    /** Registered from code and never in the manifest: a manifest receiver would wake the app when nothing is playing. */
+    private val noisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            stopPlayback()
+        }
+    }
+    private var noisyReceiverRegistered = false
+
     private val remainingMillis: Long
         get() = sleepTimer?.remaining(SystemClock.elapsedRealtime()) ?: 0
 
@@ -79,7 +130,7 @@ class PlaybackService : Service() {
                 return
             }
             val remaining = timer.remaining(now)
-            postNotification()
+            getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification())
             listener?.onTick(remaining)
             handler.postDelayed(this, TICK_INTERVAL_MILLIS)
         }
@@ -107,11 +158,13 @@ class PlaybackService : Service() {
             }
 
         fun setWhiteVolume(volume: Float) {
-            whiteChannel.volume = volume
+            whiteVolume = volume
+            applyVolumes()
         }
 
         fun setBrownVolume(volume: Float) {
-            brownChannel.volume = volume
+            brownVolume = volume
+            applyVolumes()
         }
     }
 
@@ -145,6 +198,8 @@ class PlaybackService : Service() {
         super.onDestroy()
         handler.removeCallbacks(tick)
         noiseEngine.stop()
+        unregisterNoisyReceiver()
+        audioFocus.abandon()
     }
 
     private fun startPlayback(timerMinutes: Int) {
@@ -158,9 +213,26 @@ class PlaybackService : Service() {
         // five seconds later.
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceType())
         if (playing) return
+        // Focus first: a refused request means playback never starts, so stop the way the Stop action
+        // does rather than leaving a notification over silence.
+        if (!audioFocus.request()) {
+            stopPlayback()
+            return
+        }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
-        brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
+        whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
+        brownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
+        ducking = false
+        applyVolumes()
+        if (!noisyReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                noisyReceiver,
+                IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            noisyReceiverRegistered = true
+        }
 
         noiseEngine.start()
         playing = true
@@ -174,21 +246,27 @@ class PlaybackService : Service() {
         sleepTimer = null
         noiseEngine.stop()
         playing = false
+        pausedByFocusLoss = false
+        ducking = false
+        unregisterNoisyReceiver()
+        audioFocus.abandon()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
         listener?.onPlaybackStopped()
     }
 
-    // The constant itself is API 29, so lint rejects naming it below that even though ServiceCompat
-    // would ignore the argument there.
-    private fun foregroundServiceType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-    } else {
-        0
+    /** The one place a channel volume is written, so the duck factor cannot be lost by a slider move. */
+    private fun applyVolumes() {
+        val factor = if (ducking) DUCK_FACTOR else 1.0f
+        whiteChannel.volume = whiteVolume * factor
+        brownChannel.volume = brownVolume * factor
     }
 
-    private fun postNotification() {
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification())
+    // Called from both stopPlayback() and onDestroy(), and stopSelf() puts them in that order.
+    private fun unregisterNoisyReceiver() {
+        if (!noisyReceiverRegistered) return
+        noisyReceiverRegistered = false
+        unregisterReceiver(noisyReceiver)
     }
 
     private fun buildNotification(): Notification {
@@ -216,5 +294,16 @@ class PlaybackService : Service() {
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
         private const val TICK_INTERVAL_MILLIS = 1_000L
+
+        // The constant itself is API 29, so lint rejects naming it below that even though ServiceCompat
+        // would ignore the argument there.
+        private fun foregroundServiceType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        } else {
+            0
+        }
+
+        /** How much of the chosen volume is left while something else is talking over the noise. */
+        private const val DUCK_FACTOR = 0.2f
     }
 }
