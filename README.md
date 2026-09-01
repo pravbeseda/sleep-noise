@@ -37,7 +37,7 @@ Being honest about the current state — all of these are tracked in
 
 ## Building from source
 
-Requires JDK 17 and the Android SDK (compileSdk 36, minSdk 24).
+Requires JDK 17 and the Android SDK (compileSdk 36, minSdk 26).
 
 ```bash
 git clone git@github.com:pravbeseda/sleep-noise.git

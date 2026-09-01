@@ -374,8 +374,8 @@ noise, and the manifest declares no permissions at all. Consequences:
 - [ ] Request the notification permission at runtime on API 33+; playback must still work
       if the user denies it.
 - [ ] Ongoing notification with a stop action and the remaining timer.
-- [ ] Audio focus via `AudioManagerCompat` / `AudioFocusRequestCompat` from
-      `androidx.media:media` — `AudioFocusRequest` alone requires API 26 and minSdk here is 24.
+- [ ] Audio focus via `AudioFocusRequest`, which minSdk 26 makes available without the
+      `androidx.media:media` compatibility wrapper.
       Handle `LOSS` (stop), `LOSS_TRANSIENT` (pause), `LOSS_TRANSIENT_CAN_DUCK` (lower volume).
 - [ ] Register a `BroadcastReceiver` for `ACTION_AUDIO_BECOMING_NOISY` and stop on it.
 - [ ] Move the timer into the service. Replace `CountDownTimer` with a deadline computed

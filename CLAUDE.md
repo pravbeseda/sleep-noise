@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 24 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
