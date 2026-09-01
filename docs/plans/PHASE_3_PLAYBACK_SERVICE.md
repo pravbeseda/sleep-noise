@@ -62,7 +62,7 @@ issue #1.
       none — done when: the service computes its own deadline with `SleepTimer`, stops itself
       when it expires, updates the notification with the remaining time, pushes ticks to a bound
       Activity, and `TimerController` is gone with no caller left behind.
-- [ ] 6. Handle audio focus and headphone unplug — files: `playback/PlaybackService.kt` — lenses:
+- [x] 6. Handle audio focus and headphone unplug — files: `playback/PlaybackService.kt` — lenses:
       security — done when: the service requests focus before playing, stops on
       `AUDIOFOCUS_LOSS`, pauses on `LOSS_TRANSIENT` and resumes after, ducks on
       `LOSS_TRANSIENT_CAN_DUCK`, and a context-registered (never manifest-registered) receiver
@@ -87,6 +87,12 @@ issue #1.
   here as well as Kotlin.
 
 ## Parked
+
+- `NoiseEngine.stop()` joins the writer thread with no timeout (`media/NoiseEngine.kt:35-39`), and
+  the focus callback now calls it on the main thread. Any app on the device can drive that by
+  taking and abandoning transient focus in a loop, stalling this app's main thread for up to one
+  write each time — roughly 160 ms at the current buffer settings — and churning a thread and an
+  `AudioTrack` per cycle. Bounding the join belongs in `media/`, not in this step.
 - Step 2, quality (blocking) and spec: the format tests depended on the machine's default locale
   and would have passed against a `Locale.ROOT` implementation — the exact regression the
   project's Locale convention exists to prevent. Fixed: the tests pin the default locale around
@@ -146,3 +152,21 @@ issue #1.
   `remainingMillis` is non-zero only while playing. Fixed: the guard is the remaining time alone.
 - Step 5, spec: the ruling above predicted two stale detekt entries and four were removed
   (14 → 10). The PR description states both counts, as `CLAUDE.md` requires of any baseline edit.
+- Step 6, spec: the ducking branch is dead. From API 26 the framework ducks the app's own track and
+  never sends `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener that has not asked to
+  pause instead. Fixed by deletion: `Change.DUCK`, `DUCK_FACTOR`, the `ducking` flag, `applyVolumes()`
+  and the two shadow volume fields are gone, and the volumes are written straight to the channels
+  again. The audible behaviour the step asked for is unchanged — the system produces it.
+- Step 6, security: a transient focus loss left the service silent with `playing` still true, and
+  nothing but a stop could leave that state. An app holding transient focus therefore parked the
+  session indefinitely while the notification counted down over silence. Fixed: an `ACTION_START`
+  arriving in that state re-requests focus and resumes, or stops when the focus is refused.
+- Step 6, security: only `AUDIOFOCUS_GAIN` ended the pause, while the framework has four gain
+  constants. Fixed: any positive focus change counts as regained.
+- Step 6, security: `onDestroy` abandoned a focus request that a service which never played had
+  never made. Fixed: it abandons only while playing.
+- Step 6, spec: two code moves rode along to stay under detekt's function threshold. One is now
+  gone (`postNotification()` is a method again); `foregroundServiceType()` stays in the companion,
+  where it reads no instance state, and the PR description says so.
+- Step 6, security: `NoiseEngine.stop()` blocks the main thread on an unbounded join, which the
+  focus callback can now trigger repeatedly. Parked above — the fix belongs to `media/`, not here.

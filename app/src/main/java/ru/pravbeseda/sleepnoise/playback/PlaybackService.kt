@@ -75,10 +75,6 @@ class PlaybackService : Service() {
     private var sleepTimer: SleepTimer? = null
     private var listener: Listener? = null
 
-    // The volumes the user chose, kept here because the channels also carry the duck factor.
-    private var whiteVolume = DEFAULT_WHITE_NOISE_VOLUME
-    private var brownVolume = DEFAULT_BROWN_NOISE_VOLUME
-    private var ducking = false
     private var pausedByFocusLoss = false
 
     // Lazy, like the intents: a Service has no context to ask for a system service until it is created.
@@ -93,18 +89,9 @@ class PlaybackService : Service() {
                     pausedByFocusLoss = true
                 }
 
-                AudioFocus.Change.DUCK -> {
-                    ducking = true
-                    applyVolumes()
-                }
-
-                AudioFocus.Change.REGAINED -> {
-                    ducking = false
-                    applyVolumes()
-                    if (pausedByFocusLoss) {
-                        pausedByFocusLoss = false
-                        noiseEngine.start()
-                    }
+                AudioFocus.Change.REGAINED -> if (pausedByFocusLoss) {
+                    pausedByFocusLoss = false
+                    noiseEngine.start()
                 }
             }
         }
@@ -130,7 +117,7 @@ class PlaybackService : Service() {
                 return
             }
             val remaining = timer.remaining(now)
-            getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification())
+            postNotification()
             listener?.onTick(remaining)
             handler.postDelayed(this, TICK_INTERVAL_MILLIS)
         }
@@ -158,13 +145,11 @@ class PlaybackService : Service() {
             }
 
         fun setWhiteVolume(volume: Float) {
-            whiteVolume = volume
-            applyVolumes()
+            whiteChannel.volume = volume
         }
 
         fun setBrownVolume(volume: Float) {
-            brownVolume = volume
-            applyVolumes()
+            brownChannel.volume = volume
         }
     }
 
@@ -199,7 +184,8 @@ class PlaybackService : Service() {
         handler.removeCallbacks(tick)
         noiseEngine.stop()
         unregisterNoisyReceiver()
-        audioFocus.abandon()
+        // Only a session that ran ever took the focus, and a stopped one has already given it back.
+        if (playing) audioFocus.abandon()
     }
 
     private fun startPlayback(timerMinutes: Int) {
@@ -212,7 +198,16 @@ class PlaybackService : Service() {
         // one that arrives while playback is already running: an unanswered start crashes the app
         // five seconds later.
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceType())
-        if (playing) return
+        if (playing) {
+            // A start arriving while a transient focus loss holds the engine silent is the user asking
+            // for the sound back. Without this the session sits paused for as long as the app that took
+            // the focus keeps it, with the notification counting down over silence.
+            if (pausedByFocusLoss) {
+                pausedByFocusLoss = false
+                if (audioFocus.request()) noiseEngine.start() else stopPlayback()
+            }
+            return
+        }
         // Focus first: a refused request means playback never starts, so stop the way the Stop action
         // does rather than leaving a notification over silence.
         if (!audioFocus.request()) {
@@ -220,10 +215,9 @@ class PlaybackService : Service() {
             return
         }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        whiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
-        brownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
-        ducking = false
-        applyVolumes()
+        whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
+        brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
+        pausedByFocusLoss = false
         if (!noisyReceiverRegistered) {
             ContextCompat.registerReceiver(
                 this,
@@ -247,7 +241,6 @@ class PlaybackService : Service() {
         noiseEngine.stop()
         playing = false
         pausedByFocusLoss = false
-        ducking = false
         unregisterNoisyReceiver()
         audioFocus.abandon()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -255,18 +248,15 @@ class PlaybackService : Service() {
         listener?.onPlaybackStopped()
     }
 
-    /** The one place a channel volume is written, so the duck factor cannot be lost by a slider move. */
-    private fun applyVolumes() {
-        val factor = if (ducking) DUCK_FACTOR else 1.0f
-        whiteChannel.volume = whiteVolume * factor
-        brownChannel.volume = brownVolume * factor
-    }
-
     // Called from both stopPlayback() and onDestroy(), and stopSelf() puts them in that order.
     private fun unregisterNoisyReceiver() {
         if (!noisyReceiverRegistered) return
         noisyReceiverRegistered = false
         unregisterReceiver(noisyReceiver)
+    }
+
+    private fun postNotification() {
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification())
     }
 
     private fun buildNotification(): Notification {
@@ -295,6 +285,7 @@ class PlaybackService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val TICK_INTERVAL_MILLIS = 1_000L
 
+        // Reads no instance state, and lives here to keep the service under detekt's function count.
         // The constant itself is API 29, so lint rejects naming it below that even though ServiceCompat
         // would ignore the argument there.
         private fun foregroundServiceType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -302,8 +293,5 @@ class PlaybackService : Service() {
         } else {
             0
         }
-
-        /** How much of the chosen volume is left while something else is talking over the noise. */
-        private const val DUCK_FACTOR = 0.2f
     }
 }

@@ -22,10 +22,7 @@ class AudioFocus(private val audioManager: AudioManager, private val onChange: (
         /** Something else is playing for a while — stop the sound but keep the session. */
         PAUSE,
 
-        /** Play on, quietly, beside the other sound. */
-        DUCK,
-
-        /** Focus is back — undo whatever [PAUSE] or [DUCK] did. */
+        /** Focus is back — undo what [PAUSE] did. */
         REGAINED,
     }
 
@@ -36,8 +33,8 @@ class AudioFocus(private val audioManager: AudioManager, private val onChange: (
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build(),
         )
-        // False, so the framework ducks this app's track itself — which is what normally happens from
-        // API 26 on, and why [Change.DUCK] is a fallback for the systems that hand the job back instead.
+        // False, so the framework ducks this app's own track when something talks over it. That is what
+        // API 26 introduced, and it is why no LOSS_TRANSIENT_CAN_DUCK ever reaches the listener below.
         .setWillPauseWhenDucked(false)
         .setOnAudioFocusChangeListener(::dispatch, Handler(Looper.getMainLooper()))
         .build()
@@ -50,11 +47,16 @@ class AudioFocus(private val audioManager: AudioManager, private val onChange: (
     }
 
     private fun dispatch(focusChange: Int) {
-        val change = when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS -> Change.LOST
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> Change.PAUSE
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> Change.DUCK
-            AudioManager.AUDIOFOCUS_GAIN -> Change.REGAINED
+        val change = when {
+            focusChange == AudioManager.AUDIOFOCUS_LOSS -> Change.LOST
+
+            focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> Change.PAUSE
+
+            // Every gain is positive and there are four of them; matching only AUDIOFOCUS_GAIN would
+            // leave the caller paused for good on a device that answers with one of the transient ones.
+            focusChange > 0 -> Change.REGAINED
+
+            // Anything else is a loss the framework handles by ducking the track for us.
             else -> return
         }
         onChange(change)
