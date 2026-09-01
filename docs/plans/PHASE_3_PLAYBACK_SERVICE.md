@@ -222,3 +222,7 @@ issue #1.
 - Quality: the Activity cleared the service listener that `onUnbind` clears anyway. Fixed.
 - Security: `localized` built a configuration context on each of the three strings in a
   notification rebuilt once a second. Fixed: one context per notification.
+- Final gate, round two: two imports left over from the first attempt at the localization fix, and
+  a Stop action wearing the play glyph. Both fixed — the action has its own `ic_stop` drawable. The
+  same finding claimed the leftovers turn the Format check red; measured and untrue, `spotlessCheck`
+  passes with them, which is why they survived in the first place.

@@ -10,13 +10,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
-import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
-import android.os.LocaleList
 import android.os.Looper
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
@@ -296,7 +294,7 @@ class PlaybackService : Service() {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setSilent(true)
-            .addAction(R.drawable.ic_notification, strings.getString(R.string.notification_stop), stopIntent)
+            .addAction(R.drawable.ic_stop, strings.getString(R.string.notification_stop), stopIntent)
             .build()
     }
 
