@@ -32,7 +32,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
-import ru.pravbeseda.sleepnoise.timer.TimerController
+import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import ru.pravbeseda.sleepnoise.timer.TimerView
 
 const val APP_PREFS = "AppPreferences"
@@ -46,7 +46,6 @@ const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
     private lateinit var timerView: TimerView
-    private lateinit var timerController: TimerController
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
     private lateinit var whiteNoiseLabel: TextView
@@ -57,12 +56,26 @@ class MainActivity : AppCompatActivity() {
     // user the ongoing notification and its Stop action.
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    private val playbackListener = object : PlaybackService.Listener {
+        override fun onTick(remainingMillis: Long) {
+            showCountdown(remainingMillis)
+        }
+
+        /** Every stop: the notification's Stop action, the sleep timer expiring, or the ACTION_STOP sent here. */
+        override fun onPlaybackStopped() {
+            showPlayingState(false)
+        }
+    }
+
     private val playbackConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as? PlaybackService.LocalBinder ?: return
             playbackBinder = binder
-            binder.listener = PlaybackService.Listener { onPlaybackStoppedByService() }
+            binder.listener = playbackListener
             showPlayingState(binder.isPlaying)
+            if (binder.isPlaying && binder.remainingMillis > 0) {
+                showCountdown(binder.remainingMillis)
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -92,11 +105,6 @@ class MainActivity : AppCompatActivity() {
         playButton = findViewById(R.id.playButton)
 
         timerView = findViewById(R.id.timerView)
-
-        timerController = TimerController(
-            onTick = { time -> timerView.showCountdown(time) },
-            onTime = { stopPlayback() },
-        )
 
         val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
         val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
@@ -204,25 +212,19 @@ class MainActivity : AppCompatActivity() {
         askForNotificationPermission()
         showPlayingState(true)
 
-        val timerValue = timerView.getTimerValueInMinutes()
-        if (timerValue > 0) {
-            timerController.startTimer(timerValue)
-        }
-
-        ContextCompat.startForegroundService(this, playbackIntent(PlaybackService.ACTION_START))
+        val startIntent = playbackIntent(PlaybackService.ACTION_START)
+            .putExtra(PlaybackService.EXTRA_TIMER_MINUTES, timerView.getTimerValueInMinutes())
+        ContextCompat.startForegroundService(this, startIntent)
     }
 
     private fun stopPlayback() {
-        timerController.stopTimer()
         showPlayingState(false)
 
         startService(playbackIntent(PlaybackService.ACTION_STOP))
     }
 
-    /** Playback stopped: either the notification's Stop action or the ACTION_STOP this Activity sent. */
-    private fun onPlaybackStoppedByService() {
-        timerController.stopTimer()
-        showPlayingState(false)
+    private fun showCountdown(remainingMillis: Long) {
+        timerView.showCountdown(SleepTimer.formatRemaining(remainingMillis))
     }
 
     private fun showPlayingState(playing: Boolean) {
