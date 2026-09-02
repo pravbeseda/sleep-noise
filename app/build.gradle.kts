@@ -1,5 +1,4 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
-import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import java.util.Properties
 
 plugins {
@@ -339,7 +338,7 @@ kover {
         variant("debug") {
             verify {
                 rule("Line coverage of the Android-free classes") {
-                    minBound(80, CoverageUnit.LINE)
+                    minBound(80)
                 }
             }
         }

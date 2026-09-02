@@ -88,4 +88,8 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
   Dropped — the extra task only prints, cannot change the job's outcome, and putting the figure in
   the log of every run is the reason it is there. The step comment already says so.
 
+- Final reviewer: `minBound(80, CoverageUnit.LINE)` passed Kover's own default and cost an import to
+  say it. Fixed — the argument and the import are gone; the rule is named "Line coverage of the
+  Android-free classes", which says the same thing where a failure is actually read.
+
 ## Parked
