@@ -47,7 +47,8 @@ Three moves replace them:
    this way and currently runs nowhere, because CI has no instrumented job.
 3. **Coverage is measured on the Android-free packages only.** SpendControl puts its 80 % Kover
    bound on `:domain` alone, and its build script says why: a denominator full of Activities
-   makes the figure answer no question however good the tests get.
+   makes the figure answer no question however good the tests get. Single-module, this project
+   names the same set with a Kover class filter instead of a module boundary.
 
 Why not Robolectric: it is a second, approximate Android, and a foreground service, an ongoing
 notification and audio focus are precisely where the approximation is thinnest — an emulator
@@ -59,16 +60,18 @@ Reopening it means changing this section first, with the case for it.
 
 ### Follow-up work
 
-- [ ] Kover with a class filter, so the bound covers `media.*` and the Android-free part of
-      `timer/` rather than the whole module. Extends the Definition of done in `CLAUDE.md`.
+- [x] Kover with a class filter, so the bound covers `media.*` and the Android-free part of
+      `timer/` rather than the whole module. Landed in PR #30: the filter and the 80 % bound are
+      in `app/build.gradle.kts`, and `koverVerifyDebug` joined the Definition of done in
+      `CLAUDE.md`.
 - [ ] A CI job running `connectedAndroidTest` on an emulator — what turns point 2 from an
       intention into coverage, and the first thing to run the existing `NoiseEngineHammerTest`.
 - [ ] An architecture test that reads the sources and fails if `media/` or `timer/SleepTimer`
       imports `android.*` — the single-module stand-in for SpendControl's module boundary.
       SpendControl weighed Konsist and ArchUnit for this and wrote neither: Konsist is
-      unmaintained, ArchUnit needs a bytecode importer per flavour, and at three rules walking
-      the file tree is cheaper than both.
-
+      effectively unmaintained, and its rule is to reach for ArchUnit only past ~15 rules —
+      below that, walking the file tree is cheaper than either. It holds six rules that way;
+      this project needs one.
 
 ---
 
