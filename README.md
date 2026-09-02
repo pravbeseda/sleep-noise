@@ -125,13 +125,14 @@ changes only Markdown skips the four Gradle jobs — they still report green, th
 Before opening a PR:
 
 ```bash
-./gradlew spotlessCheck detekt testDebugUnitTest lint
+./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
 its test in the same commit. Android plumbing is exempt from test-first, but a PR that leaves
 behaviour uncovered says which behaviour and why. Bug fixes start with a test that reproduces the
-bug. No test gets disabled or weakened to turn a build green.
+bug. No test gets disabled or weakened to turn a build green. `koverVerifyDebug` puts an 80 % line
+floor under those Android-free classes — the only ones a JVM test can reach.
 
 The full rule, and the reasoning for drawing the line there, is in [`CLAUDE.md`](CLAUDE.md).
 

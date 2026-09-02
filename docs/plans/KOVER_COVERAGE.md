@@ -34,10 +34,11 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
       measured figure (checked locally, not committed). Bound: **80 %** on the debug variant. Both
       halves were run: green at 80, and red at 99 with `Rule 'Line coverage of the Android-free
       classes' violated: lines covered percentage is 97.561000`.
-- [ ] 3. Wire it into the Definition of done and CI — files: `CLAUDE.md`,
-      `.github/workflows/ci.yml`, `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when the
-      documented command runs green end to end locally and the CI job carries the same task under
-      the existing `decide-work` gate.
+- [x] 3. Wire it into the Definition of done and CI — files: `CLAUDE.md`, `README.md`,
+      `.github/workflows/ci.yml` — lenses: none — done when the documented command runs green end to
+      end locally and the CI job carries the same task under the existing `decide-work` gate.
+      `README.md` carried a verbatim copy of the same command and had to move with it;
+      `docs/plans/REFACTORING_PLAN.md` did not — see the ruling below.
 
 ## Rulings
 
@@ -65,5 +66,11 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
 - Reviewer, both passes: the ledger promised a `log` block on the debug variant that step 2 did not
   add. Fixed in the ruling above rather than in the build script: `koverLogDebug` exists without any
   configuration, so a `log { }` block would be configuration that buys nothing.
+
+- The step named `docs/plans/REFACTORING_PLAN.md`, whose "Testing strategy" section has a follow-up
+  item this branch closes. That section is not on `main`: it lives on `docs/testing-strategy`
+  (PR #29), still open. Ruled out of this branch — writing the section here would duplicate an
+  unmerged branch's content and conflict when it lands. The item gets ticked once #29 is merged,
+  which this branch's PR description says out loud so it is not lost with the session.
 
 ## Parked

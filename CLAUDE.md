@@ -100,20 +100,31 @@ acceptable answer; "untested and unmentioned" is not.
 **Never weaken a test to get a green build.** Not by deleting it, not with `@Ignore`, not by
 loosening an assertion. A test that seems wrong is a discussion in the PR, not a silent edit.
 
+**Coverage has a floor: 80 % of lines**, measured on the debug variant over the classes that import
+nothing from `android.*` — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`. The denominator is
+cut down on purpose: an Activity or a Service is a line no JVM test can execute, so counting them
+makes the figure report how much Android plumbing the app has rather than how well its logic is
+tested. The bound rises once the figure has settled above it, and is never lowered to turn a red run
+green — a floor that moves down is not a floor.
+
 ### Definition of done
 
 ```bash
-./gradlew spotlessCheck detekt testDebugUnitTest lint
+./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint
 ```
 
 Green is the bar for calling work finished. Red means it is not finished, whatever else is true. If
 a step could not be run at all, say which one and why rather than reporting around it.
 
-These four run locally. The fifth required check, Guardrails, compares the PR against its base
+`koverVerifyDebug` runs `testDebugUnitTest` itself, so the tests execute once however you reach
+them; both are named so that a reader can see the tests run at all.
+
+Five tasks, four required checks: coverage has no job of its own and rides in `Unit tests`. The
+fifth required check, Guardrails, compares the PR against its base
 commit and exists only on CI: a green local run means the work is done, not that the PR is
 mergeable. See the CI section.
 
-The command grows as tooling lands (Kover next); when it does, update it here.
+New tooling joins this line as it lands; Kover was the most recent.
 
 ## CI
 
