@@ -38,10 +38,12 @@ called untested.
 
 Three moves replace them:
 
-1. **Pure logic stays Android-free and is tested on the JVM** — `media/` and `timer/SleepTimer`
-   already are. SpendControl gets this as a compile-time guarantee: its logic lives in a
-   separate `java-library` module that could not resolve an `android.*` import if it tried.
-   This project is single-module, so the same rule has to be checked rather than granted.
+1. **Pure logic stays Android-free and is tested on the JVM** — `media/` minus `NoiseEngine`,
+   plus `timer/SleepTimer`, already is. `NoiseEngine` owns the `AudioTrack` and is Android
+   plumbing by design; it is the one carve-out, and it is the same one everywhere below.
+   SpendControl gets this as a compile-time guarantee: its logic lives in a separate
+   `java-library` module that could not resolve an `android.*` import if it tried. This
+   project is single-module, so the same rule has to be checked rather than granted.
 2. **Android plumbing is tested on a real emulator**, in `androidTest` — the way SpendControl
    tests Room, its migrations and its file storage. `NoiseEngineHammerTest` is already written
    this way and currently runs nowhere, because CI has no instrumented job.
@@ -60,14 +62,15 @@ Reopening it means changing this section first, with the case for it.
 
 ### Follow-up work
 
-- [x] Kover with a class filter, so the bound covers `media.*` and the Android-free part of
-      `timer/` rather than the whole module. Landed in PR #30: the filter and the 80 % bound are
-      in `app/build.gradle.kts`, and `koverVerifyDebug` joined the Definition of done in
-      `CLAUDE.md`.
+- [x] Kover with a class filter, so the bound covers `media.*` minus `NoiseEngine`, plus the
+      Android-free part of `timer/`, rather than the whole module. Landed in PR #30: the
+      filter and the 80 % bound are in `app/build.gradle.kts`, and `koverVerifyDebug` joined
+      the Definition of done in `CLAUDE.md`.
 - [ ] A CI job running `connectedAndroidTest` on an emulator — what turns point 2 from an
       intention into coverage, and the first thing to run the existing `NoiseEngineHammerTest`.
-- [ ] An architecture test that reads the sources and fails if `media/` or `timer/SleepTimer`
-      imports `android.*` — the single-module stand-in for SpendControl's module boundary.
+- [ ] An architecture test that reads the sources and fails if anything in `media/` other than
+      `NoiseEngine`, or `timer/SleepTimer`, imports `android.*` — the single-module stand-in for
+      SpendControl's module boundary. The exclusion is the Kover filter's, named once in both.
       SpendControl weighed Konsist and ArchUnit for this and wrote neither: Konsist is
       effectively unmaintained, and its rule is to reach for ArchUnit only past ~15 rules —
       below that, walking the file tree is cheaper than either. It holds six rules that way;
