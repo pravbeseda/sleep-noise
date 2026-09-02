@@ -23,10 +23,12 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
 
 ## Steps
 
-- [ ] 1. Add the Kover plugin to `:app` with the class filter and coverage logging, no bound yet —
-      files: `gradle/libs.versions.toml`, `app/build.gradle.kts` — lenses: none — done when
-      `./gradlew koverLogDebug` prints a coverage figure computed over exactly the six Android-free
-      classes and no others.
+- [x] 1. Add the Kover plugin to `:app` with the class filter, no bound yet — files:
+      `gradle/libs.versions.toml`, `app/build.gradle.kts` — lenses: none — done when
+      `./gradlew koverLogDebug` prints a coverage figure computed over the Android-free classes and
+      no others. Measured: **97.561 %**, 40 of 41 lines. The report holds six entries —
+      `BrownNoise`, `NoiseChannel`, `NoiseMixer`, `WhiteNoise`, `SleepTimer` and
+      `SleepTimer$Companion`; `NoiseSource` is an interface and contributes no line to measure.
 - [ ] 2. Set the verification bound — files: `app/build.gradle.kts` — lenses: none — done when
       `./gradlew koverVerifyDebug` is green at the chosen bound, and red at a bound raised above the
       measured figure (checked locally, not committed).
@@ -36,5 +38,24 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
       the existing `decide-work` gate.
 
 ## Rulings
+
+- Reviewer: the comment claimed the trailing `*` on the **exclude** is what keeps `NoiseEngine`'s
+  companion out of the report. Fixed — the claim was false. A companion holding only constants
+  compiles to nothing executable and is dropped from the report whatever the pattern says, which
+  `BrownNoise$Companion` demonstrates: it is inside the include and absent from the report. The
+  comment now claims only what the include's `*` really does, which is to catch
+  `SleepTimer$Companion` and its eight lines.
+- Reviewer: "javac names `Owner$Companion`". Fixed — kotlinc emits those classes and javac never
+  sees these sources.
+- Reviewer: `log { onCheck = true }` on the `total` report attached coverage to `check` through the
+  merged debug+release report — a different variant from the `koverLogDebug` this step measures and
+  the bound step 2 sets, and it pulled `testReleaseUnitTest` into `check` along the way. Fixed by
+  dropping it: step 2 puts the log and the bound on the debug variant, and step 3 names the task in
+  the Definition of done, which is what actually runs locally and on CI. Nothing runs `check` here.
+- Reviewer: the step's done-criterion said "exactly the six Android-free classes", and the report's
+  six entries are not that set — `NoiseSource` is an interface with no executable line and never
+  appears, while `SleepTimer$Companion` does. Ruled met in substance: the filter includes and
+  excludes exactly the intended sources, and a class with no measurable line changes no figure. The
+  step's wording is corrected above rather than the filter.
 
 ## Parked

@@ -307,13 +307,16 @@ dependencies {
 // it in would make the figure track the Activity/Service line count rather than
 // how well the logic is tested.
 //
-// The trailing * on each pattern is what catches the companion objects, which
-// javac names Owner$Companion and Kover reports as separate classes: without it
-// SleepTimer's companion falls outside the includes and NoiseEngine's stays
-// inside the report.
+// The trailing * on the include is what catches SleepTimer's companion object,
+// which the Kotlin compiler emits as a separate SleepTimer$Companion class
+// carrying the eight lines of forDuration and formatRemaining. It is the only
+// companion the filters have to think about: the others hold constants, compile
+// to nothing executable, and are dropped from the report whatever the patterns
+// say.
 //
-// No verification bound yet — step 2 of docs/plans/KOVER_COVERAGE.md sets one
-// from the measured figure.
+// No verification bound and no report wired into a lifecycle task yet — step 2
+// of docs/plans/KOVER_COVERAGE.md sets the bound on the debug variant, which is
+// the one CI builds and measures.
 kover {
     reports {
         filters {
@@ -325,13 +328,6 @@ kover {
             }
             excludes {
                 classes("ru.pravbeseda.sleepnoise.media.NoiseEngine*")
-            }
-        }
-        total {
-            // Puts the number in the build log of every `check`, so it is
-            // visible without generating and opening a report.
-            log {
-                onCheck = true
             }
         }
     }
