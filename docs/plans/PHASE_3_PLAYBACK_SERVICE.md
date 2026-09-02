@@ -29,7 +29,8 @@ issue #1.
   simply not shown; the foreground service runs regardless.
 - Robolectric → not added. The service is Android plumbing and a new test dependency is a
   separate decision; the service's behaviour is covered by the manual smoke test in the PR
-  description, and the PR says so.
+  description, and the PR says so. That separate decision was taken on 2 September 2026 and went
+  the same way for good: see "Testing strategy" in `REFACTORING_PLAN.md`.
 - Version → `1.0.4`, displayed as `Version 1.0.4 (128)`. `versionCode` stays derived from the
   commit count. Bumping it here breaks the "release-PR territory" rule in `CLAUDE.md`, and does
   it because the maintainer asked for it in the same run.
