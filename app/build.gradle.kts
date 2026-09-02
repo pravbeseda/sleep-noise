@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kover)
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
 }
@@ -297,4 +298,41 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.androidx.core.splashscreen)
+}
+
+// --- Coverage ---------------------------------------------------------------
+// The denominator is cut down to the classes a JVM test can actually reach:
+// media/ minus the audio engine, plus timer/SleepTimer. Everything else in the
+// app imports android.*, so no unit test can execute a line of it, and leaving
+// it in would make the figure track the Activity/Service line count rather than
+// how well the logic is tested.
+//
+// The trailing * on each pattern is what catches the companion objects, which
+// javac names Owner$Companion and Kover reports as separate classes: without it
+// SleepTimer's companion falls outside the includes and NoiseEngine's stays
+// inside the report.
+//
+// No verification bound yet — step 2 of docs/plans/KOVER_COVERAGE.md sets one
+// from the measured figure.
+kover {
+    reports {
+        filters {
+            includes {
+                classes(
+                    "ru.pravbeseda.sleepnoise.media.*",
+                    "ru.pravbeseda.sleepnoise.timer.SleepTimer*",
+                )
+            }
+            excludes {
+                classes("ru.pravbeseda.sleepnoise.media.NoiseEngine*")
+            }
+        }
+        total {
+            // Puts the number in the build log of every `check`, so it is
+            // visible without generating and opening a report.
+            log {
+                onCheck = true
+            }
+        }
+    }
 }
