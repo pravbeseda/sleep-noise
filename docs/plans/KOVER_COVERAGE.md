@@ -73,4 +73,19 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
   unmerged branch's content and conflict when it lands. The item gets ticked once #29 is merged,
   which this branch's PR description says out loud so it is not lost with the session.
 
+- Reviewer: neither `## Commands` block listed a kover task, so a developer working from that block
+  would never learn the coverage tasks exist. Fixed in both `CLAUDE.md` and `README.md`:
+  `koverVerifyDebug` and `koverLogDebug` are named there with one line each.
+- Reviewer: the prose said the floor covers "the Android-free classes — the only ones a JVM test can
+  reach", and `models/Language` disproves the equivalence: it imports nothing from `android.*` and
+  is outside the filter. Fixed by stating the set as the definition and saying why that data holder
+  is left out, rather than by widening the filter to a class with no behaviour to cover.
+- Reviewer: the number 80 had come to live in three places — the build script, `CLAUDE.md` and
+  `README.md` — with nothing marking which is authoritative, unlike the line-length rule that
+  documents its three copies. Fixed by dropping the figure from `README.md`, which now points at
+  `CLAUDE.md`, and by naming `app/build.gradle.kts` in `CLAUDE.md` as where the bound is set.
+- Reviewer: the CI step runs `koverLogDebug` as well as the `koverVerifyDebug` the step named.
+  Dropped — the extra task only prints, cannot change the job's outcome, and putting the figure in
+  the log of every run is the reason it is there. The step comment already says so.
+
 ## Parked

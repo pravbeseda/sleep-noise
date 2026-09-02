@@ -57,6 +57,8 @@ With `remote.origin.prune` set as above, `git fetch` clears the stale remote-tra
 ./gradlew assembleDebug                  # build debug APK
 ./gradlew installDebug                   # build + install on connected device
 ./gradlew testDebugUnitTest              # JVM unit tests
+./gradlew koverVerifyDebug               # unit tests + the coverage floor
+./gradlew koverLogDebug                  # print the coverage figure without enforcing it
 ./gradlew connectedAndroidTest           # instrumented tests (needs device/emulator)
 ./gradlew lint                           # Android lint (fails on new warnings)
 ./gradlew detekt                         # Kotlin static analysis (baselined)
@@ -100,12 +102,14 @@ acceptable answer; "untested and unmentioned" is not.
 **Never weaken a test to get a green build.** Not by deleting it, not with `@Ignore`, not by
 loosening an assertion. A test that seems wrong is a discussion in the PR, not a silent edit.
 
-**Coverage has a floor: 80 % of lines**, measured on the debug variant over the classes that import
-nothing from `android.*` — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`. The denominator is
-cut down on purpose: an Activity or a Service is a line no JVM test can execute, so counting them
-makes the figure report how much Android plumbing the app has rather than how well its logic is
-tested. The bound rises once the figure has settled above it, and is never lowered to turn a red run
-green — a floor that moves down is not a floor.
+**Coverage has a floor: 80 % of lines**, set in `app/build.gradle.kts` and measured on the debug
+variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`. The
+denominator is cut down on purpose: an Activity or a Service is a line no JVM test can execute, so
+counting them makes the figure report how much Android plumbing the app has rather than how well its
+logic is tested. It is the logic that is measured, not everything a JVM test could technically
+reach — `models/Language` imports nothing from `android.*` either, and is a data holder with no
+behaviour to cover. The bound rises once the figure has settled above it, and is never lowered to
+turn a red run green — a floor that moves down is not a floor.
 
 ### Definition of done
 
