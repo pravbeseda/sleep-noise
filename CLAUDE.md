@@ -93,9 +93,13 @@ the smallest implementation that passes it, then refactoring. New pure logic wit
 same commit is not finished work — do not describe it as done.
 
 **Android plumbing** (Activity, View, Service, `SharedPreferences`) is not written test-first. If the
-behaviour can be expressed through Robolectric, the test lands after the implementation in the same
-PR. If it cannot, the PR description says which behaviour is uncovered and why. "Untested" is an
-acceptable answer; "untested and unmentioned" is not.
+behaviour can be expressed as an instrumented test on an emulator, the test lands after the
+implementation in the same PR. If it cannot, the PR description says which behaviour is uncovered and
+why. "Untested" is an acceptable answer; "untested and unmentioned" is not.
+
+**Robolectric and MockK are ruled out** — plumbing is covered on a real emulator instead, and pure
+logic needs neither. The decision, with what replaces them, is in `docs/plans/REFACTORING_PLAN.md`
+under "Testing strategy"; adding either dependency means changing that section first.
 
 **A bug fix starts with a test** that reproduces the defect and fails before the fix.
 
@@ -286,7 +290,7 @@ Two rules are easy to break here. **Every `startForegroundService()` has to be a
 
 `playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
 
-None of the service is covered by tests: Robolectric is not on the classpath and adding it is a dependency decision nobody has taken. Its behaviour is verified by hand on a device.
+None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and CI has no instrumented job to run them, so its behaviour is verified by hand on a device.
 
 ### Timer
 

@@ -36,8 +36,9 @@ Being honest about the current state. The roadmap lives in
 [`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
 in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
 
-- The playback service has no automated tests: Robolectric is not on the classpath, so its
-  lifecycle, notification and audio-focus handling are verified by hand on a device.
+- The playback service has no automated tests yet: it is to be covered by instrumented tests on an
+  emulator, which CI does not run yet, so its lifecycle, notification and audio-focus handling are
+  verified by hand on a device.
 - No lock-screen or headset-button controls — the ongoing notification's Stop action is the only
   control outside the app.
 
