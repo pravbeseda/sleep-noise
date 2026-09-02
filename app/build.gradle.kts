@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import java.util.Properties
 
 plugins {
@@ -314,9 +315,13 @@ dependencies {
 // to nothing executable, and are dropped from the report whatever the patterns
 // say.
 //
-// No verification bound and no report wired into a lifecycle task yet — step 2
-// of docs/plans/KOVER_COVERAGE.md sets the bound on the debug variant, which is
-// the one CI builds and measures.
+// The bound sits on the debug variant, not on `total`: total merges debug and
+// release, so a rule there would measure a variant CI never builds and drag
+// testReleaseUnitTest into the graph behind it.
+//
+// 80 rather than the 97.561 % measured today: the floor has to survive a new
+// class landing with its edge cases covered a commit later, and it is raised
+// when the figure settles higher — never lowered to turn a red run green.
 kover {
     reports {
         filters {
@@ -328,6 +333,14 @@ kover {
             }
             excludes {
                 classes("ru.pravbeseda.sleepnoise.media.NoiseEngine*")
+            }
+        }
+
+        variant("debug") {
+            verify {
+                rule("Line coverage of the Android-free classes") {
+                    minBound(80, CoverageUnit.LINE)
+                }
             }
         }
     }
