@@ -29,9 +29,11 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
       no others. Measured: **97.561 %**, 40 of 41 lines. The report holds six entries —
       `BrownNoise`, `NoiseChannel`, `NoiseMixer`, `WhiteNoise`, `SleepTimer` and
       `SleepTimer$Companion`; `NoiseSource` is an interface and contributes no line to measure.
-- [ ] 2. Set the verification bound — files: `app/build.gradle.kts` — lenses: none — done when
+- [x] 2. Set the verification bound — files: `app/build.gradle.kts` — lenses: none — done when
       `./gradlew koverVerifyDebug` is green at the chosen bound, and red at a bound raised above the
-      measured figure (checked locally, not committed).
+      measured figure (checked locally, not committed). Bound: **80 %** on the debug variant. Both
+      halves were run: green at 80, and red at 99 with `Rule 'Line coverage of the Android-free
+      classes' violated: lines covered percentage is 97.561000`.
 - [ ] 3. Wire it into the Definition of done and CI — files: `CLAUDE.md`,
       `.github/workflows/ci.yml`, `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when the
       documented command runs green end to end locally and the CI job carries the same task under
@@ -50,12 +52,18 @@ of "Testing strategy" in `REFACTORING_PLAN.md`; no production code changes.
 - Reviewer: `log { onCheck = true }` on the `total` report attached coverage to `check` through the
   merged debug+release report — a different variant from the `koverLogDebug` this step measures and
   the bound step 2 sets, and it pulled `testReleaseUnitTest` into `check` along the way. Fixed by
-  dropping it: step 2 puts the log and the bound on the debug variant, and step 3 names the task in
-  the Definition of done, which is what actually runs locally and on CI. Nothing runs `check` here.
+  dropping it: step 2 puts the bound on the debug variant, and step 3 names the task in the
+  Definition of done, which is what actually runs locally and on CI. Nothing runs `check` here. No
+  replacement `log` block was needed either — Kover registers `koverLogDebug` on its own, and that
+  is the task that prints the figure.
 - Reviewer: the step's done-criterion said "exactly the six Android-free classes", and the report's
   six entries are not that set — `NoiseSource` is an interface with no executable line and never
   appears, while `SleepTimer$Companion` does. Ruled met in substance: the filter includes and
   excludes exactly the intended sources, and a class with no measurable line changes no figure. The
   step's wording is corrected above rather than the filter.
+
+- Reviewer, both passes: the ledger promised a `log` block on the debug variant that step 2 did not
+  add. Fixed in the ruling above rather than in the build script: `koverLogDebug` exists without any
+  configuration, so a `log { }` block would be configuration that buys nothing.
 
 ## Parked
