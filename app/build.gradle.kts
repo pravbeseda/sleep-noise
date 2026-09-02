@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kover)
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
 }
@@ -297,4 +298,49 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.androidx.core.splashscreen)
+}
+
+// --- Coverage ---------------------------------------------------------------
+// The denominator is cut down to the classes a JVM test can actually reach:
+// media/ minus the audio engine, plus timer/SleepTimer. Everything else in the
+// app imports android.*, so no unit test can execute a line of it, and leaving
+// it in would make the figure track the Activity/Service line count rather than
+// how well the logic is tested.
+//
+// The trailing * on the include is what catches SleepTimer's companion object,
+// which the Kotlin compiler emits as a separate SleepTimer$Companion class
+// carrying the eight lines of forDuration and formatRemaining. It is the only
+// companion the filters have to think about: the others hold constants, compile
+// to nothing executable, and are dropped from the report whatever the patterns
+// say.
+//
+// The bound sits on the debug variant, not on `total`: total merges debug and
+// release, so a rule there would measure a variant CI never builds and drag
+// testReleaseUnitTest into the graph behind it.
+//
+// 80 rather than the 97.561 % measured today: the floor has to survive a new
+// class landing with its edge cases covered a commit later, and it is raised
+// when the figure settles higher — never lowered to turn a red run green.
+kover {
+    reports {
+        filters {
+            includes {
+                classes(
+                    "ru.pravbeseda.sleepnoise.media.*",
+                    "ru.pravbeseda.sleepnoise.timer.SleepTimer*",
+                )
+            }
+            excludes {
+                classes("ru.pravbeseda.sleepnoise.media.NoiseEngine*")
+            }
+        }
+
+        variant("debug") {
+            verify {
+                rule("Line coverage of the Android-free classes") {
+                    minBound(80)
+                }
+            }
+        }
+    }
 }

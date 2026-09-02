@@ -71,6 +71,18 @@ jobs:
         if: steps.decide.outputs.run == 'true'
         run: ./gradlew testDebugUnitTest --stacktrace
 
+      # Its own step, not folded into the one above: a failing test and a
+      # coverage figure below the floor are different problems, and a single
+      # red step named "Run unit tests" would not say which happened. The tests
+      # are already up to date from that step, so this only measures them.
+      # koverLogDebug prints the figure into the log of every run;
+      # koverVerifyDebug is what fails the job. Skipped when the tests failed —
+      # there is nothing to measure then — while the report upload below still
+      # runs on always().
+      - name: Verify coverage
+        if: steps.decide.outputs.run == 'true'
+        run: ./gradlew koverLogDebug koverVerifyDebug --stacktrace
+
       - name: Upload test report
         # always() alone would upload nothing from a skipped job and hide the
         # decision behind a missing artifact.

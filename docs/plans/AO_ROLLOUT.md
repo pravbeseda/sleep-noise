@@ -293,11 +293,10 @@ chose.
 
 **What is actually under test:** whether the build survives a worktree. It is
 the one question whose answer, if it is "no", makes every later stage
-worthless. Spawn one small task and, inside its worktree, run by hand:
-
-```bash
-./gradlew spotlessCheck detekt testDebugUnitTest lint
-```
+worthless. Spawn one small task and, inside its worktree, run the Definition of
+done command from `CLAUDE.md` by hand — named rather than copied here, because a
+copy of it in a document nobody runs goes stale the first time a check is added,
+which is exactly what happened to the copy this file used to carry.
 
 Three places where this could break, and why they probably will not:
 

@@ -65,6 +65,8 @@ secret scanners within hours and stuck in the history for good.
 ./gradlew assembleDebug          # debug APK
 ./gradlew installDebug           # build + install on a connected device
 ./gradlew testDebugUnitTest      # JVM unit tests
+./gradlew koverVerifyDebug       # unit tests + the coverage floor
+./gradlew koverLogDebug          # print the coverage figure without enforcing it
 ./gradlew connectedAndroidTest   # instrumented tests (needs a device or emulator)
 ./gradlew lint                   # Android lint — fails on new warnings
 ./gradlew detekt                 # Kotlin static analysis (baselined)
@@ -125,13 +127,14 @@ changes only Markdown skips the four Gradle jobs — they still report green, th
 Before opening a PR:
 
 ```bash
-./gradlew spotlessCheck detekt testDebugUnitTest lint
+./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
 its test in the same commit. Android plumbing is exempt from test-first, but a PR that leaves
 behaviour uncovered says which behaviour and why. Bug fixes start with a test that reproduces the
-bug. No test gets disabled or weakened to turn a build green.
+bug. No test gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage
+floor under the noise and timer logic; `CLAUDE.md` says what it is and which classes it counts.
 
 The full rule, and the reasoning for drawing the line there, is in [`CLAUDE.md`](CLAUDE.md).
 
