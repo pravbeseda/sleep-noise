@@ -90,8 +90,10 @@ agentRules: |
   AO created the branch. Work in it: do not create your own, do not switch to
   main, do not rebase onto main or release.
 
-  Work is finished when this is green:
-  ./gradlew spotlessCheck detekt testDebugUnitTest lint
+  Work is finished when the command under "Definition of done" in CLAUDE.md is
+  green. It is named there rather than repeated here: a second copy of it goes
+  stale the first time a check is added, and this file already says it keeps no
+  second copy of the project rules.
   If a step could not be run at all, say which one and why. A report that
   routes around the step it skipped is worse than a red result.
 
