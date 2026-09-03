@@ -44,7 +44,13 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
       required-check list, the `NoiseEngine` architecture note), `README.md` (the instrumented
       tests paragraph), `docs/plans/REFACTORING_PLAN.md` (tick the follow-up checkbox) —
       lenses: none — done when: no file outside this plan still claims CI runs no instrumented
-      test, and the checkbox is `[x]` with the PR named.
+      test, and the checkbox is `[x]` naming issue #31. The pull request does not exist while the
+      step runs, so its number is written into that checkbox by a commit of its own at the final
+      gate — step 3.
+
+- [ ] 3. Name the pull request in the ticked follow-up checkbox — files:
+      `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: the entry reads "Landed in
+      PR #N" in the same form as the Kover entry above it.
 
 ## Verification outside the loop
 The suite is run on a local API 36 emulator before the job is written, so a red instrumented
@@ -54,6 +60,22 @@ job itself can only be proven green on CI, which is the final gate: the PR edits
 PR executes the job it adds.
 
 ## Rulings
+- Step 2, spec reviewer, `CLAUDE.md:151` — "five Gradle jobs, two of them booting an emulator"
+  counts matrix legs as jobs. **Fixed**: one job boots an emulator on each of its two legs, and
+  the sentence now says so; the same paragraph counts jobs three clauses later.
+- Step 2, spec reviewer, `docs/plans/REFACTORING_PLAN.md:247` — "lets the four Gradle jobs skip
+  their steps" is now five. **Dropped**: that paragraph is the dated record of what deliverable D3
+  landed, and four is what it landed against. Rewriting it would falsify the record rather than
+  correct it, and the live statement of the same fact — `CLAUDE.md` — was updated. Cost if wrong:
+  a reader takes a historical note for a current count, in a file whose surrounding lines are all
+  historical notes.
+- Step 2, spec reviewer, `.github/workflows/ci.yml:425` — the Guardrails comment says "the other
+  four jobs". **Fixed** to five, together with one more count this branch made stale at
+  `ci.yml:141`. Both are in a file this branch already changes.
+- Step 2, quality reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:43` — step 2 is ticked while its
+  own done-criterion asks for a pull request number that cannot exist yet. **Fixed**: the
+  criterion now says what was actually decided — the checkbox names issue #31 — and writing the
+  number is step 3, at the final gate, where the pull request exists.
 - Step 1, quality reviewer, `.github/workflows/ci.yml:144` — "Guardrails is the one job here
   carrying a job-level `if:`" is false; `alpha` carries one too. **Fixed**: the sentence now says
   "the one required check", and names `alpha` as the other, deliberately not required. A comment
@@ -65,3 +87,8 @@ PR executes the job it adds.
   if wrong: the step's diff is one bullet wider than its own text.
 
 ## Parked
+- Nothing tracks the manual flip that makes `Instrumented tests (API 26)` and `(API 36)` required
+  status checks. Issue #31 is closed by this pull request, and the fact then has to be edited in
+  five places at once: `CLAUDE.md:139`, the context-name list at `CLAUDE.md:144`, `README.md:126`,
+  `docs/plans/REFACTORING_PLAN.md:73` and the comment at `.github/workflows/ci.yml:140`. Raised by
+  the step 2 quality reviewer.

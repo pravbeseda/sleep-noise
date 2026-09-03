@@ -138,7 +138,7 @@ jobs:
           fetch-depth: 0
 
       # The if: goes on every step below, never on the job — the same rule the
-      # four Gradle jobs follow, and for the same reason: this job is meant to
+      # other four Gradle jobs follow, and for the same reason: this job is meant to
       # become a required status check, and a job skipped at job level reports
       # no context at all, which blocks the merge button rather than freeing it.
       # Skipped at step level it still reports green, in seconds. Guardrails is
@@ -422,7 +422,7 @@ jobs:
     # a push to main has nothing to compare against.
     if: github.event_name == 'pull_request'
     # No JDK, no Android SDK, no Gradle, no google-services.json: this job reads
-    # the diff and counts lines. Adding the setup steps the other four jobs need
+    # the diff and counts lines. Adding the setup steps the other five jobs need
     # would turn seconds into minutes for no gain.
     steps:
       - name: Checkout
