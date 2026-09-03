@@ -40,7 +40,7 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
       files: `.github/workflows/ci.yml` — lenses: security — done when:
       `grep -c connectedDebugAndroidTest .github/workflows/ci.yml` is 1, the file parses as
       YAML, and the job's step-level `if:` guards match the other four jobs.
-- [ ] 2. Update the prose that says CI has no device — files: `CLAUDE.md` (job count, the
+- [x] 2. Update the prose that says CI has no device — files: `CLAUDE.md` (job count, the
       required-check list, the `NoiseEngine` architecture note), `README.md` (the instrumented
       tests paragraph), `docs/plans/REFACTORING_PLAN.md` (tick the follow-up checkbox) —
       lenses: none — done when: no file outside this plan still claims CI runs no instrumented

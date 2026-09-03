@@ -136,7 +136,7 @@ New tooling joins this line as it lands; Kover was the most recent.
 
 ## CI
 
-`.github/workflows/ci.yml` runs six jobs. Five of them are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on. The sixth, **alpha**, delivers and is deliberately not required — see the delivery section below.
+`.github/workflows/ci.yml` runs seven jobs. Five of them are **required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on. The sixth, **instrumented tests**, runs on every pull request exactly like the required five but is **not required yet**: it is a matrix over API 26 and API 36, so it reports two contexts — `Instrumented tests (API 26)` and `Instrumented tests (API 36)` — and neither has been seen passing on a pull request. Adding them to the branch protection is a manual step taken once both have, for the reason the `Guardrails` paragraph below spells out: a required check that has never reported blocks every merge in the repository. The seventh, **alpha**, delivers and is deliberately not required — see the delivery section below.
 
 Four of the five — unit tests, lint, detekt and format — are triggered on every PR and push to `main`, but each one first asks `.github/actions/decide-work` whether it has anything to do. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
 
@@ -144,17 +144,17 @@ It enforces two rules this file states in prose, and only the half of each that 
 
 The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, hardcoded on both sides. Renaming a job without renaming the context turns the check into a missing one and blocks every merge — change them together.
 
-The four Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
+The five Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
 ### Which jobs have work: `.github/actions/decide-work`
 
-A pull request that only edits prose does not need four Gradle jobs, so the composite action answers `run=true` / `run=false` and every subsequent step in the four carries `if: steps.decide.outputs.run == 'true'`. **The condition never moves to job level**: all five required contexts are matched by job name, and a job skipped at job level reports nothing at all, which blocks the merge button permanently instead of freeing it. A skipped job here still reports green in seconds.
+A pull request that only edits prose does not need five Gradle jobs, two of them booting an emulator, so the composite action answers `run=true` / `run=false` and every subsequent step in the five carries `if: steps.decide.outputs.run == 'true'`. **The condition never moves to job level**: all five required contexts are matched by job name, and a job skipped at job level reports nothing at all, which blocks the merge button permanently instead of freeing it. The instrumented tests follow the same rule while they are still unrequired, because that is what they are meant to become. A skipped job here still reports green in seconds.
 
-The rule lives in exactly one place, the `ignored_globs` array at the top of `decide.sh`, and it is one glob: `*.md`. `docs/**` is not beside it because every file under `docs/` is Markdown — a second glob no test could tell from the first. `.github/**` is not there either, unlike SpendControl: a workflow is build configuration, not prose, and a PR that rewrites `ci.yml` has to run `ci.yml` or a broken step lands behind five green checks that executed none of it.
+The rule lives in exactly one place, the `ignored_globs` array at the top of `decide.sh`, and it is one glob: `*.md`. `docs/**` is not beside it because every file under `docs/` is Markdown — a second glob no test could tell from the first. `.github/**` is not there either, unlike SpendControl: a workflow is build configuration, not prose, and a PR that rewrites `ci.yml` has to run `ci.yml` or a broken step lands behind seven green checks that executed none of it.
 
 A push to `main` answers `false` on its own, whatever changed: branch protection is `strict: true`, so the pull request already ran against the very tree being merged. `workflow_dispatch` answers `true` and is how a full run is forced on demand.
 
-The decision needs the merge base, so **every calling job checks out with `fetch-depth: 0`** — that, and not the Spotless ratchet, is now why three of the four do. `decide.sh` has its own tests in `test.sh`, and the action runs them before it decides: nothing else on CI exercises them, and a wrong decision is the one failure that reports green.
+The decision needs the merge base, so **every calling job checks out with `fetch-depth: 0`** — that, and not the Spotless ratchet, is now why four of the five do. `decide.sh` has its own tests in `test.sh`, and the action runs them before it decides: nothing else on CI exercises them, and a wrong decision is the one failure that reports green.
 
 ### Alpha delivery to Firebase App Distribution
 
@@ -278,7 +278,7 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `playback/PlaybackService` holds two `NoiseChannel`s (white and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "white noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
 
-`start()` and `stop()` are expected on the main thread and are each a no-op when the engine is already in the state they ask for; `stop()` is one `@Volatile` flag plus `join()` — an unbounded one, which now matters because the audio-focus callback can drive it too (issue #26). `app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI has no device, so it runs only when someone runs `connectedAndroidTest`.
+`start()` and `stop()` are expected on the main thread and are each a no-op when the engine is already in the state they ask for; `stop()` is one `@Volatile` flag plus `join()` — an unbounded one, which now matters because the audio-focus callback can drive it too (issue #26). `app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI runs it on an emulator at API 26 and API 36 on every pull request, and `connectedAndroidTest` runs it against whatever device is attached. It asserts how long `stop()` blocks its caller, which is why that emulator is deliberately not started with `-noaudio`: without an audio sink the guest still accepts the writes, only far more slowly, and the bound is missed.
 
 ### Playback: a foreground service, not the Activity
 
@@ -290,7 +290,7 @@ Two rules are easy to break here. **Every `startForegroundService()` has to be a
 
 `playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
 
-None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and CI has no instrumented job to run them, so its behaviour is verified by hand on a device.
+None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and CI now runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
 
 ### Timer
 
