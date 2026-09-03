@@ -92,10 +92,12 @@ sample generation, time formatting, state computation, settings migration. Order
 the smallest implementation that passes it, then refactoring. New pure logic without a test in the
 same commit is not finished work — do not describe it as done.
 
-The boundary is checked, not trusted: `AndroidFreeSourcesTest` walks `media/` minus `NoiseEngine`
-and `timer/SleepTimer.kt` and fails naming the file and the import line when one of them imports
-`android.*` or `androidx.*`. A separate `java-library` module would grant the same guarantee at
-compile time; single-module, it is asserted instead (issue #32).
+The two roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
+walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, and fails naming the file and the
+import line when one of them imports `android.*` or `androidx.*`. The rest of the rule above is still
+discipline — pure logic outside those two roots is scanned by nothing, `models/Language` included. A
+separate `java-library` module would grant the whole rule at compile time; single-module, this much
+of it is asserted instead (issue #32).
 
 **Android plumbing** (Activity, View, Service, `SharedPreferences`) is not written test-first. If the
 behaviour can be expressed as an instrumented test on an emulator, the test lands after the
@@ -120,9 +122,13 @@ reach — `models/Language` imports nothing from `android.*` either, and is a da
 behaviour to cover. The bound rises once the figure has settled above it, and is never lowered to
 turn a red run green — a floor that moves down is not a floor.
 
-That set is named twice — the Kover filter and `AndroidFreeSourcesTest` — and the two change
-together: a package added to the filter without being added to the test keeps the floor honest while
-quietly dropping the Android-free rule that justifies the floor.
+That set is written twice and not identically: Kover names classes by glob, the test names files.
+Where they differ the test is the stricter one — it reads every `.kt` under `media/` except
+`NoiseEngine.kt`, while the filter excludes the whole `NoiseEngine*` glob — except at the edges a
+glob reaches and a file name does not: a `SleepTimerFormatter` class, or a second class declared
+inside `NoiseEngine.kt`, counts towards the floor while going unscanned. Change one and look at the
+other; a package added to the filter alone keeps the floor honest while quietly dropping the
+Android-free premise that justifies it.
 
 ### Definition of done
 

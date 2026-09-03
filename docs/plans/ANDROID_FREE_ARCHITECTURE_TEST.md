@@ -58,6 +58,25 @@ Step 1, gate round 1 — two reviewers, no `blocking` finding, six suggestions:
   the test, so a new pure package added to the Kover filter would silently go unchecked → **fixed in
   step 2**, where the documentation is updated.
 
+Step 2 and the final gate over the whole branch — again no `blocking` finding:
+
+- Spec and the final reviewer independently: the new `CLAUDE.md` prose claimed more than the test
+  does — "the boundary is checked" reads as covering the whole pure-logic rule when two roots are
+  scanned, and "named twice … the two change together" asserts an identity that does not hold, since
+  Kover matches class globs (`SleepTimer*`, `NoiseEngine*`) and the test matches file names → both
+  **fixed**: the paragraphs now name the two roots, say the rest of the rule is discipline, and spell
+  out the two edges where a glob reaches further than a file name.
+- Final: the `files.isEmpty()` guard is unreachable on a checkout, since git stores no empty
+  directory and a missing one is already caught → **dropped**. Inspecting nothing is the single
+  failure mode of a file-walk rule, and the case is reachable in a working tree mid-rename — which is
+  exactly when someone is moving these files. Four lines to make a silent pass impossible is
+  proportionate.
+- Final: narrow the Kover `SleepTimer*` glob so the two expressions match exactly → **dropped**.
+  Editing `app/build.gradle.kts` drags a 300-line file into the Spotless ratchet for a wording
+  problem, and the divergence is now documented rather than denied.
+
 ## Parked
 
-_None yet._
+- `README.md:136` states the same pure-logic rule as `CLAUDE.md` and does not mention what enforces
+  it. Outside this run's two steps; both documents describe the rule, so the one left alone goes
+  stale silently — which is what the `CLAUDE.md` "Project" section warns about.
