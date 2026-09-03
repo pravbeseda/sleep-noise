@@ -121,12 +121,12 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests, lint, detekt, formatting and Guardrails are required checks: a red run blocks the merge,
-and the branch has to be current with `main` before it can go in. The first four run locally;
-Guardrails compares the PR against its base commit, so it exists only on CI. The instrumented tests
-run on every pull request too, on emulators at API 26 and API 36; they become required checks once
-they have been seen passing on one. A pull request that changes only Markdown skips the five Gradle
-jobs — they still report green, they just do no work.
+Unit tests, lint, detekt, formatting, Guardrails and the instrumented tests are required checks: a
+red run blocks the merge, and the branch has to be current with `main` before it can go in. The
+first four run locally; Guardrails compares the PR against its base commit, so it exists only on CI,
+and the instrumented tests run on emulators at API 26 and API 36 — one required context per level. A
+pull request that changes only Markdown skips the five Gradle jobs — they still report green, they
+just do no work.
 Before opening a PR:
 
 ```bash

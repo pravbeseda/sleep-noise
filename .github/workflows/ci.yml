@@ -138,8 +138,9 @@ jobs:
           fetch-depth: 0
 
       # The if: goes on every step below, never on the job — the same rule the
-      # other four Gradle jobs follow, and for the same reason: this job is meant to
-      # become a required status check, and a job skipped at job level reports
+      # other four Gradle jobs follow, and for the same reason: both of this
+      # job's contexts are required status checks, and a job skipped at job
+      # level reports
       # no context at all, which blocks the merge button rather than freeing it.
       # Skipped at step level it still reports green, in seconds. Guardrails is
       # the one required check here carrying a job-level if:, because it

@@ -70,9 +70,9 @@ Reopening it means changing this section first, with the case for it.
       intention into coverage, and the first thing to run the existing `NoiseEngineHammerTest`.
       Landed in PR #33: the `instrumented-tests` job in `.github/workflows/ci.yml` runs
       `connectedDebugAndroidTest` on `reactivecircus/android-emulator-runner` over API 26 and
-      API 36, on every pull request and guarded by `decide-work` like the Gradle jobs. Its two
-      contexts join the required checks once they have been seen passing on a pull request. The
-      design is in [`CI_INSTRUMENTED_TESTS.md`](CI_INSTRUMENTED_TESTS.md).
+      API 36, on every pull request and guarded by `decide-work` like the Gradle jobs. Both of its
+      contexts are required status checks, added once they had been seen green on that pull
+      request. The design is in [`CI_INSTRUMENTED_TESTS.md`](CI_INSTRUMENTED_TESTS.md).
 - [ ] An architecture test that reads the sources and fails if anything in `media/` other than
       `NoiseEngine`, or `timer/SleepTimer`, imports `android.*` — the single-module stand-in for
       SpendControl's module boundary. The exclusion is the Kover filter's, named once in both.

@@ -19,6 +19,11 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
   job was written: on a local API 36 emulator the same 100 hammer cycles put the worst `stop()`
   at 1158 ms with the flag and at 321 ms without it, against the test's 1000 ms bound. The flag
   fails the very test this job exists to run.
+- Making the two contexts required → done in this pull request rather than left to issue #34,
+  because the user asked for it once both had reported green on PR #33. Applied with a `PATCH` on
+  `required_status_checks` rather than a `PUT` on the whole protection object, which would have
+  rewritten `enforce_admins`, the force-push and deletion bans and the conversation-resolution rule
+  along the way; those were re-read afterwards and are unchanged.
 - Job-level `timeout-minutes` → an emulator that never boots must fail the job, not burn the
   default 6 hours.
 - Trigger scope → every pull request, like the other four Gradle jobs, with `decide-work`
@@ -105,8 +110,9 @@ PR executes the job it adds.
   if wrong: the step's diff is one bullet wider than its own text.
 
 ## Parked
-- Nothing tracks the manual flip that makes `Instrumented tests (API 26)` and `(API 36)` required
-  status checks. Issue #31 is closed by this pull request, and the fact then has to be edited in
-  five places at once: `CLAUDE.md:139`, the context-name list at `CLAUDE.md:145`, `README.md:126`,
-  `docs/plans/REFACTORING_PLAN.md:73` and the comment at `.github/workflows/ci.yml:140`. Raised by
-  the step 2 quality reviewer. Filed as issue #34.
+- ~~Nothing tracks the manual flip that makes `Instrumented tests (API 26)` and `(API 36)` required
+  status checks.~~ Raised by the step 2 quality reviewer, filed as issue #34 — and then done inside
+  this pull request instead, on the user's instruction, once both contexts had been seen green on
+  it. The five places the entry named are updated in the same commit, and the counts they carry
+  moved with them: seven required contexts now, reported by six of the seven jobs, because the
+  instrumented job reports one per matrix leg.
