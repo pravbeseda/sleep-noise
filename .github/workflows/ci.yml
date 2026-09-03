@@ -39,9 +39,9 @@ jobs:
           # package an artifact, and this job packages nothing.
           fetch-depth: 0
 
-      # The if: goes on every step below, never on the job. All five jobs are
-      # required status checks, and a job skipped at job level never reports its
-      # context — which blocks the merge button rather than freeing it.
+      # The if: goes on every step below, never on the job. This job's context
+      # is a required status check, and a job skipped at job level never reports
+      # its context — which blocks the merge button rather than freeing it.
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work

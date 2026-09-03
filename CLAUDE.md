@@ -127,9 +127,13 @@ a step could not be run at all, say which one and why rather than reporting arou
 `koverVerifyDebug` runs `testDebugUnitTest` itself, so the tests execute once however you reach
 them; both are named so that a reader can see the tests run at all.
 
-Five tasks, four required checks: coverage has no job of its own and rides in `Unit tests`. The
-fifth required check, Guardrails, compares the PR against its base
-commit and exists only on CI: a green local run means the work is done, not that the PR is
+Five tasks, four of the seven required checks: coverage has no job of its own and rides in `Unit
+tests`. The other three are deliberately not on that line. Guardrails compares the PR against its
+base commit, so there is nothing local to run at all. `Instrumented tests (API 26)` and
+`(API 36)` are the remaining two, and unlike Guardrails they *can* be run here —
+`connectedAndroidTest`, in the Commands section — but they need a device or an emulator, and a
+pre-push line that does not run without one is a line that gets skipped. So a green local run
+means the work is done as far as a machine with no device can tell; it does not mean the PR is
 mergeable. See the CI section.
 
 New tooling joins this line as it lands; Kover was the most recent.
