@@ -109,4 +109,4 @@ PR executes the job it adds.
   status checks. Issue #31 is closed by this pull request, and the fact then has to be edited in
   five places at once: `CLAUDE.md:139`, the context-name list at `CLAUDE.md:145`, `README.md:126`,
   `docs/plans/REFACTORING_PLAN.md:73` and the comment at `.github/workflows/ci.yml:140`. Raised by
-  the step 2 quality reviewer.
+  the step 2 quality reviewer. Filed as issue #34.
