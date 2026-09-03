@@ -93,6 +93,162 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest
           if-no-files-found: ignore
 
+  instrumented-tests:
+    name: Instrumented tests (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    # Its own job and not a step of Unit tests: the emulator dominates the wall
+    # clock of whatever job it sits in, and a flaky boot must not hide the
+    # coverage, formatting and lint verdicts, which have nothing to do with a
+    # device. The androidTest sources are older than this job and CI had never
+    # executed one of them — NoiseEngineHammerTest, 100 start/stop cycles
+    # against a real AudioTrack, ran only when someone typed
+    # connectedAndroidTest on a machine with a device attached.
+    strategy:
+      # Both legs report. A flake on one level must not cancel the other, or the
+      # run says nothing about the level that was still working.
+      fail-fast: false
+      matrix:
+        include:
+          # The floor and the ceiling of the range the app claims: minSdk 26 and
+          # targetSdk/compileSdk 36 in app/build.gradle.kts. They are the two
+          # ends a failure can be acted on — below the floor the app is not
+          # installed at all, above the ceiling it is not compiled against yet —
+          # and the levels between them differ from one end or the other, never
+          # from both.
+          - api-level: 26
+            # No ATD system image exists below API 30, so the floor runs the
+            # plain one. The ceiling takes aosp_atd instead: a stripped image
+            # without the Play services boots faster and flakes less, and
+            # nothing in app/src/androidTest asks for them.
+            target: default
+          - api-level: 36
+            target: aosp_atd
+    # An emulator that never boots has to fail this job rather than sit there
+    # until the six-hour default gives up on it.
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The decision below diffs against the pull request's merge base, so
+          # the history has to reach it. Nothing else in this job needs the
+          # depth: it builds the debug variant, and the release versioning gate
+          # in app/build.gradle.kts only guards the tasks that package a
+          # release.
+          fetch-depth: 0
+
+      # The if: goes on every step below, never on the job — the same rule the
+      # four Gradle jobs follow, and for the same reason: this job is meant to
+      # become a required status check, and a job skipped at job level reports
+      # no context at all, which blocks the merge button rather than freeing it.
+      # Skipped at step level it still reports green, in seconds. Guardrails is
+      # the one job here carrying a job-level if:, because it compares against
+      # the pull request's base commit and a push to main has nothing to compare
+      # against; that is not this job's situation and not the pattern to copy.
+      - name: Decide whether there is work
+        id: decide
+        uses: ./.github/actions/decide-work
+
+      - name: Set up JDK 17
+        if: steps.decide.outputs.run == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        if: steps.decide.outputs.run == 'true'
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        if: steps.decide.outputs.run == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        if: steps.decide.outputs.run == 'true'
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Free disk space for the emulator
+        if: steps.decide.outputs.run == 'true'
+        # The emulator refuses to start unless 120% of its userdata partition is
+        # free, and it counts more strictly than df does: on SpendControl, the
+        # pipeline this job is modelled on, it refused while df on the same
+        # runner reported gigabytes to spare. So the margin to widen is the
+        # emulator's and the only way to widen it is to delete something. The
+        # NDK is several gigabytes and nothing here compiles native code; dotnet
+        # and ghc are the other two large toolchains the runner image ships and
+        # this project uses neither. The df lines around the removal are what
+        # makes a future refusal readable at all.
+        run: |
+          df -h /
+          sudo rm -rf "$ANDROID_HOME/ndk" /usr/share/dotnet /opt/ghc
+          df -h /
+
+      - name: Enable KVM
+        if: steps.decide.outputs.run == 'true'
+        # The runner image ships KVM but leaves the device owned by root, and
+        # without access to it the emulator falls back to software rendering —
+        # tens of minutes instead of a few, against the 45-minute cap above.
+        # This hands the device to everyone on the runner.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run instrumented tests
+        if: steps.decide.outputs.run == 'true'
+        # Pinned to the tag, not to a commit. This repository SHA-pins exactly
+        # one action — wzieba/Firebase-Distribution-Github-Action in the alpha
+        # job — and the reason is written beside it: that step is handed a
+        # service account, so whoever could move the tag would get the
+        # credential. This one is handed no secret, so it follows the convention
+        # of every other action here: actions/checkout@v4,
+        # android-actions/setup-android@v3, gradle/actions/setup-gradle@v4.
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
+          arch: x86_64
+          profile: pixel_2
+          # -no-snapshot-save keeps every run a cold boot: a snapshot would be
+          # written into a runner discarded minutes later, and a stale snapshot
+          # is the classic way an emulator job starts failing for reasons no
+          # diff explains. No window and no boot animation because nobody is
+          # watching this one.
+          #
+          # -noaudio is deliberately absent, and it is the one option this job
+          # does not take from SpendControl. SpendControl's instrumented tests
+          # touch Room and a file store; this project's NoiseEngineHammerTest
+          # writes to a real AudioTrack and asserts on how long stop() blocks
+          # its caller. Without an audio sink the guest still accepts the
+          # writes, only far more slowly: measured on a local API 36 emulator,
+          # the same 100 cycles put the worst stop() at 1158 ms with -noaudio
+          # against the test's 1000 ms bound, and at 321 ms without it. So the
+          # flag does not silence a test that has nothing to do with audio here
+          # — it fails the one test this job exists to run.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -camera-back none
+          disable-animations: true
+          # The debug variant only: a release build needs the SN_* signing
+          # credentials, which this job is not given and has no use for.
+          script: ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Upload instrumented test report
+        # always() alone would upload nothing from a skipped job and hide the
+        # decision behind a missing artifact.
+        if: always() && steps.decide.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          # The API level is part of the name because upload-artifact@v4 fails
+          # on a duplicate one and both matrix legs reach this step.
+          name: instrumented-test-report-api-${{ matrix.api-level }}
+          path: |
+            app/build/reports/androidTests/connected
+            app/build/outputs/androidTest-results/connected
+          if-no-files-found: ignore
+
   format:
     name: Format
     runs-on: ubuntu-latest

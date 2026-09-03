@@ -16,6 +16,10 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
 - `if:` on every step, never on the job → the same rule `CLAUDE.md` states for the other five:
   the job is meant to become a required status check, and a job skipped at job level never
   reports its context.
+- No `-noaudio`, the one emulator option not taken from SpendControl → measured here before the
+  job was written: on a local API 36 emulator the same 100 hammer cycles put the worst `stop()`
+  at 1158 ms with the flag and at 321 ms without it, against the test's 1000 ms bound. The flag
+  fails the very test this job exists to run.
 - Job-level `timeout-minutes` → an emulator that never boots must fail the job, not burn the
   default 6 hours.
 - Trigger scope → every pull request, like the other four Gradle jobs, with `decide-work`
@@ -29,7 +33,7 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
   turned down: nothing tests notifications yet, so it would buy coverage that does not exist.
 
 ## Steps
-- [ ] 1. Add the `instrumented-tests` job to `.github/workflows/ci.yml`: checkout with
+- [x] 1. Add the `instrumented-tests` job to `.github/workflows/ci.yml`: checkout with
       `fetch-depth: 0`, `decide-work`, JDK 17 + Android SDK + Gradle, the shared
       `google-services` action, free disk space, enable KVM, `android-emulator-runner`
       running `./gradlew connectedDebugAndroidTest`, and an `always()` report upload —
