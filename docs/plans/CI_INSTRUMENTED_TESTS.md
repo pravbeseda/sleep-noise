@@ -11,7 +11,7 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
 - Pin by tag `@v2`, not by commit SHA → the repository SHA-pins exactly one action,
   `wzieba/Firebase-Distribution-Github-Action`, and states the reason: it is handed a service
   account credential. The emulator runner is handed none, so it follows the rule every other
-  action in the workflow already follows: pinned to its tag.
+  third-party action in the workflow already follows: pinned to its tag.
 - `if:` on every step, never on the job → the same rule `CLAUDE.md` states for the other five:
   the job is meant to become a required status check, and a job skipped at job level never
   reports its context.
@@ -68,8 +68,15 @@ PR executes the job it adds.
   named three, while the workflow uses five. **Fixed** by dropping the enumeration: every other
   action in the workflow is tag-pinned, which is the claim that was actually being made and the
   one that does not drift when an action is added.
-- Final gate, quality reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:92` — the parked entry
-  pointed at `CLAUDE.md:144`, a blank line. **Fixed** to 145.
+- Final gate, quality reviewer — the `## Parked` entry below pointed at `CLAUDE.md:144`, a blank
+  line. **Fixed** to 145.
+- Final gate re-review, three counts a reader can disprove from the file that states them.
+  **Fixed**, each by dropping the count rather than correcting it, since all three had drifted at
+  least once already: the pin rationale now says *third-party* action, which is what the claim was
+  always about — the two local composite actions are path references, pinned to nothing; the
+  Guardrails comment now reads "every other job here" instead of a number that was off by one
+  before this branch and stayed off after the first wave carried it forward; and the ruling above
+  names the parked entry rather than its line, which its own commit had moved.
 - Step 2, spec reviewer, `CLAUDE.md:151` — "five Gradle jobs, two of them booting an emulator"
   counts matrix legs as jobs. **Fixed**: one job boots an emulator on each of its two legs, and
   the sentence now says so; the same paragraph counts jobs three clauses later.
@@ -79,9 +86,10 @@ PR executes the job it adds.
   correct it, and the live statement of the same fact — `CLAUDE.md` — was updated. Cost if wrong:
   a reader takes a historical note for a current count, in a file whose surrounding lines are all
   historical notes.
-- Step 2, spec reviewer, `.github/workflows/ci.yml:425` — the Guardrails comment says "the other
-  four jobs". **Fixed** to five, together with one more count this branch made stale at
-  `ci.yml:141`. Both are in a file this branch already changes.
+- Step 2, spec reviewer, `.github/workflows/ci.yml:425` — the Guardrails comment miscounts the
+  jobs it contrasts itself with. **Fixed**, together with one more count this branch made stale in
+  the same file; see the re-review ruling below for the wording that finally stuck. Both are in a
+  file this branch already changes.
 - Step 2, quality reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:43` — step 2 is ticked while its
   own done-criterion asks for a pull request number that cannot exist yet. **Fixed**: the
   criterion now says what was actually decided — the checkbox names issue #31 — and writing the
