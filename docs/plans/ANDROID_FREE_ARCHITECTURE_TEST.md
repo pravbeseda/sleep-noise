@@ -28,7 +28,7 @@ test walks those sources and fails naming the file and the offending line.
       — lenses: none — done when: the test passes on the tree as it stands, and fails naming the file
       and the import line when the issue's reproduction (`import android.util.Log` in `WhiteNoise.kt`)
       is planted; the planted violation is reverted before the step is committed.
-- [ ] 2. Documentation — files: `docs/plans/REFACTORING_PLAN.md`, `CLAUDE.md` — lenses: none —
+- [x] 2. Documentation — files: `docs/plans/REFACTORING_PLAN.md`, `CLAUDE.md` — lenses: none —
       done when: the "Testing strategy" follow-up checkbox is ticked and names this test, and the
       `CLAUDE.md` rule that states the Android-free boundary says what enforces it.
 

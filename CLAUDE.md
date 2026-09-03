@@ -92,6 +92,11 @@ sample generation, time formatting, state computation, settings migration. Order
 the smallest implementation that passes it, then refactoring. New pure logic without a test in the
 same commit is not finished work — do not describe it as done.
 
+The boundary is checked, not trusted: `AndroidFreeSourcesTest` walks `media/` minus `NoiseEngine`
+and `timer/SleepTimer.kt` and fails naming the file and the import line when one of them imports
+`android.*` or `androidx.*`. A separate `java-library` module would grant the same guarantee at
+compile time; single-module, it is asserted instead (issue #32).
+
 **Android plumbing** (Activity, View, Service, `SharedPreferences`) is not written test-first. If the
 behaviour can be expressed as an instrumented test on an emulator, the test lands after the
 implementation in the same PR. If it cannot, the PR description says which behaviour is uncovered and
@@ -114,6 +119,10 @@ logic is tested. It is the logic that is measured, not everything a JVM test cou
 reach — `models/Language` imports nothing from `android.*` either, and is a data holder with no
 behaviour to cover. The bound rises once the figure has settled above it, and is never lowered to
 turn a red run green — a floor that moves down is not a floor.
+
+That set is named twice — the Kover filter and `AndroidFreeSourcesTest` — and the two change
+together: a package added to the filter without being added to the test keeps the floor honest while
+quietly dropping the Android-free rule that justifies the floor.
 
 ### Definition of done
 
