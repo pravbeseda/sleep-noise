@@ -11,10 +11,12 @@ import java.nio.file.Paths
  * nothing from `android.*`. Nothing checked it before, so the assumption failed silently.
  */
 class AndroidFreeSourcesTest {
-    // Mirrors the Kover filter in app/build.gradle.kts: media.* minus NoiseEngine*.
+    // The carve-out of the Kover filter in app/build.gradle.kts, by file rather than by its
+    // NoiseEngine* glob: a second class whose name merely starts with NoiseEngine is checked here.
     private val excludedFromMedia = "NoiseEngine.kt"
 
-    private val androidImport = Regex("^import android\\.")
+    // androidx too: an androidx import is as unrunnable on the JVM as an android one.
+    private val androidImport = Regex("^import androidx?\\.")
 
     @Test
     fun theAndroidFreeSourcesImportNothingFromAndroid() {
