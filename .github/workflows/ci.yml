@@ -207,7 +207,8 @@ jobs:
         # job — and the reason is written beside it: that step is handed a
         # service account, so whoever could move the tag would get the
         # credential. This one is handed no secret, so it follows the convention
-        # every other action in this workflow follows: pinned to its tag.
+        # every other third-party action in this workflow follows: pinned to its
+        # tag.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -421,8 +422,8 @@ jobs:
     # a push to main has nothing to compare against.
     if: github.event_name == 'pull_request'
     # No JDK, no Android SDK, no Gradle, no google-services.json: this job reads
-    # the diff and counts lines. Adding the setup steps the other five jobs need
-    # would turn seconds into minutes for no gain.
+    # the diff and counts lines. Adding the setup steps every other job here
+    # needs would turn seconds into minutes for no gain.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
