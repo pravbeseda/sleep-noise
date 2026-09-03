@@ -36,9 +36,9 @@ Being honest about the current state. The roadmap lives in
 [`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
 in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
 
-- The playback service has no automated tests yet: it is to be covered by instrumented tests on an
-  emulator, which CI does not run yet, so its lifecycle, notification and audio-focus handling are
-  verified by hand on a device.
+- The playback service has no automated tests yet: CI runs the project's instrumented tests on an
+  emulator, but none of them covers the service, so its lifecycle, notification and audio-focus
+  handling are verified by hand on a device.
 - No lock-screen or headset-button controls — the ongoing notification's Stop action is the only
   control outside the app.
 
@@ -121,10 +121,12 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests, lint, detekt, formatting and Guardrails are required checks: a red run blocks the merge,
-and the branch has to be current with `main` before it can go in. The first four run locally;
-Guardrails compares the PR against its base commit, so it exists only on CI. A pull request that
-changes only Markdown skips the four Gradle jobs — they still report green, they just do no work.
+Unit tests, lint, detekt, formatting, Guardrails and the instrumented tests are required checks: a
+red run blocks the merge, and the branch has to be current with `main` before it can go in. The
+first four run locally; Guardrails compares the PR against its base commit, so it exists only on CI,
+and the instrumented tests run on emulators at API 26 and API 36 — one required context per level. A
+pull request that changes only Markdown skips the five Gradle jobs — they still report green, they
+just do no work.
 Before opening a PR:
 
 ```bash

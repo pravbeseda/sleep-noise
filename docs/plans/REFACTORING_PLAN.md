@@ -46,7 +46,7 @@ Three moves replace them:
    project is single-module, so the same rule has to be checked rather than granted.
 2. **Android plumbing is tested on a real emulator**, in `androidTest` — the way SpendControl
    tests Room, its migrations and its file storage. `NoiseEngineHammerTest` is already written
-   this way and currently runs nowhere, because CI has no instrumented job.
+   this way, and CI runs it on an emulator at API 26 and API 36 on every pull request.
 3. **Coverage is measured on the Android-free packages only.** SpendControl puts its 80 % Kover
    bound on `:domain` alone, and its build script says why: a denominator full of Activities
    makes the figure answer no question however good the tests get. Single-module, this project
@@ -66,8 +66,13 @@ Reopening it means changing this section first, with the case for it.
       Android-free part of `timer/`, rather than the whole module. Landed in PR #30: the
       filter and the 80 % bound are in `app/build.gradle.kts`, and `koverVerifyDebug` joined
       the Definition of done in `CLAUDE.md`.
-- [ ] A CI job running `connectedAndroidTest` on an emulator — what turns point 2 from an
+- [x] A CI job running `connectedAndroidTest` on an emulator — what turns point 2 from an
       intention into coverage, and the first thing to run the existing `NoiseEngineHammerTest`.
+      Landed in PR #33: the `instrumented-tests` job in `.github/workflows/ci.yml` runs
+      `connectedDebugAndroidTest` on `reactivecircus/android-emulator-runner` over API 26 and
+      API 36, on every pull request and guarded by `decide-work` like the Gradle jobs. Both of its
+      contexts are required status checks, added once they had been seen green on that pull
+      request. The design is in [`CI_INSTRUMENTED_TESTS.md`](CI_INSTRUMENTED_TESTS.md).
 - [ ] An architecture test that reads the sources and fails if anything in `media/` other than
       `NoiseEngine`, or `timer/SleepTimer`, imports `android.*` — the single-module stand-in for
       SpendControl's module boundary. The exclusion is the Kover filter's, named once in both.
@@ -387,8 +392,8 @@ exactly one writer thread alive on the cycles that dwell long enough to look, no
 `stop()`. The track count is not asserted, because no API lets a process count its own live tracks;
 it follows from the thread count instead, the track being a local of the writer thread and released
 in that thread's own `finally`. It passed on the `Medium_Phone_API_36.0` emulator, which is the only
-hardware this run had, and CI has no device, so it runs only when someone runs
-`connectedAndroidTest`. A real device is still unverified — see the risk below.
+hardware this run had; CI now runs it on emulators at API 26 and API 36 on every pull request.
+A real device is still unverified — see the risk below.
 
 ### Risk
 

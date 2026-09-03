@@ -22,7 +22,7 @@ set -euo pipefail
 #
 # `.github/**` is deliberately absent, unlike SpendControl. A workflow is build
 # configuration, not prose: a pull request that rewrites ci.yml has to run
-# ci.yml, or a broken step lands behind five green checks that executed none of
+# ci.yml, or a broken step lands behind seven green checks that executed none of
 # it.
 ignored_globs=(
   '*.md'
