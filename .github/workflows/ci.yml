@@ -207,8 +207,7 @@ jobs:
         # job — and the reason is written beside it: that step is handed a
         # service account, so whoever could move the tag would get the
         # credential. This one is handed no secret, so it follows the convention
-        # of every other action here: actions/checkout@v4,
-        # android-actions/setup-android@v3, gradle/actions/setup-gradle@v4.
+        # every other action in this workflow follows: pinned to its tag.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}

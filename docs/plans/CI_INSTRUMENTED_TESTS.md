@@ -10,9 +10,8 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
   reference implementation and already proven in SpendControl.
 - Pin by tag `@v2`, not by commit SHA → the repository SHA-pins exactly one action,
   `wzieba/Firebase-Distribution-Github-Action`, and states the reason: it is handed a service
-  account credential. The emulator runner is handed none, so it follows the majority rule the
-  other four actions already use (`actions/checkout@v4`, `android-actions/setup-android@v3`,
-  `gradle/actions/setup-gradle@v4`).
+  account credential. The emulator runner is handed none, so it follows the rule every other
+  action in the workflow already follows: pinned to its tag.
 - `if:` on every step, never on the job → the same rule `CLAUDE.md` states for the other five:
   the job is meant to become a required status check, and a job skipped at job level never
   reports its context.
@@ -60,6 +59,17 @@ job itself can only be proven green on CI, which is the final gate: the PR edits
 PR executes the job it adds.
 
 ## Rulings
+- Final gate, quality reviewer, `.github/actions/decide-work/decide.sh:25` — "five green checks"
+  is the twin of the sentence `CLAUDE.md` already had corrected to seven, and this branch is what
+  made it false. **Fixed** although the file was outside the plan's steps: leaving it would ship a
+  statement this diff itself disproves, and `CLAUDE.md` names exactly this failure mode.
+- Final gate, quality reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:14` and
+  `.github/workflows/ci.yml:209` — the tag-pin rationale said "the other four actions" and then
+  named three, while the workflow uses five. **Fixed** by dropping the enumeration: every other
+  action in the workflow is tag-pinned, which is the claim that was actually being made and the
+  one that does not drift when an action is added.
+- Final gate, quality reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:92` — the parked entry
+  pointed at `CLAUDE.md:144`, a blank line. **Fixed** to 145.
 - Step 2, spec reviewer, `CLAUDE.md:151` — "five Gradle jobs, two of them booting an emulator"
   counts matrix legs as jobs. **Fixed**: one job boots an emulator on each of its two legs, and
   the sentence now says so; the same paragraph counts jobs three clauses later.
@@ -89,6 +99,6 @@ PR executes the job it adds.
 ## Parked
 - Nothing tracks the manual flip that makes `Instrumented tests (API 26)` and `(API 36)` required
   status checks. Issue #31 is closed by this pull request, and the fact then has to be edited in
-  five places at once: `CLAUDE.md:139`, the context-name list at `CLAUDE.md:144`, `README.md:126`,
+  five places at once: `CLAUDE.md:139`, the context-name list at `CLAUDE.md:145`, `README.md:126`,
   `docs/plans/REFACTORING_PLAN.md:73` and the comment at `.github/workflows/ci.yml:140`. Raised by
   the step 2 quality reviewer.
