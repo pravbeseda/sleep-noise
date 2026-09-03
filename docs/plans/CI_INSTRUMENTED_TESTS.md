@@ -54,5 +54,14 @@ job itself can only be proven green on CI, which is the final gate: the PR edits
 PR executes the job it adds.
 
 ## Rulings
+- Step 1, quality reviewer, `.github/workflows/ci.yml:144` — "Guardrails is the one job here
+  carrying a job-level `if:`" is false; `alpha` carries one too. **Fixed**: the sentence now says
+  "the one required check", and names `alpha` as the other, deliberately not required. A comment
+  that a reader can disprove from the same file is worse than no comment.
+- Step 1, spec reviewer, `docs/plans/CI_INSTRUMENTED_TESTS.md:19` — the commit that implements
+  the step also adds a `## Decisions` bullet the step did not name. **Dropped**: the plan file is
+  the run's memory and every decision taken on the user's behalf has to be written into it in the
+  commit that acts on it, or an interrupted run resumes from a file that never recorded it. Cost
+  if wrong: the step's diff is one bullet wider than its own text.
 
 ## Parked

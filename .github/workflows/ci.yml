@@ -142,9 +142,11 @@ jobs:
       # become a required status check, and a job skipped at job level reports
       # no context at all, which blocks the merge button rather than freeing it.
       # Skipped at step level it still reports green, in seconds. Guardrails is
-      # the one job here carrying a job-level if:, because it compares against
-      # the pull request's base commit and a push to main has nothing to compare
-      # against; that is not this job's situation and not the pattern to copy.
+      # the one required check here carrying a job-level if:, because it
+      # compares against the pull request's base commit and a push to main has
+      # nothing to compare against; alpha carries one too and is deliberately
+      # not required. Neither is this job's situation, and neither is the
+      # pattern to copy.
       - name: Decide whether there is work
         id: decide
         uses: ./.github/actions/decide-work
