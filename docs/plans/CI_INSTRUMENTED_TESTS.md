@@ -47,7 +47,7 @@ Closes issue #31 and ticks the follow-up in `docs/plans/REFACTORING_PLAN.md`.
       step runs, so its number is written into that checkbox by a commit of its own at the final
       gate — step 3.
 
-- [ ] 3. Name the pull request in the ticked follow-up checkbox — files:
+- [x] 3. Name the pull request in the ticked follow-up checkbox — files:
       `docs/plans/REFACTORING_PLAN.md` — lenses: none — done when: the entry reads "Landed in
       PR #N" in the same form as the Kover entry above it.
 

@@ -68,7 +68,7 @@ Reopening it means changing this section first, with the case for it.
       the Definition of done in `CLAUDE.md`.
 - [x] A CI job running `connectedAndroidTest` on an emulator — what turns point 2 from an
       intention into coverage, and the first thing to run the existing `NoiseEngineHammerTest`.
-      Landed for issue #31: the `instrumented-tests` job in `.github/workflows/ci.yml` runs
+      Landed in PR #33: the `instrumented-tests` job in `.github/workflows/ci.yml` runs
       `connectedDebugAndroidTest` on `reactivecircus/android-emulator-runner` over API 26 and
       API 36, on every pull request and guarded by `decide-work` like the Gradle jobs. Its two
       contexts join the required checks once they have been seen passing on a pull request. The
