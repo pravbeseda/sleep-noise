@@ -373,7 +373,7 @@ channel's volume is 0 — all night.
 - [x] Make the writer thread the sole owner of the `AudioTrack` lifecycle: it creates the
       track, and it releases it in its own `finally`. No other thread ever touches the track.
 - [x] `stop()` becomes: set a `@Volatile` flag, then `join()` the thread. Remove `isStopped`;
-      one flag is enough.
+      one flag is enough. (The `join()` was later dropped — issue #26; see "Done when" below.)
 - [x] Mix as `sum = white * wVol + brown * bVol`, then clamp to `[-1, 1]` before converting
       to `Short`, so raising both sliders cannot clip.
 - [x] Skip generation entirely for channels at volume 0.
@@ -392,12 +392,19 @@ logcat; only one `AudioTrack` is alive during playback.
 
 `app/src/androidTest/.../NoiseEngineHammerTest` executes as much of that as a test can: 100 cycles,
 no crash, no `IllegalStateException` — neither escaping the writer thread nor logged by it — and
-exactly one writer thread alive on the cycles that dwell long enough to look, none after the last
-`stop()`. The track count is not asserted, because no API lets a process count its own live tracks;
-it follows from the thread count instead, the track being a local of the writer thread and released
-in that thread's own `finally`. It passed on the `Medium_Phone_API_36.0` emulator, which is the only
-hardware this run had; CI now runs it on emulators at API 26 and API 36 on every pull request.
-A real device is still unverified — see the risk below.
+exactly one writer thread alive throughout, none once the engine is released. The track count is not
+asserted, because no API lets a process count its own live tracks; it follows from the thread count
+instead, the track being a local of the writer thread and released in that thread's own `finally`.
+It passed on the `Medium_Phone_API_36.0` emulator, which is the only hardware this run had; CI now
+runs it on emulators at API 26 and API 36 on every pull request. A real device is still unverified —
+see the risk below.
+
+The `join()` this phase put in `stop()` is gone (issue #26). It ran on the main thread and waited out
+the `AudioTrack.write()` in flight — 176-208 ms per stop on that emulator, on a path the audio-focus
+callback lets any other app drive. The writer thread is now long-lived: it parks between sessions and
+ends on `release()`, so `stop()` is a flag under a lock and no caller waits for it. Dropping the join
+while keeping a thread per session would have traded the wait for unbounded thread creation under a
+flapping focus, which is why the thread is reused rather than respawned.
 
 ### Risk
 
