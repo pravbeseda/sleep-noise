@@ -44,9 +44,6 @@ class LeakyBrownNoise(cutoffHz: Double = DEFAULT_CUTOFF_HZ, private val random: 
 
         const val RADIANS_PER_CYCLE = 2.0 * PI
 
-        /** Must match `NoiseEngine.SAMPLE_RATE_HZ`; declared here so this file stays free of `android.*`. */
-        const val SAMPLE_RATE_HZ = 44_100.0
-
         /** Variance of the uniform white input over `[-1, 1]`. */
         const val WHITE_VARIANCE = 1.0 / 3.0
 

@@ -77,5 +77,10 @@ gain, which only clips — is the lever.
   seeded stream exercises `reset()` against a live signal, where a constant input drives every
   section to the same steady value. Cost if wrong: one test class carries five lines it could have
   done without.
+- Step 2, spec reviewer, suggestion: `LeakyBrownNoise`'s `cutoffHz` constructor parameter is not
+  literally asked for by the step, whose wording is "at a named cutoff". Dropped. The corner
+  frequency is the one value this whole change exists to try by ear, the Goal section says the next
+  experiment should be a rebuild rather than a re-implementation, and a test exercises two values —
+  so it is not configurability without a caller. Cost if wrong: one unused default parameter.
 
 ## Parked

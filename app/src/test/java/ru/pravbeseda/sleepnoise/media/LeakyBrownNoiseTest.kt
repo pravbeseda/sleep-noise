@@ -1,21 +1,27 @@
 package ru.pravbeseda.sleepnoise.media
 
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class LeakyBrownNoiseTest {
     private val bufferSize = 1 shl 16
     private val headSize = 64
     private val seed = 20260905
-    private val sampleRate = 44_100.0
+    private val sampleRate = SAMPLE_RATE_HZ.toDouble()
 
-    /** The normalisation aims at a quarter of full scale, so a correct buffer peaks well above this. */
-    private val minimumPeak = 0.5f
+    /**
+     * The normalisation target, pinned from both sides: a floor on the peak alone passes a gain three times too
+     * large, which clips a fifth of the samples.
+     */
+    private val expectedRms = 0.25
+    private val rmsTolerance = 0.025
 
     /** Above the shipping walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
     private val bandSplitHz = 200.0
@@ -29,17 +35,6 @@ class LeakyBrownNoiseTest {
     private val lowerCutoffHz = 100.0
     private val higherCutoffHz = 1_000.0
 
-    /** A Random the test can rewind, so a reset source and a fresh one are fed the identical white input. */
-    private class RewindableRandom(private val seed: Int) : Random() {
-        private var delegate = Random(seed)
-
-        override fun nextBits(bitCount: Int): Int = delegate.nextBits(bitCount)
-
-        fun rewind() {
-            delegate = Random(seed)
-        }
-    }
-
     @Test
     fun fillProducesSamplesWithinRange() {
         val buffer = FloatArray(bufferSize)
@@ -49,8 +44,8 @@ class LeakyBrownNoiseTest {
         buffer.forEachIndexed { index, sample ->
             assertTrue("sample $index out of range: $sample", sample >= -1.0f && sample <= 1.0f)
         }
-        val peak = buffer.maxOf { abs(it) }
-        assertTrue("normalisation left the output far below full scale: peak $peak", peak > minimumPeak)
+        val rms = rms(buffer)
+        assertEquals("normalisation missed its target level", expectedRms, rms, rmsTolerance)
     }
 
     @Test
@@ -117,4 +112,6 @@ class LeakyBrownNoiseTest {
         }
         return highEnergy / signal.size
     }
+
+    private fun rms(buffer: FloatArray): Double = sqrt(buffer.sumOf { it.toDouble() * it } / buffer.size)
 }
