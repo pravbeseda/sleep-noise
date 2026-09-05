@@ -1,3 +1,5 @@
 <resources>
     <dimen name="lang_icon_size">40dp</dimen>
+    <!-- Between a slider and the label under it. The lab pairs are built in code and read the same value. -->
+    <dimen name="noise_label_spacing">24dp</dimen>
 </resources>

@@ -26,7 +26,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/brown_noise_volume"
-        android:paddingTop="24dp"/>
+        android:paddingTop="@dimen/noise_label_spacing"/>
 
     <SeekBar
         android:id="@+id/brownNoiseVolume"
@@ -40,6 +40,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:gravity="center_horizontal"
         android:visibility="gone"/>
 
     <LinearLayout

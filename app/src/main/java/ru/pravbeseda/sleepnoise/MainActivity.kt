@@ -18,6 +18,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,9 +48,6 @@ const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
-
-/** What activity_main.xml gives the brown label, so a lab pair sits under the shipping ones at the same spacing. */
-private const val LAB_LABEL_TOP_PADDING_DP = 24
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
@@ -362,11 +360,13 @@ class MainActivity : AppCompatActivity() {
     private fun addNoiseLabSliders() {
         val container: LinearLayout = findViewById(R.id.noiseLabContainer)
         container.visibility = View.VISIBLE
-        val labelTopPadding = (LAB_LABEL_TOP_PADDING_DP * resources.displayMetrics.density).toInt()
+        val labelTopPadding = resources.getDimensionPixelSize(R.dimen.noise_label_spacing)
 
         NOISE_LAB_CANDIDATES.forEach { candidate ->
             val label = TextView(this)
             label.setPadding(0, labelTopPadding, 0, 0)
+            // wrap_content, so the container's gravity centres it the way the root centres the shipping labels.
+            label.layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
             container.addView(label)
 
             val slider = SeekBar(this)
@@ -383,10 +383,8 @@ class MainActivity : AppCompatActivity() {
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
             })
-            container.addView(
-                slider,
-                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
-            )
+            // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what the slider wants.
+            container.addView(slider)
         }
     }
 
