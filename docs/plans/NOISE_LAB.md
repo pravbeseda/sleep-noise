@@ -71,5 +71,11 @@ gain, which only clips — is the lever.
       behaviour, which CLAUDE.md allows and silence does not.
 
 ## Rulings
+- Step 1, quality reviewer, suggestion: replace `RewindableRandom` in `PinkNoiseTest` with a
+  constant-input `Random` (the `AlwaysMaxRandom` shape `BrownNoiseTest` uses). Dropped. The reviewer
+  itself put it as the author's call, and it detects no defect the current test misses — a rewound
+  seeded stream exercises `reset()` against a live signal, where a constant input drives every
+  section to the same steady value. Cost if wrong: one test class carries five lines it could have
+  done without.
 
 ## Parked

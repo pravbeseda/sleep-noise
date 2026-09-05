@@ -44,7 +44,6 @@ class PinkNoiseTest {
             assertTrue("sample $index out of range: $sample", sample >= -1.0f && sample <= 1.0f)
         }
         val peak = buffer.maxOf { abs(it) }
-        assertTrue("fill left the buffer silent", buffer.any { it != 0.0f })
         assertTrue("normalisation left the output far below full scale: peak $peak", peak > minimumPeak)
     }
 

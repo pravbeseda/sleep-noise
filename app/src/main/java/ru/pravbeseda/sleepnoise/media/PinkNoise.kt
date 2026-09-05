@@ -60,9 +60,9 @@ class PinkNoise(private val random: Random = Random.Default) : NoiseSource {
         const val DELAYED_GAIN = 0.115926
 
         /** RMS the bank puts out when fed uniform white in `[-1, 1]`; measured over 2^20 samples. */
-        const val BANK_RMS = 1.74
+        const val BANK_RMS = 1.75
 
-        /** A quarter of full scale: peaks run about 4.4x the RMS, so the clamp below bites on ~6 samples per million. */
+        /** A quarter of full scale: peaks run about 4.6x the RMS, so `fill`'s clamp bites on ~30 samples per million. */
         const val TARGET_RMS = 0.25
         const val OUTPUT_GAIN = TARGET_RMS / BANK_RMS
     }
