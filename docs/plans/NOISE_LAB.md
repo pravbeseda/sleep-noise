@@ -64,7 +64,7 @@ gain, which only clips — is the lever.
       lenses: compatibility — done when: `NoiseLabTest` is green (each candidate carries a distinct
       preference key and builds its own source) and `PlaybackService` runs its engine over the two
       shipping channels plus every lab channel, reading each one's stored volume at start.
-- [ ] 4. The lab sliders, behind the flag — files:
+- [x] 4. The lab sliders, behind the flag — files:
       `app/src/main/res/layout/activity_main.xml`,
       `app/src/main/res/values/strings.xml`,
       `app/src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt` — lenses: none —

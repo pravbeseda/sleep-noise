@@ -34,6 +34,14 @@
         android:layout_height="wrap_content"
         android:max="100"/>
 
+    <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
+    <LinearLayout
+        android:id="@+id/noiseLabContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"/>
+
     <LinearLayout
         android:id="@+id/playTimerContainer"
         android:layout_width="match_parent"

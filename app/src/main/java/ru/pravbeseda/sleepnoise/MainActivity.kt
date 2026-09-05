@@ -17,6 +17,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,9 +31,14 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
+import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.timer.TimerView
+import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
 const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
@@ -41,6 +47,9 @@ const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
+
+/** What activity_main.xml gives the brown label, so a lab pair sits under the shipping ones at the same spacing. */
+private const val LAB_LABEL_TOP_PADDING_DP = 24
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
@@ -151,6 +160,7 @@ class MainActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+        if (NOISE_LAB_ENABLED) addNoiseLabSliders()
     }
 
     @SuppressLint("RestrictedApi")
@@ -341,6 +351,49 @@ class MainActivity : AppCompatActivity() {
     private fun setBrownNoiseVolume(volume: Float) {
         playbackBinder?.setBrownVolume(volume)
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
+    }
+
+    /**
+     * One labelled slider per candidate under the shipping pair, so the four can be judged by ear side by side.
+     *
+     * The registry is read straight from `media/NoiseLab` rather than through the service binder: this runs in
+     * onCreate and the binder does not arrive until after onStart, so a registry behind it would draw nothing.
+     */
+    private fun addNoiseLabSliders() {
+        val container: LinearLayout = findViewById(R.id.noiseLabContainer)
+        container.visibility = View.VISIBLE
+        val labelTopPadding = (LAB_LABEL_TOP_PADDING_DP * resources.displayMetrics.density).toInt()
+
+        NOISE_LAB_CANDIDATES.forEach { candidate ->
+            val label = TextView(this)
+            label.setPadding(0, labelTopPadding, 0, 0)
+            container.addView(label)
+
+            val slider = SeekBar(this)
+            slider.max = 100
+            val savedVolume = preferences.getFloat(candidate.preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+            slider.progress = (savedVolume * 100).toInt()
+            setLabNoiseVolume(candidate, label, savedVolume)
+            slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val volume = progress / 100f
+                    setLabNoiseVolume(candidate, label, volume)
+                    saveVolume(candidate.preferenceKey, volume)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+            container.addView(
+                slider,
+                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
+            )
+        }
+    }
+
+    /** The label is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
+    private fun setLabNoiseVolume(candidate: NoiseLabCandidate, label: TextView, volume: Float) {
+        playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
+        label.text = String.format(Locale.getDefault(), "%s: %d%%", candidate.label, (volume * 100).toInt())
     }
 
     private fun languageSelection() {
