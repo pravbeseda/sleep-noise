@@ -2,7 +2,9 @@ package ru.pravbeseda.sleepnoise.ui
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Parcelable
 import android.util.AttributeSet
+import android.util.SparseArray
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -58,6 +60,25 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
         controls = findViewById(R.id.noiseControls)
         label = findViewById(R.id.noiseLabel)
         slider = findViewById(R.id.noiseSlider)
+    }
+
+    /**
+     * Every row inflates the same layout, so all of them carry a `noiseSlider` and a `noiseSwitch`
+     * with the same id, and the window's saved hierarchy state is one array keyed by exactly that:
+     * the default dispatch would collapse the rows into a single entry and hand the last one saved
+     * back to all of them. A theme or a language change goes through `recreate()`, and the restore
+     * lands after [bind] has attached the listeners, so the substituted level and switch would be
+     * written into each noise's own preferences — over the level the switch exists to preserve.
+     *
+     * A row therefore saves itself and nothing below it. It loses no state by that: a level and a
+     * switch live in the preferences [bind] reads, which is the one place they are kept.
+     */
+    override fun dispatchSaveInstanceState(container: SparseArray<Parcelable>) {
+        dispatchFreezeSelfOnly(container)
+    }
+
+    override fun dispatchRestoreInstanceState(container: SparseArray<Parcelable>) {
+        dispatchThawSelfOnly(container)
     }
 
     /**

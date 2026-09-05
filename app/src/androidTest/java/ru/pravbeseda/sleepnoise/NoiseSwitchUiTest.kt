@@ -84,6 +84,43 @@ class NoiseSwitchUiTest {
         }
     }
 
+    /**
+     * A theme or a language change goes through `recreate()`, which saves and restores the view
+     * hierarchy. Every row inflates the same layout, so its children share their ids: left to the
+     * default dispatch, Android would collapse the four sliders into one entry keyed by
+     * `noiseSlider` and hand the last row's value back to all of them — over the levels the switch
+     * exists to preserve, and into each noise's preferences, since the listeners are already on.
+     */
+    @Test
+    fun recreatingTheScreenLeavesEveryNoiseWithItsOwnSettings() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val white = activity.noiseControl(R.id.whiteNoiseControl)
+                white.slider().progress = CHOSEN_PROGRESS
+                white.noiseSwitch().isChecked = false
+            }
+
+            scenario.recreate()
+
+            scenario.onActivity { activity ->
+                val white = activity.noiseControl(R.id.whiteNoiseControl)
+                assertEquals("white's slider after a recreate", CHOSEN_PROGRESS, white.slider().progress)
+                assertFalse("white's switch after a recreate", white.noiseSwitch().isChecked)
+                assertEquals(
+                    "white's stored level after a recreate",
+                    CHOSEN_PROGRESS / PERCENT_SCALE,
+                    preferences.getFloat(WHITE_NOISE_VOLUME, Float.NaN),
+                    0f,
+                )
+
+                val brown = activity.noiseControl(R.id.brownNoiseControl)
+                val brownProgress = (DEFAULT_BROWN_NOISE_VOLUME * PERCENT_SCALE).toInt()
+                assertEquals("brown's slider after a recreate", brownProgress, brown.slider().progress)
+                assertTrue("brown's switch after a recreate", brown.noiseSwitch().isChecked)
+            }
+        }
+    }
+
     /** One noise's switch gates that noise only: the other keeps both its state and its level. */
     @Test
     fun switchingOneNoiseOffLeavesTheOtherAlone() {
