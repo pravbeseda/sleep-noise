@@ -203,17 +203,6 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        preferences.edit().putFloat(key, volume).apply()"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt"
-            line="232"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="            val ed = preferences.edit()"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~">
         <location

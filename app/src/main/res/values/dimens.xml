@@ -1,5 +1,9 @@
 <resources>
     <dimen name="lang_icon_size">40dp</dimen>
-    <!-- Between a slider and the label under it. The lab pairs are built in code and read the same value. -->
-    <dimen name="noise_label_spacing">24dp</dimen>
+    <!-- Above one noise's row. Owned by NoiseControlView, so every noise is spaced the same way. -->
+    <dimen name="noise_row_spacing">24dp</dimen>
+    <!-- Inset of one noise's row from the screen edges, on top of the root layout's own padding. -->
+    <dimen name="noise_row_horizontal_padding">16dp</dimen>
+    <!-- Between a noise's switch and the label and slider it gates. -->
+    <dimen name="noise_switch_spacing">16dp</dimen>
 </resources>

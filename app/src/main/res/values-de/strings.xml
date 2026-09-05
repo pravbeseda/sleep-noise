@@ -4,6 +4,8 @@
     <string name="app_name">Einschlafrauschen</string>
     <string name="white_noise_volume">Weißes Rauschen: %1$d%%</string>
     <string name="brown_noise_volume">Braunes Rauschen: %1$d%%</string>
+    <string name="white_noise_name">Weißes Rauschen</string>
+    <string name="brown_noise_name">Braunes Rauschen</string>
     <string name="play_button">Abspielen</string>
     <string name="theme_system">Systemthema</string>
     <string name="theme_light">Helles Thema</string>
