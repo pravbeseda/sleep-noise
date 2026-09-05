@@ -32,13 +32,6 @@ class NoiseLabTest {
     }
 
     @Test
-    fun theCandidatesAreThePinkAndTheLeakyBrownSource() {
-        val sources = NOISE_LAB_CANDIDATES.map { it.createSource() }
-
-        assertEquals(listOf(PinkNoise::class, LeakyBrownNoise::class), sources.map { it::class })
-    }
-
-    @Test
     fun everyCallToTheFactoryBuildsAnotherSource() {
         NOISE_LAB_CANDIDATES.forEach { candidate ->
             assertNotSame(

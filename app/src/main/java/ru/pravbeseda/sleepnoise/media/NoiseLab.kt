@@ -4,9 +4,10 @@ package ru.pravbeseda.sleepnoise.media
  * The one switch for the whole noise lab, read by the playback service as much as by the Activity:
  * a flag the UI alone honoured would leave a stored lab volume playing with no slider to turn it down.
  *
- * Putting the lab away is editing this to `false`. It is a `const val`, so it is inlined and R8 drops
- * every branch behind it out of a release build; the candidate sources, their preference keys and
- * their tests deliberately stay in the tree, which makes the next experiment a rebuild rather than a
+ * Putting the lab away is editing this to `false`. It is a `const val`, so the compiler inlines it and
+ * every branch behind it becomes unreachable — the release build does not shrink (`isMinifyEnabled` is
+ * false), so the candidate classes stay in the APK, unused. Their sources, preference keys and tests
+ * deliberately stay in the tree too, which makes the next experiment a rebuild rather than a
  * re-implementation.
  */
 const val NOISE_LAB_ENABLED = true

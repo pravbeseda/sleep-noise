@@ -22,7 +22,7 @@ class LeakyBrownNoise(cutoffHz: Double = DEFAULT_CUTOFF_HZ, private val random: 
      * The unity-DC-gain form below has output variance `varWhite * (1 - a) / (1 + a)`, so the normalising gain
      * follows from the pole instead of being measured and pasted, and stays correct at any cutoff.
      */
-    private val outputGain = TARGET_RMS / sqrt(WHITE_VARIANCE * (1.0 - smoothing) / (1.0 + smoothing))
+    private val outputGain = NORMALISED_SOURCE_RMS / sqrt(WHITE_VARIANCE * (1.0 - smoothing) / (1.0 + smoothing))
 
     private var state = 0.0
 
@@ -46,8 +46,5 @@ class LeakyBrownNoise(cutoffHz: Double = DEFAULT_CUTOFF_HZ, private val random: 
 
         /** Variance of the uniform white input over `[-1, 1]`. */
         const val WHITE_VARIANCE = 1.0 / 3.0
-
-        /** A quarter of full scale, as in `PinkNoise`: peaks run a few times the RMS, so `fill`'s clamp rarely bites. */
-        const val TARGET_RMS = 0.25
     }
 }

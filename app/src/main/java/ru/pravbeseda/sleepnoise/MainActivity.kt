@@ -49,6 +49,12 @@ const val CURRENT_LANGUAGE = "selectedLanguage"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
+/**
+ * A seekbar's range as a volume. Named in the lab's code and not in the shipping sliders' because a new
+ * literal there would have been absorbed by an existing detekt baseline entry and gone unreported.
+ */
+private const val PERCENT_SCALE = 100f
+
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
     private lateinit var timerView: TimerView
@@ -372,11 +378,11 @@ class MainActivity : AppCompatActivity() {
             val slider = SeekBar(this)
             slider.max = 100
             val savedVolume = preferences.getFloat(candidate.preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
-            slider.progress = (savedVolume * 100).toInt()
+            slider.progress = (savedVolume * PERCENT_SCALE).toInt()
             setLabNoiseVolume(candidate, label, savedVolume)
             slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val volume = progress / 100f
+                    val volume = progress / PERCENT_SCALE
                     setLabNoiseVolume(candidate, label, volume)
                     saveVolume(candidate.preferenceKey, volume)
                 }
@@ -391,7 +397,7 @@ class MainActivity : AppCompatActivity() {
     /** The label is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
     private fun setLabNoiseVolume(candidate: NoiseLabCandidate, label: TextView, volume: Float) {
         playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
-        label.text = String.format(Locale.getDefault(), "%s: %d%%", candidate.label, (volume * 100).toInt())
+        label.text = String.format(Locale.getDefault(), "%s: %d%%", candidate.label, (volume * PERCENT_SCALE).toInt())
     }
 
     private fun languageSelection() {

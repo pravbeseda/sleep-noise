@@ -66,11 +66,13 @@ gain, which only clips — is the lever.
       shipping channels plus every lab channel, reading each one's stored volume at start.
 - [x] 4. The lab sliders, behind the flag — files:
       `app/src/main/res/layout/activity_main.xml`,
-      `app/src/main/res/values/strings.xml`,
+      `app/src/main/res/values/dimens.xml`,
       `app/src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt` — lenses: none —
       done when: with the flag on, the screen shows one labelled slider per lab candidate under the
-      shipping pair, each moving its channel live and persisting on release; with the flag off, the
-      container is gone and the layout is byte-for-byte the one shipping today.
+      shipping pair, each moving its channel live and persisting on every move, as the shipping
+      sliders do; with the flag off, the container is gone and the screen renders exactly as today's.
+      (`strings.xml` left this list when the labels became Kotlin literals; `dimens.xml` joined it
+      when the label spacing stopped being written twice.)
 - [x] 5. Instrumented cover for step 4, the documentation and the definition of done — files:
       `app/src/androidTest/java/ru/pravbeseda/sleepnoise/NoiseLabUiTest.kt`, `CLAUDE.md` — lenses: none —
       also: `CLAUDE.md`'s Architecture section says the service holds two `NoiseChannel`s and its

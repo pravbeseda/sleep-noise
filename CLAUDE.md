@@ -302,6 +302,8 @@ With the noise lab switched on the service holds more than two: one further `Noi
 The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` — editing it to `false` puts the
 experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
 with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
+Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
+ships two developer-facing sliders whose English labels are not translated into any of the six locales.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 

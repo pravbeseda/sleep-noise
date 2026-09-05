@@ -20,7 +20,7 @@ class LeakyBrownNoiseTest {
      * The normalisation target, pinned from both sides: a floor on the peak alone passes a gain three times too
      * large, which clips a fifth of the samples.
      */
-    private val expectedRms = 0.25
+    private val expectedRms = NORMALISED_SOURCE_RMS
     private val rmsTolerance = 0.025
 
     /** Above the shipping walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
