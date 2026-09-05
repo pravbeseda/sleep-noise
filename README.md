@@ -134,13 +134,12 @@ Before opening a PR:
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
-its test in the same commit. `AndroidFreeSourcesTest` checks that boundary for two roots only —
-`media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt` — and fails naming the file and the
-import line when one of them imports `android.*` or `androidx.*`; anywhere else the rule is
-discipline. Android plumbing is exempt from test-first, but a PR that leaves
-behaviour uncovered says which behaviour and why. Bug fixes start with a test that reproduces the
-bug. No test gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage
-floor under the noise and timer logic; `CLAUDE.md` says what it is and which classes it counts.
+its test in the same commit. `AndroidFreeSourcesTest` checks that boundary, `androidx.*` included,
+for two roots only: `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`. Anywhere else the
+rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
+uncovered says which behaviour and why. Bug fixes start with a test that reproduces the bug. No test
+gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage floor under
+the noise and timer logic; `CLAUDE.md` says what it is and which classes it counts.
 
 The full rule, and the reasoning for drawing the line there, is in [`CLAUDE.md`](CLAUDE.md).
 
