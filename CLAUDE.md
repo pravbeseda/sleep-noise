@@ -183,7 +183,7 @@ It checks out with `fetch-depth: 0` because `versionCode` is the commit count an
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 25 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 24 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **Both baselines only ever shrink** — `app/lint-baseline.xml` and `config/detekt/baseline.xml` alike. Regenerating one to make a new warning disappear converts a
 five-minute fix into permanent debt, and does it invisibly — the build goes green and the count goes
@@ -243,8 +243,8 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **9 entries covering 19 findings** —
-`MagicNumber` 12, `EmptyFunctionBlock` 6, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **6 entries covering 9 findings** —
+`MagicNumber` 6, `EmptyFunctionBlock` 2, `TooManyFunctions` 1.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
@@ -252,8 +252,11 @@ an already-baselined expression is suppressed silently. Detekt is a floor, not a
 `ImplicitDefaultLocale` restates one of the Kotlin conventions below in executable form, and is no
 longer baselined — its three call sites in `timer/` name their `Locale`, so a new implicit one fails
 the build. `PrintStackTrace` went the same way when its two call sites were fixed. `media/` is clear of `MagicNumber` too: phase 1 of the refactoring plan
-moved the sample math into named constants and both of its entries went with it. The 12 that remain
-sit in `MainActivity` (6), `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1).
+moved the sample math into named constants and both of its entries went with it. `MainActivity` is
+clear of both rules since its noise sliders moved into `ui/NoiseControlView`, which took their
+percentage literals and their empty seekbar callbacks with them. The 6 `MagicNumber` findings that
+remain sit in `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1), and the 2
+`EmptyFunctionBlock` ones in `timer/TimerView`.
 
 The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
 two minors and a major ahead of this project. Revisit when the project moves, not before.
@@ -332,9 +335,16 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 
 ### Preferences
 
-Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `brownNoiseVolume`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `brownNoiseVolume`, `whiteNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
-Two more `APP_PREFS` keys belong to the noise lab — `labPinkNoiseVolume` and `labLeakyBrownNoiseVolume` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: each lives on its candidate in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. Both default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` neither is read at all.
+Every noise has a `*Enabled` key beside its volume — the two shipping ones here, each lab candidate on its own
+descriptor — and they default to `true`, so an install made before the switches existed sounds exactly as it did.
+A switched-off noise **keeps its stored level**: the gate is applied where the volume is handed to the engine,
+never by writing 0 over the level. That gate is written twice on purpose — `ui/NoiseControlView` applies it to the
+live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
+start, because a session begun with no Activity in sight reads nothing else.
+
+Four more `APP_PREFS` keys belong to the noise lab — `labPinkNoiseVolume` / `labPinkNoiseEnabled` and `labLeakyBrownNoiseVolume` / `labLeakyBrownNoiseEnabled` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: each pair lives on its candidate in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the four is read at all.
 
 ### Theme
 
@@ -351,7 +361,13 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 ## UI is Views, not Compose
 
-The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
+The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
+
+`ui/NoiseControlView` is the one row every noise gets: a switch, a label and a slider, bound to that noise's own
+preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the volume the mix
+should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per candidate in code,
+and neither knows how a switch is persisted or how a switched-off row is dimmed. A new noise that wires its own
+slider by hand is the mistake this replaced.
 
 ## Versioning and releasing
 

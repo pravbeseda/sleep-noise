@@ -18,8 +18,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -39,6 +37,8 @@ import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.timer.TimerView
+import ru.pravbeseda.sleepnoise.ui.NoiseControl
+import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
@@ -46,22 +46,19 @@ const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
+const val WHITE_NOISE_ENABLED = "whiteNoiseEnabled"
+const val BROWN_NOISE_ENABLED = "brownNoiseEnabled"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
-/**
- * A seekbar's range as a volume. Named in the lab's code and not in the shipping sliders' because a new
- * literal there would have been absorbed by an existing detekt baseline entry and gone unreported.
- */
-private const val PERCENT_SCALE = 100f
+/** A noise ships switched on, so an install made before the switches existed sounds exactly as it did. */
+const val DEFAULT_NOISE_ENABLED = true
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
     private lateinit var timerView: TimerView
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
-    private lateinit var whiteNoiseLabel: TextView
-    private lateinit var brownNoiseLabel: TextView
     private var playbackBinder: PlaybackService.LocalBinder? = null
 
     // The answer is not read: the foreground service plays either way, a denial only costs the
@@ -124,18 +121,24 @@ class MainActivity : AppCompatActivity() {
 
         timerView = findViewById(R.id.timerView)
 
-        val whiteNoiseVolume: SeekBar = findViewById(R.id.whiteNoiseVolume)
-        val brownNoiseVolume: SeekBar = findViewById(R.id.brownNoiseVolume)
-        whiteNoiseLabel = findViewById(R.id.whiteNoiseLabel)
-        brownNoiseLabel = findViewById(R.id.brownNoiseLabel)
-
-        val savedWhiteVolume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
-        val savedBrownVolume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
-
-        whiteNoiseVolume.progress = (savedWhiteVolume * 100).toInt()
-        brownNoiseVolume.progress = (savedBrownVolume * 100).toInt()
-        setWhiteNoiseVolume(savedWhiteVolume)
-        setBrownNoiseVolume(savedBrownVolume)
+        bindNoiseControl(
+            findViewById(R.id.whiteNoiseControl),
+            NoiseControl(
+                WHITE_NOISE_VOLUME,
+                WHITE_NOISE_ENABLED,
+                DEFAULT_WHITE_NOISE_VOLUME,
+                getString(R.string.white_noise_name),
+            ) { percent -> getString(R.string.white_noise_volume, percent) },
+        ) { volume -> playbackBinder?.setWhiteVolume(volume) }
+        bindNoiseControl(
+            findViewById(R.id.brownNoiseControl),
+            NoiseControl(
+                BROWN_NOISE_VOLUME,
+                BROWN_NOISE_ENABLED,
+                DEFAULT_BROWN_NOISE_VOLUME,
+                getString(R.string.brown_noise_name),
+            ) { percent -> getString(R.string.brown_noise_volume, percent) },
+        ) { volume -> playbackBinder?.setBrownVolume(volume) }
 
         playButton.setOnClickListener {
             if (isPlaying) {
@@ -145,26 +148,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        whiteNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val volume = progress / 100f
-                setWhiteNoiseVolume(volume)
-                saveVolume(WHITE_NOISE_VOLUME, volume)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        brownNoiseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val volume = progress / 100f
-                setBrownNoiseVolume(volume)
-                saveVolume(BROWN_NOISE_VOLUME, volume)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-        if (NOISE_LAB_ENABLED) addNoiseLabSliders()
+        if (NOISE_LAB_ENABLED) addNoiseLabControls()
     }
 
     @SuppressLint("RestrictedApi")
@@ -313,10 +297,6 @@ class MainActivity : AppCompatActivity() {
         recreate()
     }
 
-    private fun saveVolume(key: String, volume: Float) {
-        preferences.edit().putFloat(key, volume).apply()
-    }
-
     private fun applyTheme(theme: String) {
         when (theme) {
             "system" -> {
@@ -347,58 +327,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setWhiteNoiseVolume(volume: Float) {
-        playbackBinder?.setWhiteVolume(volume)
-        whiteNoiseLabel.text = getString(R.string.white_noise_volume, (volume * 100).toInt())
-    }
-
-    private fun setBrownNoiseVolume(volume: Float) {
-        playbackBinder?.setBrownVolume(volume)
-        brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
-    }
-
     /**
-     * One labelled slider per candidate under the shipping pair, so the four can be judged by ear side by side.
+     * One candidate, one [NoiseControlView] — the same component the shipping noises use, so an
+     * experiment gets its switch for nothing.
      *
      * The registry is read straight from `media/NoiseLab` rather than through the service binder: this runs in
      * onCreate and the binder does not arrive until after onStart, so a registry behind it would draw nothing.
      */
-    private fun addNoiseLabSliders() {
+    private fun addNoiseLabControls() {
         val container: LinearLayout = findViewById(R.id.noiseLabContainer)
         container.visibility = View.VISIBLE
-        val labelTopPadding = resources.getDimensionPixelSize(R.dimen.noise_label_spacing)
 
         NOISE_LAB_CANDIDATES.forEach { candidate ->
-            val label = TextView(this)
-            label.setPadding(0, labelTopPadding, 0, 0)
-            // wrap_content, so the container's gravity centres it the way the root centres the shipping labels.
-            label.layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
-            container.addView(label)
-
-            val slider = SeekBar(this)
-            slider.max = 100
-            val savedVolume = preferences.getFloat(candidate.preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
-            slider.progress = (savedVolume * PERCENT_SCALE).toInt()
-            setLabNoiseVolume(candidate, label, savedVolume)
-            slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val volume = progress / PERCENT_SCALE
-                    setLabNoiseVolume(candidate, label, volume)
-                    saveVolume(candidate.preferenceKey, volume)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-            // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what the slider wants.
-            container.addView(slider)
+            // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what a row wants.
+            val control = NoiseControlView(this)
+            container.addView(control)
+            bindNoiseControl(control, labNoiseControl(candidate)) { volume ->
+                playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
+            }
         }
     }
 
-    /** The label is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
-    private fun setLabNoiseVolume(candidate: NoiseLabCandidate, label: TextView, volume: Float) {
-        playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
-        label.text = String.format(Locale.getDefault(), "%s: %d%%", candidate.label, (volume * PERCENT_SCALE).toInt())
-    }
+    /** The name is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
+    private fun labNoiseControl(candidate: NoiseLabCandidate) = NoiseControl(
+        candidate.preferenceKey,
+        candidate.enabledPreferenceKey,
+        DEFAULT_LAB_NOISE_VOLUME,
+        candidate.label,
+    ) { percent -> String.format(Locale.getDefault(), "%s: %d%%", candidate.label, percent) }
+
+    /** The engine hears the level only while the noise is switched on; the component decides which it is. */
+    private fun bindNoiseControl(view: NoiseControlView, noise: NoiseControl, setVolume: (Float) -> Unit) =
+        view.bind(noise, preferences, setVolume)
 
     private fun languageSelection() {
         val builder = AlertDialog.Builder(this)

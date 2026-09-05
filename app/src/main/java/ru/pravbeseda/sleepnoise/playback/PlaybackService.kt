@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Binder
@@ -21,11 +22,14 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import ru.pravbeseda.sleepnoise.APP_PREFS
+import ru.pravbeseda.sleepnoise.BROWN_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.DEFAULT_BROWN_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.DEFAULT_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.DEFAULT_WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
+import ru.pravbeseda.sleepnoise.WHITE_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.BrownNoise
 import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
@@ -36,6 +40,14 @@ import ru.pravbeseda.sleepnoise.media.NoiseEngine
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.media.WhiteNoise
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
+
+/**
+ * A noise's level as the mix should hear it: a switched-off noise keeps the level its slider shows
+ * and contributes nothing. The gate lives here as well as in the Activity because a session started
+ * from the notification, or after the Activity is gone, reads the preferences and nothing else.
+ */
+private fun SharedPreferences.noiseVolume(volumeKey: String, enabledKey: String, defaultVolume: Float): Float =
+    if (getBoolean(enabledKey, DEFAULT_NOISE_ENABLED)) getFloat(volumeKey, defaultVolume) else 0f
 
 /**
  * Owns the noise engine and the sleep timer so that both outlive the Activity.
@@ -254,10 +266,11 @@ class PlaybackService : Service() {
             return
         }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
-        brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
-        labChannels.forEach { (preferenceKey, channel) ->
-            channel.volume = preferences.getFloat(preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+        whiteChannel.volume = preferences.noiseVolume(WHITE_NOISE_VOLUME, WHITE_NOISE_ENABLED, DEFAULT_WHITE_NOISE_VOLUME)
+        brownChannel.volume = preferences.noiseVolume(BROWN_NOISE_VOLUME, BROWN_NOISE_ENABLED, DEFAULT_BROWN_NOISE_VOLUME)
+        labCandidates.forEach { candidate ->
+            labChannels.getValue(candidate.preferenceKey).volume =
+                preferences.noiseVolume(candidate.preferenceKey, candidate.enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
         }
         pausedByFocusLoss = false
         // Reached only when playback was stopped, and a stop always unregisters, so this is never a double.

@@ -4,6 +4,8 @@
     <string name="app_name">Шум для сна</string>
     <string name="white_noise_volume">Белый шум: %1$d%%</string>
     <string name="brown_noise_volume">Коричневый шум: %1$d%%</string>
+    <string name="white_noise_name">Белый шум</string>
+    <string name="brown_noise_name">Коричневый шум</string>
     <string name="play_button">Играть</string>
     <string name="theme_system">Системная тема</string>
     <string name="theme_light">Светлая тема</string>

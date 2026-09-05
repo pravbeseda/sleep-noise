@@ -4,6 +4,8 @@
     <string name="app_name">ضوضاء للنوم</string>
     <string name="white_noise_volume">الضوضاء البيضاء: %1$d%%</string>
     <string name="brown_noise_volume">الضوضاء البنية: %1$d%%</string>
+    <string name="white_noise_name">الضوضاء البيضاء</string>
+    <string name="brown_noise_name">الضوضاء البنية</string>
     <string name="play_button">تشغيل</string>
     <string name="theme_system">سمة النظام</string>
     <string name="theme_light">سمة فاتحة</string>

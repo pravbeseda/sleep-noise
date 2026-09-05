@@ -18,10 +18,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**
- * The lab screen is what the registry says it is: one labelled slider per entry of
- * [NOISE_LAB_CANDIDATES], each persisting under that entry's own preference key.
+ * The lab screen is what the registry says it is: one [NoiseControlView] per entry of
+ * [NOISE_LAB_CANDIDATES] — the same row the shipping noises get, switch included — each persisting
+ * under that entry's own preference key.
  *
  * Both sides of the flag are asserted rather than skipped, so the class keeps its meaning when
  * [NOISE_LAB_ENABLED] is turned off: with the lab away the container is gone, empty, and writes no
@@ -45,11 +47,14 @@ class NoiseLabUiTest {
 
     /** The test writes real preferences on the device, so it takes them back out again. */
     private fun forgetLabVolumes() = preferences.edit(commit = true) {
-        NOISE_LAB_CANDIDATES.forEach { remove(it.preferenceKey) }
+        NOISE_LAB_CANDIDATES.forEach {
+            remove(it.preferenceKey)
+            remove(it.enabledPreferenceKey)
+        }
     }
 
     @Test
-    fun theContainerHoldsOneLabelledSliderPerCandidate() {
+    fun theContainerHoldsOneLabelledRowPerCandidate() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val container = activity.labContainer()
@@ -61,19 +66,15 @@ class NoiseLabUiTest {
 
                 assertEquals("lab container visibility", View.VISIBLE, container.visibility)
                 assertEquals(
-                    "views in the lab container: one label and one slider per candidate",
-                    NOISE_LAB_CANDIDATES.size * VIEWS_PER_CANDIDATE,
+                    "views in the lab container: one row per candidate",
+                    NOISE_LAB_CANDIDATES.size,
                     container.childCount,
                 )
                 NOISE_LAB_CANDIDATES.forEachIndexed { index, candidate ->
-                    val label = container.getChildAt(index * VIEWS_PER_CANDIDATE)
-                    assertTrue("the view at ${index * VIEWS_PER_CANDIDATE} is not a TextView", label is TextView)
-                    val text = (label as TextView).text.toString()
+                    val row = container.getChildAt(index)
+                    assertTrue("the view at $index is not a NoiseControlView", row is NoiseControlView)
+                    val text = (row as NoiseControlView).findViewById<TextView>(R.id.noiseLabel).text.toString()
                     assertTrue("the label of ${candidate.preferenceKey} reads \"$text\"", text.startsWith(candidate.label))
-                    assertTrue(
-                        "the view after the label of ${candidate.preferenceKey} is not a SeekBar",
-                        container.getChildAt(index * VIEWS_PER_CANDIDATE + 1) is SeekBar,
-                    )
                 }
             }
         }
@@ -117,13 +118,10 @@ class NoiseLabUiTest {
 
     private fun MainActivity.labContainer(): LinearLayout = findViewById(R.id.noiseLabContainer)
 
-    /** The slider of the candidate at [index], the view the label of that pair is followed by. */
-    private fun LinearLayout.sliderAt(index: Int): SeekBar = getChildAt(index * VIEWS_PER_CANDIDATE + 1) as SeekBar
+    /** The slider of the candidate at [index], looked up inside that candidate's own row. */
+    private fun LinearLayout.sliderAt(index: Int): SeekBar = getChildAt(index).findViewById(R.id.noiseSlider)
 
     private companion object {
-        /** One label and one slider, in that order, per candidate — the shape `addNoiseLabSliders` builds. */
-        const val VIEWS_PER_CANDIDATE = 2
-
         const val FIRST_PROGRESS = 23
         const val PROGRESS_STEP = 31
         const val PERCENT_SCALE = 100f

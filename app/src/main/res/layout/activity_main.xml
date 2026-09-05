@@ -8,31 +8,15 @@
     android:fitsSystemWindows="true"
     android:padding="32dp">
 
-    <TextView
-        android:id="@+id/whiteNoiseLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/white_noise_volume"
-        android:paddingTop="32dp"/>
-
-    <SeekBar
-        android:id="@+id/whiteNoiseVolume"
+    <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+        android:id="@+id/whiteNoiseControl"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="100"/>
+        android:layout_height="wrap_content"/>
 
-    <TextView
-        android:id="@+id/brownNoiseLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/brown_noise_volume"
-        android:paddingTop="@dimen/noise_label_spacing"/>
-
-    <SeekBar
-        android:id="@+id/brownNoiseVolume"
+    <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+        android:id="@+id/brownNoiseControl"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="100"/>
+        android:layout_height="wrap_content"/>
 
     <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
     <LinearLayout

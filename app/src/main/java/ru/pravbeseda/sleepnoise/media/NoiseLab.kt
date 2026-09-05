@@ -24,6 +24,8 @@ const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
  */
 class NoiseLabCandidate(
     val preferenceKey: String,
+    /** Where this candidate's switch is stored. Its own key, so switching one experiment off leaves the rest alone. */
+    val enabledPreferenceKey: String,
     /** Developer-facing debug copy. The lab never reaches a user, so this is deliberately never translated. */
     val label: String,
     val createSource: () -> NoiseSource,
@@ -35,6 +37,6 @@ class NoiseLabCandidate(
  * list, so nothing else in the app carries a second copy of it.
  */
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
-    NoiseLabCandidate("labPinkNoiseVolume", "Pink") { PinkNoise() },
-    NoiseLabCandidate("labLeakyBrownNoiseVolume", "Leaky brown") { LeakyBrownNoise() },
+    NoiseLabCandidate("labPinkNoiseVolume", "labPinkNoiseEnabled", "Pink") { PinkNoise() },
+    NoiseLabCandidate("labLeakyBrownNoiseVolume", "labLeakyBrownNoiseEnabled", "Leaky brown") { LeakyBrownNoise() },
 )
