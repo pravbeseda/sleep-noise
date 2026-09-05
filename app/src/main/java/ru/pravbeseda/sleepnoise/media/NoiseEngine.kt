@@ -41,14 +41,18 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
     private val lock = ReentrantLock()
     private val stateChanged = lock.newCondition()
 
-    /** Both guarded by [lock], the writer's reads of [state] included. */
+    /** All three guarded by [lock], the writer's reads of [state] included. */
     private var state = State.STOPPED
+
+    /** Counts the runs of [State.PLAYING], so the writer can tell its own session from a newer one. */
+    private var session = 0
     private var writer: Thread? = null
 
     fun start() {
         lock.withLock {
             if (state != State.STOPPED) return
             state = State.PLAYING
+            session++
             if (writer == null) {
                 // Held over the lock only until the new thread's first read of the state it is about to serve.
                 writer = Thread(::writeWhilePlaying, THREAD_NAME).apply { start() }
@@ -77,18 +81,18 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
 
     private fun writeWhilePlaying() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
-        while (awaitPlaying()) {
-            playOneSession()
+        while (true) {
+            playOneSession(awaitPlaying() ?: return)
         }
     }
 
-    /** Parks until [start] asks for sound again, and answers false once [release] has ended the engine. */
-    private fun awaitPlaying(): Boolean = lock.withLock {
+    /** Parks until [start] asks for sound again, and answers null once [release] has ended the engine. */
+    private fun awaitPlaying(): Int? = lock.withLock {
         while (state == State.STOPPED) stateChanged.await()
-        state == State.PLAYING
+        if (state == State.PLAYING) session else null
     }
 
-    private fun playOneSession() {
+    private fun playOneSession(session: Int) {
         // A device that cannot serve this format is left to fail: an error size turns the chunk length
         // negative and dies allocating it, and a device that refuses the track dies in the builder. The
         // alternative — logging and returning — is a silence with the UI still showing playback.
@@ -110,28 +114,33 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
                 if (written < 0) {
                     // A dead track reports itself here rather than by throwing; looping on it would spin.
                     Log.e(TAG, "AudioTrack.write failed with $written; stopping playback.")
-                    stopFromWriter()
+                    stopFromWriter(session)
                     break
                 }
             }
             track.stop()
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Audio playback failed", e)
-            stopFromWriter()
+            stopFromWriter(session)
         } finally {
             track.release()
         }
     }
 
+    /**
+     * Deliberately blind to the session number: a stop and a start the writer never got to see leave it
+     * playing on the track it already has, which is the stop/start behaviour the engine has always had.
+     */
     private fun isPlaying(): Boolean = lock.withLock { state == State.PLAYING }
 
     /**
      * Drops the caller's request, because this session is ending for a reason the caller does not know
-     * about. Called before the track is torn down and never after, so a [start] that arrives during the
-     * teardown survives it and is served by the next turn of the writer's loop.
+     * about — a dead track, not a stop. Only its own session is dropped: a [start] that arrived while
+     * the write was failing is a newer request than anything this session can speak for, and leaving it
+     * standing is what has the writer build a fresh track for it instead of parking over it.
      */
-    private fun stopFromWriter() {
-        lock.withLock { if (state == State.PLAYING) state = State.STOPPED }
+    private fun stopFromWriter(session: Int) {
+        lock.withLock { if (state == State.PLAYING && this.session == session) state = State.STOPPED }
     }
 
     private fun buildTrack(bufferSizeBytes: Int): AudioTrack = AudioTrack.Builder()
