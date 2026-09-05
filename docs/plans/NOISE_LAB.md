@@ -34,15 +34,17 @@ gain, which only clips — is the lever.
 - Gating is one explicit compile-time constant, `NOISE_LAB_ENABLED`, declared in `media/NoiseLab.kt`
   rather than in `MainActivity.kt` as first written — not an environment variable, not `BuildConfig.DEBUG`, not a
   runtime setting. Turning the lab off is editing `true` to `false`: a `const val` is inlined, so
-  R8 drops the whole branch from a release build while the sources, channels and preference keys
-  stay in the tree for the next experiment. The comparison has to be possible on the alpha build
-  the phone actually runs at night, which a `BuildConfig.DEBUG` gate would have prevented.
+  every branch behind it becomes unreachable, while the sources, channels and preference keys stay
+  in the tree for the next experiment. It does not make the APK smaller — `isMinifyEnabled` is false
+  for `release`, so the candidate classes ship unused — and nothing about the decision rests on that:
+  the reason is that the comparison has to be possible on the alpha build the phone actually runs at
+  night, which a `BuildConfig.DEBUG` gate would have prevented. The constant sits in `media/` because
+  `PlaybackService` needs it as much as the Activity does: a flag the UI alone honoured would leave a
+  stored lab volume playing with no slider to turn it down.
 - The Activity reads `NOISE_LAB_CANDIDATES` directly rather than through the service binder: the
   sliders are inflated in `onCreate` and the binder does not arrive until after `onStart`, so a
   registry behind the binder would have the screen build nothing on first draw. The binder carries
   only the live volume setter.
-  The constant sits in `media/` because `PlaybackService` needs it as much as the Activity does: a
-  flag the UI alone honoured would leave a stored lab volume playing with no slider to turn it down.
 
 ## Steps
 - [x] 1. `media/PinkNoise` — 1/f source (Paul Kellett filter), test-first — files:
