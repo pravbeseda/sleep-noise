@@ -26,13 +26,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/brown_noise_volume"
-        android:paddingTop="24dp"/>
+        android:paddingTop="@dimen/noise_label_spacing"/>
 
     <SeekBar
         android:id="@+id/brownNoiseVolume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="100"/>
+
+    <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
+    <LinearLayout
+        android:id="@+id/noiseLabContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:visibility="gone"/>
 
     <LinearLayout
         android:id="@+id/playTimerContainer"

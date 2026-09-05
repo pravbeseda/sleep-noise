@@ -164,7 +164,6 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
     internal companion object {
         const val TAG = "NoiseEngine"
         const val THREAD_NAME = "NoiseEngine"
-        const val SAMPLE_RATE_HZ = 44100
         const val CHANNEL_MASK = AudioFormat.CHANNEL_OUT_MONO
         const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
 

@@ -17,6 +17,8 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,9 +32,14 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
+import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.timer.TimerView
+import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
 const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
@@ -41,6 +48,12 @@ const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
+
+/**
+ * A seekbar's range as a volume. Named in the lab's code and not in the shipping sliders' because a new
+ * literal there would have been absorbed by an existing detekt baseline entry and gone unreported.
+ */
+private const val PERCENT_SCALE = 100f
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: Button
@@ -151,6 +164,7 @@ class MainActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+        if (NOISE_LAB_ENABLED) addNoiseLabSliders()
     }
 
     @SuppressLint("RestrictedApi")
@@ -341,6 +355,49 @@ class MainActivity : AppCompatActivity() {
     private fun setBrownNoiseVolume(volume: Float) {
         playbackBinder?.setBrownVolume(volume)
         brownNoiseLabel.text = getString(R.string.brown_noise_volume, (volume * 100).toInt())
+    }
+
+    /**
+     * One labelled slider per candidate under the shipping pair, so the four can be judged by ear side by side.
+     *
+     * The registry is read straight from `media/NoiseLab` rather than through the service binder: this runs in
+     * onCreate and the binder does not arrive until after onStart, so a registry behind it would draw nothing.
+     */
+    private fun addNoiseLabSliders() {
+        val container: LinearLayout = findViewById(R.id.noiseLabContainer)
+        container.visibility = View.VISIBLE
+        val labelTopPadding = resources.getDimensionPixelSize(R.dimen.noise_label_spacing)
+
+        NOISE_LAB_CANDIDATES.forEach { candidate ->
+            val label = TextView(this)
+            label.setPadding(0, labelTopPadding, 0, 0)
+            // wrap_content, so the container's gravity centres it the way the root centres the shipping labels.
+            label.layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+            container.addView(label)
+
+            val slider = SeekBar(this)
+            slider.max = 100
+            val savedVolume = preferences.getFloat(candidate.preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+            slider.progress = (savedVolume * PERCENT_SCALE).toInt()
+            setLabNoiseVolume(candidate, label, savedVolume)
+            slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val volume = progress / PERCENT_SCALE
+                    setLabNoiseVolume(candidate, label, volume)
+                    saveVolume(candidate.preferenceKey, volume)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+            // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what the slider wants.
+            container.addView(slider)
+        }
+    }
+
+    /** The label is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
+    private fun setLabNoiseVolume(candidate: NoiseLabCandidate, label: TextView, volume: Float) {
+        playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
+        label.text = String.format(Locale.getDefault(), "%s: %d%%", candidate.label, (volume * PERCENT_SCALE).toInt())
     }
 
     private fun languageSelection() {
