@@ -43,7 +43,7 @@ gain, which only clips — is the lever.
       done when: `PinkNoiseTest` is green, asserting samples stay in `[-1, 1]`, that `reset()`
       returns the filter to silence, and that its low/high band energy ratio is above `WhiteNoise`'s
       on the same seed.
-- [ ] 2. `media/LeakyBrownNoise` — one-pole low-pass on white at a named cutoff, normalised — files:
+- [x] 2. `media/LeakyBrownNoise` — one-pole low-pass on white at a named cutoff, normalised — files:
       `app/src/main/java/ru/pravbeseda/sleepnoise/media/LeakyBrownNoise.kt`,
       `app/src/test/java/ru/pravbeseda/sleepnoise/media/LeakyBrownNoiseTest.kt` — lenses: none —
       done when: `LeakyBrownNoiseTest` is green, asserting range, `reset()`, and — the point of the
