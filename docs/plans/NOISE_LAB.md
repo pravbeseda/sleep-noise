@@ -37,7 +37,7 @@ gain, which only clips — is the lever.
   the phone actually runs at night, which a `BuildConfig.DEBUG` gate would have prevented.
 
 ## Steps
-- [ ] 1. `media/PinkNoise` — 1/f source (Paul Kellett filter), test-first — files:
+- [x] 1. `media/PinkNoise` — 1/f source (Paul Kellett filter), test-first — files:
       `app/src/main/java/ru/pravbeseda/sleepnoise/media/PinkNoise.kt`,
       `app/src/test/java/ru/pravbeseda/sleepnoise/media/PinkNoiseTest.kt` — lenses: none —
       done when: `PinkNoiseTest` is green, asserting samples stay in `[-1, 1]`, that `reset()`
