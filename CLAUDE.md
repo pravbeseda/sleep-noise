@@ -297,6 +297,12 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `playback/PlaybackService` holds two `NoiseChannel`s (white and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "white noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
 
+With the noise lab switched on the service holds more than two: one further `NoiseChannel` per entry of
+`NOISE_LAB_CANDIDATES` in `media/NoiseLab.kt`, built from the same registry the Activity builds its sliders from.
+The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` — editing it to `false` puts the
+experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
+with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
+
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
 `app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI runs it on an emulator at API 26 and API 36 on every pull request, and `connectedAndroidTest` runs it against whatever device is attached. It asserts that one writer thread serves all 100 cycles and survives every `stop()`, that `stop()` and `release()` return inside 50 ms, and that the thread is gone within 2 s of the `release()`. That last bound is what still ties the test to a real audio sink, which is why the emulator is deliberately not started with `-noaudio`: without one the guest accepts the writes far more slowly, and the writer's exit waits out the write in flight.
@@ -325,6 +331,8 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 ### Preferences
 
 Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `brownNoiseVolume`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+
+Two more `APP_PREFS` keys belong to the noise lab — `labPinkNoiseVolume` and `labLeakyBrownNoiseVolume` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: each lives on its candidate in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. Both default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` neither is read at all.
 
 ### Theme
 

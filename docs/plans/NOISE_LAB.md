@@ -71,7 +71,7 @@ gain, which only clips — is the lever.
       done when: with the flag on, the screen shows one labelled slider per lab candidate under the
       shipping pair, each moving its channel live and persisting on release; with the flag off, the
       container is gone and the layout is byte-for-byte the one shipping today.
-- [ ] 5. Instrumented cover for step 4, the documentation and the definition of done — files:
+- [x] 5. Instrumented cover for step 4, the documentation and the definition of done — files:
       `app/src/androidTest/java/ru/pravbeseda/sleepnoise/NoiseLabUiTest.kt`, `CLAUDE.md` — lenses: none —
       also: `CLAUDE.md`'s Architecture section says the service holds two `NoiseChannel`s and its
       Preferences section lists four `APP_PREFS` keys; both are false while the lab is switched on —
