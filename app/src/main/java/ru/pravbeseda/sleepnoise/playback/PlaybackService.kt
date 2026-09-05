@@ -166,10 +166,6 @@ class PlaybackService : Service() {
         val remainingMillis: Long
             get() = this@PlaybackService.remainingMillis
 
-        /** The registry itself, so the Activity builds one slider per candidate instead of keeping a second list. */
-        val labCandidates: List<NoiseLabCandidate>
-            get() = this@PlaybackService.labCandidates
-
         var listener: Listener?
             get() = this@PlaybackService.listener
             set(value) {
@@ -184,8 +180,9 @@ class PlaybackService : Service() {
             brownChannel.volume = volume
         }
 
+        /** The key comes from the registry both sides read, so an unknown one is a wiring bug and says so. */
         fun setLabVolume(preferenceKey: String, volume: Float) {
-            labChannels[preferenceKey]?.volume = volume
+            labChannels.getValue(preferenceKey).volume = volume
         }
     }
 

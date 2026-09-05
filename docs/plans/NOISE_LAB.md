@@ -27,14 +27,20 @@ gain, which only clips — is the lever.
   list, so adding a third candidate later is one entry plus one source class.
 - Lab volumes persist in `APP_PREFS` under their own keys, like the shipping sliders, and default
   to 0 — an existing install sounds exactly as it does today until a slider is moved.
-- Lab slider labels are `translatable="false"`, the pattern the project already uses for strings
-  that are not user-facing product copy.
+- Lab slider labels are Kotlin literals on the candidate descriptor, not `<string>` resources. The
+  project's `translatable="false"` pattern was the first plan; a literal beats it here because it
+  keeps a candidate to one entry in one file, which is the whole point of the registry, and the lab
+  never reaches a user who could need it translated.
 - Gating is one explicit compile-time constant, `NOISE_LAB_ENABLED`, declared in `media/NoiseLab.kt`
   rather than in `MainActivity.kt` as first written — not an environment variable, not `BuildConfig.DEBUG`, not a
   runtime setting. Turning the lab off is editing `true` to `false`: a `const val` is inlined, so
   R8 drops the whole branch from a release build while the sources, channels and preference keys
   stay in the tree for the next experiment. The comparison has to be possible on the alpha build
   the phone actually runs at night, which a `BuildConfig.DEBUG` gate would have prevented.
+- The Activity reads `NOISE_LAB_CANDIDATES` directly rather than through the service binder: the
+  sliders are inflated in `onCreate` and the binder does not arrive until after `onStart`, so a
+  registry behind the binder would have the screen build nothing on first draw. The binder carries
+  only the live volume setter.
   The constant sits in `media/` because `PlaybackService` needs it as much as the Activity does: a
   flag the UI alone honoured would leave a stored lab volume playing with no slider to turn it down.
 
@@ -65,8 +71,10 @@ gain, which only clips — is the lever.
       done when: with the flag on, the screen shows one labelled slider per lab candidate under the
       shipping pair, each moving its channel live and persisting on release; with the flag off, the
       container is gone and the layout is byte-for-byte the one shipping today.
-- [ ] 5. Instrumented cover for step 4 and the definition of done — files:
-      `app/src/androidTest/java/ru/pravbeseda/sleepnoise/NoiseLabUiTest.kt` — lenses: none —
+- [ ] 5. Instrumented cover for step 4, the documentation and the definition of done — files:
+      `app/src/androidTest/java/ru/pravbeseda/sleepnoise/NoiseLabUiTest.kt`, `CLAUDE.md` — lenses: none —
+      also: `CLAUDE.md`'s Architecture section says the service holds two `NoiseChannel`s and its
+      Preferences section lists four `APP_PREFS` keys; both are false while the lab is switched on —
       done when: `./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint` is green
       and the Espresso test asserts one slider per registered candidate. If the test proves flaky or
       unexpressible, it is dropped with a ruling and the PR description names the uncovered
@@ -90,5 +98,12 @@ gain, which only clips — is the lever.
   band-energy helpers next to it are deliberately not shared either — they answer different
   questions (a low/high ratio against `WhiteNoise`, versus high-band energy at unit peak). Cost if
   wrong: one line written twice in the test sources.
+- Step 3, quality reviewer, suggestion: delete `aNewSourceStartsFromSilenceRatherThanFromTheLastOnesState`
+  because where a filter keeps its state is the source's business, not the registry's, and
+  `assertNotSame` already covers the registry's only defect. Dropped: the claim is wrong against the
+  code. A source holding its state in a companion object hands every trial a warm filter and still
+  passes `assertNotSame`, so the two tests catch different defects. The spec reviewer measured the
+  margin over 200 simulated runs — 2.8x worst case against a 2.0 threshold — so it is not a flake
+  waiting to happen either. Cost if wrong: ~40 statistical lines in a test class.
 
 ## Parked

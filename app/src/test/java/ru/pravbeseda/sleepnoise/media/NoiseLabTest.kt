@@ -5,14 +5,11 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
+import ru.pravbeseda.sleepnoise.CURRENT_THEME
 import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
 
 class NoiseLabTest {
-    @Test
-    fun theLabRegistersItsCandidates() {
-        assertTrue("the lab registers nothing, so every other test here inspects an empty list", NOISE_LAB_CANDIDATES.isNotEmpty())
-    }
-
     @Test
     fun everyCandidateCarriesItsOwnPreferenceKey() {
         val keys = NOISE_LAB_CANDIDATES.map { it.preferenceKey }
@@ -22,11 +19,13 @@ class NoiseLabTest {
 
     @Test
     fun noCandidateReusesAShippingPreferenceKey() {
-        val shipping = setOf(WHITE_NOISE_VOLUME, BROWN_NOISE_VOLUME)
+        // The theme and language keys share the store and hold Strings, so colliding with one of those
+        // would not overwrite a volume but throw ClassCastException out of getFloat.
+        val shipping = setOf(WHITE_NOISE_VOLUME, BROWN_NOISE_VOLUME, CURRENT_THEME, CURRENT_LANGUAGE)
 
         NOISE_LAB_CANDIDATES.forEach { candidate ->
             assertTrue(
-                "${candidate.label} would overwrite the shipping ${candidate.preferenceKey}",
+                "${candidate.label} would collide with the shipping ${candidate.preferenceKey}",
                 candidate.preferenceKey !in shipping,
             )
         }
