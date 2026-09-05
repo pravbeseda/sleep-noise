@@ -82,5 +82,11 @@ gain, which only clips — is the lever.
   frequency is the one value this whole change exists to try by ear, the Goal section says the next
   experiment should be a rebuild rather than a re-implementation, and a test exercises two values —
   so it is not configurability without a caller. Cost if wrong: one unused default parameter.
+- Step 2, second round, suggestion: move the one-line `rms()` helper into the shared test file the
+  way `RewindableRandom` was moved. Dropped. `RewindableRandom` was nine duplicated lines; `rms` is
+  one, and giving it a home of its own costs a file and a doc comment to save that line. The two
+  band-energy helpers next to it are deliberately not shared either — they answer different
+  questions (a low/high ratio against `WhiteNoise`, versus high-band energy at unit peak). Cost if
+  wrong: one line written twice in the test sources.
 
 ## Parked
