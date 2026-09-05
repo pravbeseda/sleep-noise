@@ -28,8 +28,12 @@ import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.BrownNoise
+import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
+import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.media.WhiteNoise
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 
@@ -46,7 +50,14 @@ import ru.pravbeseda.sleepnoise.timer.SleepTimer
 class PlaybackService : Service() {
     private val whiteChannel = NoiseChannel(WhiteNoise())
     private val brownChannel = NoiseChannel(BrownNoise())
-    private val noiseEngine = NoiseEngine(listOf(whiteChannel, brownChannel))
+
+    /**
+     * Empty while the lab is switched off, and the engine then mixes exactly the two channels it ships with:
+     * a lab volume left in the preferences must not go on playing once its slider is gone.
+     */
+    private val labCandidates: List<NoiseLabCandidate> = if (NOISE_LAB_ENABLED) NOISE_LAB_CANDIDATES else emptyList()
+    private val labChannels: Map<String, NoiseChannel> = labCandidates.associate { it.preferenceKey to NoiseChannel(it.createSource()) }
+    private val noiseEngine = NoiseEngine(listOf(whiteChannel, brownChannel) + labChannels.values)
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
 
@@ -155,6 +166,10 @@ class PlaybackService : Service() {
         val remainingMillis: Long
             get() = this@PlaybackService.remainingMillis
 
+        /** The registry itself, so the Activity builds one slider per candidate instead of keeping a second list. */
+        val labCandidates: List<NoiseLabCandidate>
+            get() = this@PlaybackService.labCandidates
+
         var listener: Listener?
             get() = this@PlaybackService.listener
             set(value) {
@@ -167,6 +182,10 @@ class PlaybackService : Service() {
 
         fun setBrownVolume(volume: Float) {
             brownChannel.volume = volume
+        }
+
+        fun setLabVolume(preferenceKey: String, volume: Float) {
+            labChannels[preferenceKey]?.volume = volume
         }
     }
 
@@ -240,6 +259,9 @@ class PlaybackService : Service() {
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
         whiteChannel.volume = preferences.getFloat(WHITE_NOISE_VOLUME, DEFAULT_WHITE_NOISE_VOLUME)
         brownChannel.volume = preferences.getFloat(BROWN_NOISE_VOLUME, DEFAULT_BROWN_NOISE_VOLUME)
+        labChannels.forEach { (preferenceKey, channel) ->
+            channel.volume = preferences.getFloat(preferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+        }
         pausedByFocusLoss = false
         // Reached only when playback was stopped, and a stop always unregisters, so this is never a double.
         ContextCompat.registerReceiver(

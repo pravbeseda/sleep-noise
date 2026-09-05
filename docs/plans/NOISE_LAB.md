@@ -29,12 +29,14 @@ gain, which only clips — is the lever.
   to 0 — an existing install sounds exactly as it does today until a slider is moved.
 - Lab slider labels are `translatable="false"`, the pattern the project already uses for strings
   that are not user-facing product copy.
-- Gating is one explicit compile-time constant, `NOISE_LAB_ENABLED` in `MainActivity.kt`, next to
-  the other top-level constants — not an environment variable, not `BuildConfig.DEBUG`, not a
+- Gating is one explicit compile-time constant, `NOISE_LAB_ENABLED`, declared in `media/NoiseLab.kt`
+  rather than in `MainActivity.kt` as first written — not an environment variable, not `BuildConfig.DEBUG`, not a
   runtime setting. Turning the lab off is editing `true` to `false`: a `const val` is inlined, so
   R8 drops the whole branch from a release build while the sources, channels and preference keys
   stay in the tree for the next experiment. The comparison has to be possible on the alpha build
   the phone actually runs at night, which a `BuildConfig.DEBUG` gate would have prevented.
+  The constant sits in `media/` because `PlaybackService` needs it as much as the Activity does: a
+  flag the UI alone honoured would leave a stored lab volume playing with no slider to turn it down.
 
 ## Steps
 - [x] 1. `media/PinkNoise` — 1/f source (Paul Kellett filter), test-first — files:
@@ -49,7 +51,7 @@ gain, which only clips — is the lever.
       done when: `LeakyBrownNoiseTest` is green, asserting range, `reset()`, and — the point of the
       whole change — that its energy above the band split is higher than `BrownNoise`'s at the same
       peak level.
-- [ ] 3. `media/NoiseLab` registry and the service wiring — files:
+- [x] 3. `media/NoiseLab` registry and the service wiring — files:
       `app/src/main/java/ru/pravbeseda/sleepnoise/media/NoiseLab.kt`,
       `app/src/test/java/ru/pravbeseda/sleepnoise/media/NoiseLabTest.kt`,
       `app/src/main/java/ru/pravbeseda/sleepnoise/playback/PlaybackService.kt` —
