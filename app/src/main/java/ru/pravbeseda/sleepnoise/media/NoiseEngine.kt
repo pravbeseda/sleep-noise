@@ -5,48 +5,96 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
 import android.util.Log
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Plays every channel through a single [AudioTrack], mixed in software by [NoiseMixer].
  *
- * The writer thread is the sole owner of the track: it builds it, plays it and releases it in its own
- * `finally`, so no other thread can ever see a released track. Everything the caller changes while
- * playing — the channel volumes — reaches the thread through volatile fields it reads once per cycle.
+ * One writer thread serves the whole engine: the first [start] creates it, it parks between sessions
+ * and it exits on [release]. That thread is the sole owner of the track — it builds it, plays it and
+ * releases it in its own `finally`, so no other thread can ever see a released track. Everything the
+ * caller changes while playing — the channel volumes — reaches it through volatile fields it reads
+ * once per cycle.
+ *
+ * **No caller ever waits for that thread.** [start], [stop] and [release] take a lock the writer holds
+ * only long enough to read the intent out of it, so they return within microseconds however long the
+ * `AudioTrack.write()` in flight takes to drain. A stop the writer has not noticed yet leaves it
+ * finishing that write; a start arriving meanwhile is answered by the same thread once it has torn the
+ * old session down, which is what keeps two tracks from ever overlapping without anything blocking on a
+ * `join()` to arrange it. Reusing the thread rather than spawning one per session also means an app
+ * flapping audio focus costs a flag and a signal, not a thread and a stack per flap.
  *
  * The sources are never reset, so a stop/start cycle resumes the brown integrator where it left off —
  * the behaviour the app has today.
  *
- * [start] and [stop] are expected on one thread (the app's main thread) and are each a no-op when the
- * engine is already in the state they ask for.
+ * [start], [stop] and [release] are expected on one thread (the app's main thread). The first two are
+ * each a no-op when the engine is already in the state they ask for, and all three are a no-op once
+ * the engine has been released.
  */
 class NoiseEngine(private val channels: List<NoiseChannel>) {
     private val mixer = NoiseMixer(channels.map { it.source })
 
-    @Volatile
-    private var running = false
+    /** What the caller last asked for, which is not what the writer is doing yet. [RELEASED] is final. */
+    private enum class State { STOPPED, PLAYING, RELEASED }
+
+    private val lock = ReentrantLock()
+    private val stateChanged = lock.newCondition()
+
+    /** Both guarded by [lock], the writer's reads of [state] included. */
+    private var state = State.STOPPED
     private var writer: Thread? = null
 
     fun start() {
-        if (running) return
-        running = true
-        writer = Thread(::writeUntilStopped, THREAD_NAME).apply { start() }
+        lock.withLock {
+            if (state != State.STOPPED) return
+            state = State.PLAYING
+            if (writer == null) {
+                // Held over the lock only until the new thread's first read of the state it is about to serve.
+                writer = Thread(::writeWhilePlaying, THREAD_NAME).apply { start() }
+            } else {
+                stateChanged.signalAll()
+            }
+        }
     }
 
+    /** Silences the engine without waiting for the writer to notice: it does so within one write. */
     fun stop() {
-        running = false
-        writer?.join()
-        writer = null
+        // No signal: the writer waits on the condition only while the state is already STOPPED.
+        lock.withLock { if (state == State.PLAYING) state = State.STOPPED }
     }
 
-    private fun writeUntilStopped() {
-        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+    /**
+     * Ends the writer thread for good. Like [stop] it returns immediately; the thread finishes the write
+     * in flight, releases its track and exits on its own, holding nothing that has to outlive the engine.
+     */
+    fun release() {
+        lock.withLock {
+            state = State.RELEASED
+            stateChanged.signalAll()
+        }
+    }
 
+    private fun writeWhilePlaying() {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+        while (awaitPlaying()) {
+            playOneSession()
+        }
+    }
+
+    /** Parks until [start] asks for sound again, and answers false once [release] has ended the engine. */
+    private fun awaitPlaying(): Boolean = lock.withLock {
+        while (state == State.STOPPED) stateChanged.await()
+        state == State.PLAYING
+    }
+
+    private fun playOneSession() {
         // A device that cannot serve this format is left to fail: an error size turns the chunk length
         // negative and dies allocating it, and a device that refuses the track dies in the builder. The
         // alternative — logging and returning — is a silence with the UI still showing playback.
         val minBufferSizeBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE_HZ, CHANNEL_MASK, ENCODING)
         // A track buffer of several minimum buffers keeps the hardware fed across a scheduling hiccup;
-        // one write covers a fraction of it, so stop() never waits for a whole buffer to drain.
+        // one write covers a fraction of it, so the writer never takes a whole buffer to notice a stop.
         val bufferSizeBytes = minBufferSizeBytes * BUFFERS_AHEAD
         val chunkSamples = bufferSizeBytes / BYTES_PER_SAMPLE / WRITES_PER_BUFFER
         val chunk = ShortArray(chunkSamples)
@@ -55,23 +103,35 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         val track = buildTrack(bufferSizeBytes)
         try {
             track.play()
-            while (running) {
+            while (isPlaying()) {
                 channels.forEachIndexed { index, channel -> volumes[index] = channel.volume }
                 mixer.mix(volumes, chunk)
                 val written = track.write(chunk, 0, chunk.size)
                 if (written < 0) {
                     // A dead track reports itself here rather than by throwing; looping on it would spin.
                     Log.e(TAG, "AudioTrack.write failed with $written; stopping playback.")
+                    stopFromWriter()
                     break
                 }
             }
             track.stop()
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Audio playback failed", e)
+            stopFromWriter()
         } finally {
-            running = false
             track.release()
         }
+    }
+
+    private fun isPlaying(): Boolean = lock.withLock { state == State.PLAYING }
+
+    /**
+     * Drops the caller's request, because this session is ending for a reason the caller does not know
+     * about. Called before the track is torn down and never after, so a [start] that arrives during the
+     * teardown survives it and is served by the next turn of the writer's loop.
+     */
+    private fun stopFromWriter() {
+        lock.withLock { if (state == State.PLAYING) state = State.STOPPED }
     }
 
     private fun buildTrack(bufferSizeBytes: Int): AudioTrack = AudioTrack.Builder()
@@ -106,10 +166,12 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         const val BUFFERS_AHEAD = 4
 
         /**
-         * How many writes fill that track buffer. One write is what `stop()` waits out, so this is the knob
-         * between a responsive stop and the number of wakeups over a night. It stays at 2 until there is a
-         * measurement to move it: on the emulator a single `write()` takes far longer than the audio it
-         * carries, so nothing there can tell the two settings apart.
+         * How many writes fill that track buffer. One write is how long the writer takes to notice a stop,
+         * and so how long the next start waits before it can build its track — no caller blocks for it any
+         * more, which leaves this the knob between how promptly a session turns over and the number of
+         * wakeups over a night. It stays at 2 until there is a measurement to move it: on the emulator a
+         * single `write()` takes far longer than the audio it carries, so nothing there can tell the two
+         * settings apart.
          */
         const val WRITES_PER_BUFFER = 2
     }

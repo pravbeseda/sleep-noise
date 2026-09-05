@@ -199,7 +199,8 @@ class PlaybackService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(tick)
-        noiseEngine.stop()
+        // The engine's writer thread lives as long as the engine, so the service that owns it ends it.
+        noiseEngine.release()
         unregisterNoisyReceiver()
         // Only a session that ran ever took the focus, and a stopped one has already given it back.
         if (playing) audioFocus.abandon()
