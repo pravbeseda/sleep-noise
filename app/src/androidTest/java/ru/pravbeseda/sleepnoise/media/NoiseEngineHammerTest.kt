@@ -11,8 +11,8 @@ import org.junit.runner.RunWith
 
 /**
  * The phase's done-criterion, executed: 100 start/stop cycles against a real [android.media.AudioTrack]
- * leave exactly one writer thread alive while playing and none afterwards, cost the caller a bounded
- * `stop()`, and produce no `IllegalStateException`.
+ * are served by exactly one writer thread, cost their caller no measurable wait, produce no
+ * `IllegalStateException`, and leave no thread behind once the engine is released.
  *
  * The dwell between start and stop is varied so the stop lands at different points of the writer's loop —
  * before the track exists, inside a `write()`, and after several buffers have gone out.
@@ -21,6 +21,14 @@ import org.junit.runner.RunWith
 class NoiseEngineHammerTest {
     private val uncaught = mutableListOf<Throwable>()
     private var replacedHandler: Thread.UncaughtExceptionHandler? = null
+
+    /** Both channels audible: the mixer skips a muted one, and a skipped channel proves nothing. */
+    private val engine = NoiseEngine(
+        listOf(
+            NoiseChannel(WhiteNoise()).apply { volume = WHITE_VOLUME },
+            NoiseChannel(BrownNoise()).apply { volume = BROWN_VOLUME },
+        ),
+    )
 
     @Before
     fun captureUncaughtExceptions() {
@@ -37,46 +45,69 @@ class NoiseEngineHammerTest {
     }
 
     @After
+    fun releaseEngine() {
+        // Idempotent, and the only thing that ends the writer thread: a failed assertion must not leak it.
+        engine.release()
+    }
+
+    @After
     fun restoreUncaughtExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler(replacedHandler)
     }
 
     @Test
-    fun hammeredStartStopLeavesNoThreadAndNoError() {
+    fun hammeredStartStopKeepsOneWriterAndBlocksNoCaller() {
         val startMarker = logMarker("start")
-        val engine = NoiseEngine(
-            listOf(
-                NoiseChannel(WhiteNoise()).apply { volume = WHITE_VOLUME },
-                NoiseChannel(BrownNoise()).apply { volume = BROWN_VOLUME },
-            ),
-        )
 
         var worstStopMillis = 0L
         repeat(CYCLES) { cycle ->
-            val dwell = DWELLS_MILLIS[cycle % DWELLS_MILLIS.size]
             engine.start()
-            Thread.sleep(dwell)
-            // While playing there is exactly one writer, and it is the only handle on the one track.
-            if (dwell >= SETTLED_DWELL_MILLIS) {
-                assertEquals("writer threads alive during cycle $cycle", 1, liveWriterThreads().size)
-            }
+            Thread.sleep(DWELLS_MILLIS[cycle % DWELLS_MILLIS.size])
+            // One writer serves every session, and it is the only handle on the one track.
+            assertEquals("writer threads alive during cycle $cycle", 1, liveWriterThreads().size)
+
             val stopStartedAt = System.nanoTime()
             engine.stop()
             worstStopMillis = maxOf(worstStopMillis, (System.nanoTime() - stopStartedAt) / NANOS_PER_MILLI)
-        }
-        Log.i(TAG, "$CYCLES cycles done; worst stop() took $worstStopMillis ms")
 
-        assertEquals("writer threads still alive after the last stop()", emptyList<String>(), liveWriterThreads())
-        assertEquals("the writer thread died of an uncaught exception: $uncaught", 0, uncaught.size)
+            // A stop parks that thread rather than ending it: nothing is spawned per session.
+            assertEquals("writer threads alive after the stop of cycle $cycle", 1, liveWriterThreads().size)
+        }
+
+        val releaseStartedAt = System.nanoTime()
+        engine.release()
+        val releaseMillis = (System.nanoTime() - releaseStartedAt) / NANOS_PER_MILLI
+        Log.i(TAG, "$CYCLES cycles done; worst stop() took $worstStopMillis ms, release() took $releaseMillis ms")
+
         assertTrue(
-            "worst stop() took $worstStopMillis ms, over the $MAX_STOP_MILLIS ms a caller may block for",
-            worstStopMillis <= MAX_STOP_MILLIS,
+            "worst stop() took $worstStopMillis ms, over the $MAX_HANDOFF_MILLIS ms a main-thread caller may block for",
+            worstStopMillis <= MAX_HANDOFF_MILLIS,
         )
+        assertTrue(
+            "release() took $releaseMillis ms, over the $MAX_HANDOFF_MILLIS ms a main-thread caller may block for",
+            releaseMillis <= MAX_HANDOFF_MILLIS,
+        )
+        assertEquals("writer threads still alive after release()", emptyList<String>(), awaitNoWriterThreads())
+        assertEquals("the writer thread died of an uncaught exception: $uncaught", 0, uncaught.size)
         assertEquals("${NoiseEngine.TAG} logged an error during the run", 0, engineErrorsSince(startMarker))
     }
 
     private fun liveWriterThreads(): List<String> =
         Thread.getAllStackTraces().keys.filter { it.name == NoiseEngine.THREAD_NAME && it.isAlive }.map { it.toString() }
+
+    /**
+     * The writer threads left once the engine's thread has had time to exit. `release()` does not wait for it —
+     * that is the point of it — so the wait is here instead, and it is the write in flight that it covers.
+     */
+    private fun awaitNoWriterThreads(): List<String> {
+        val deadline = System.nanoTime() + THREAD_EXIT_TIMEOUT_MILLIS * NANOS_PER_MILLI
+        while (System.nanoTime() < deadline) {
+            val alive = liveWriterThreads()
+            if (alive.isEmpty()) return alive
+            Thread.sleep(THREAD_EXIT_POLL_MILLIS)
+        }
+        return liveWriterThreads()
+    }
 
     /**
      * How many errors the engine logged since [startMarker], counted over that slice of logcat rather than over
@@ -118,7 +149,6 @@ class NoiseEngineHammerTest {
     private companion object {
         const val CYCLES = 100
 
-        /** Both channels audible: the mixer skips a muted one, and a skipped channel proves nothing. */
         const val WHITE_VOLUME = 0.6f
         const val BROWN_VOLUME = 0.4f
 
@@ -128,18 +158,18 @@ class NoiseEngineHammerTest {
          */
         val DWELLS_MILLIS = longArrayOf(0, 1, 2, 3, 5, 8, 0, 1, 40, 120)
 
-        /** Long enough that the writer is certainly running, so the live count can be asserted at all. */
-        const val SETTLED_DWELL_MILLIS = 40L
-
         /**
-         * `stop()` joins the writer, so the caller waits out the `write()` in flight and nothing else — probing
-         * the engine put `AudioTrack.stop()` at 2 ms and `release()` at 1 ms against a `write()` of up to 195 ms.
-         * That 195 ms is the API 36 emulator's audio sink, not the chunk, which held 46 ms of audio. So the bound
-         * is not a claim about what a device costs its caller: it catches a `join()` that stops returning.
-         * Measured worst over 100 cycles on that emulator: 176-208 ms.
+         * What `stop()` and `release()` cost the thread that calls them: a lock the writer holds only to read
+         * the intent out of it, so the real figure is well under a millisecond. The bound is loose enough to
+         * ride out a scheduling hiccup on a loaded emulator and still far below the 176-208 ms the joining
+         * `stop()` this replaced was measured at, so a regression to waiting for the writer fails here.
          */
-        const val MAX_STOP_MILLIS = 1000L
+        const val MAX_HANDOFF_MILLIS = 50L
         const val NANOS_PER_MILLI = 1_000_000
+
+        /** One write in flight is what the writer takes to exit, and that write is the emulator's ~200 ms. */
+        const val THREAD_EXIT_TIMEOUT_MILLIS = 2_000L
+        const val THREAD_EXIT_POLL_MILLIS = 20L
 
         const val TAG = "NoiseHammer"
 

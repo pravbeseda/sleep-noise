@@ -225,13 +225,14 @@ jobs:
           # -noaudio is deliberately absent, and it is the one option this job
           # does not take from SpendControl. SpendControl's instrumented tests
           # touch Room and a file store; this project's NoiseEngineHammerTest
-          # writes to a real AudioTrack and asserts on how long stop() blocks
-          # its caller. Without an audio sink the guest still accepts the
-          # writes, only far more slowly: measured on a local API 36 emulator,
-          # the same 100 cycles put the worst stop() at 1158 ms with -noaudio
-          # against the test's 1000 ms bound, and at 321 ms without it. So the
-          # flag does not silence a test that has nothing to do with audio here
-          # — it fails the one test this job exists to run.
+          # writes to a real AudioTrack, and what it still times is how long
+          # the writer thread takes to exit after release() — one write in
+          # flight, bounded at 2 s. Without an audio sink the guest accepts the
+          # writes far more slowly: measured on a local API 36 emulator, a
+          # single write ran to 1158 ms with -noaudio against 321 ms without
+          # it, which leaves that bound too little room. (Before issue #26 the
+          # same measurement was of stop() itself, which joined the writer;
+          # stop() no longer waits for anything.)
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -camera-back none
           disable-animations: true
           # The debug variant only: a release build needs the SN_* signing
