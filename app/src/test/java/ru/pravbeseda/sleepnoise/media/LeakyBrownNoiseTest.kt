@@ -4,9 +4,6 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.exp
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -14,7 +11,6 @@ class LeakyBrownNoiseTest {
     private val bufferSize = 1 shl 16
     private val headSize = 64
     private val seed = 20260905
-    private val sampleRate = SAMPLE_RATE_HZ.toDouble()
 
     /**
      * The normalisation target, pinned from both sides: a floor on the peak alone passes a gain three times too
@@ -22,9 +18,6 @@ class LeakyBrownNoiseTest {
      */
     private val expectedRms = NORMALISED_SOURCE_RMS
     private val rmsTolerance = 0.025
-
-    /** Above the shipping walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
-    private val bandSplitHz = 200.0
 
     /** Measured factor on this seed is ~16; half of it is clear of the noise and still fails a corner left subsonic. */
     private val minimumHighBandFactor = 8.0
@@ -68,7 +61,7 @@ class LeakyBrownNoiseTest {
     }
 
     @Test
-    fun leakyBrownReachesTheAudibleBandWhereTheShippingWalkDoesNot() {
+    fun leakyBrownReachesTheAudibleBandWhereTheRandomWalkDoesNot() {
         val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(cutoffHz, Random(seed)).fill(it) }
         val walk = FloatArray(bufferSize).also { BrownNoise(Random(seed)).fill(it) }
 
@@ -76,7 +69,7 @@ class LeakyBrownNoiseTest {
         val walkEnergy = highBandEnergyAtUnitPeak(walk)
 
         assertTrue(
-            "at equal peak level the leaky source should carry far more energy above $bandSplitHz Hz: " +
+            "at equal peak level the leaky source should carry far more energy above $AUDIBLE_BAND_SPLIT_HZ Hz: " +
                 "leaky $leakyEnergy, walk $walkEnergy, factor ${leakyEnergy / walkEnergy}",
             leakyEnergy > minimumHighBandFactor * walkEnergy,
         )
@@ -91,29 +84,10 @@ class LeakyBrownNoiseTest {
         val lowerEnergy = highBandEnergyAtUnitPeak(lower)
 
         assertTrue(
-            "$higherCutoffHz Hz should put more energy above $bandSplitHz Hz than $lowerCutoffHz Hz: " +
+            "$higherCutoffHz Hz should put more energy above $AUDIBLE_BAND_SPLIT_HZ Hz than $lowerCutoffHz Hz: " +
                 "higher $higherEnergy, lower $lowerEnergy, factor ${higherEnergy / lowerEnergy}",
             higherEnergy > minimumCutoffFactor * lowerEnergy,
         )
-    }
-
-    /**
-     * Scales the signal to a peak of exactly 1 — the level the mixer's headroom actually constrains — then splits it
-     * with a one-pole low-pass and its complementary high-pass and reports the mean energy of the high half.
-     * Cheaper than an FFT and enough for a claim about how much of a spectrum is audible at all.
-     */
-    private fun highBandEnergyAtUnitPeak(signal: FloatArray): Double {
-        val scale = 1.0 / signal.maxOf { abs(it) }
-        val smoothing = exp(-2.0 * PI * bandSplitHz / sampleRate)
-        var low = 0.0
-        var highEnergy = 0.0
-        for (sample in signal) {
-            val scaled = sample * scale
-            low = (smoothing * low) + ((1.0 - smoothing) * scaled)
-            val high = scaled - low
-            highEnergy += high * high
-        }
-        return highEnergy / signal.size
     }
 
     private fun rms(buffer: FloatArray): Double = sqrt(buffer.sumOf { it.toDouble() * it } / buffer.size)

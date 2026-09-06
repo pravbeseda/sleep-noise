@@ -31,14 +31,14 @@ import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.PINK_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.media.BrownNoise
 import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.media.PinkNoise
+import ru.pravbeseda.sleepnoise.media.shippingBrownNoise
+import ru.pravbeseda.sleepnoise.media.shippingPinkNoise
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 
 /**
@@ -60,8 +60,8 @@ private fun SharedPreferences.noiseVolume(volumeKey: String, enabledKey: String,
  * and stops, pauses or ducks when the system says something else needs the output.
  */
 class PlaybackService : Service() {
-    private val pinkChannel = NoiseChannel(PinkNoise())
-    private val brownChannel = NoiseChannel(BrownNoise())
+    private val pinkChannel = NoiseChannel(shippingPinkNoise())
+    private val brownChannel = NoiseChannel(shippingBrownNoise())
 
     /**
      * Empty while the lab is switched off, and the engine then mixes exactly the two channels it ships with:

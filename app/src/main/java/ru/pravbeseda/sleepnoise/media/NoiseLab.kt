@@ -47,9 +47,6 @@ private const val BRIGHT_LEAKY_BROWN_HZ = 250
 /** Between the two, where the spectrum darkens while a phone speaker still returns most of it. */
 private const val MID_LEAKY_BROWN_HZ = 120
 
-/** The bottom of the range: below this a phone speaker gives back too little to judge. */
-private const val DEEP_LEAKY_BROWN_HZ = 60
-
 /**
  * Every candidate under test, in the order their sliders appear. Adding another experiment is one entry
  * here plus one [NoiseSource]: the service's channels and the Activity's sliders are both built from this
@@ -58,5 +55,4 @@ private const val DEEP_LEAKY_BROWN_HZ = 60
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
     leakyBrown(BRIGHT_LEAKY_BROWN_HZ),
     leakyBrown(MID_LEAKY_BROWN_HZ),
-    leakyBrown(DEEP_LEAKY_BROWN_HZ),
 )
