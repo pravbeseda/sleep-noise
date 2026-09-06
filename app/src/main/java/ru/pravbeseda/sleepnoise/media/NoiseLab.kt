@@ -32,11 +32,31 @@ class NoiseLabCandidate(
 )
 
 /**
- * Every candidate under test, in the order their sliders appear. Adding a third experiment is one entry
+ * One [LeakyBrownNoise] on trial at [cutoffHz], which is the only thing that separates one of them from the
+ * next: the cutoff is in the key and in the label, so the rows cannot be told apart by their position alone.
+ */
+private fun leakyBrown(cutoffHz: Int) = NoiseLabCandidate(
+    "labLeakyBrown${cutoffHz}NoiseVolume",
+    "labLeakyBrown${cutoffHz}NoiseEnabled",
+    "Leaky brown $cutoffHz Hz",
+) { LeakyBrownNoise(cutoffHz.toDouble()) }
+
+/** Bright enough to sit close to pink: the top of the range worth judging by ear. */
+private const val BRIGHT_LEAKY_BROWN_HZ = 250
+
+/** Between the two, where the spectrum darkens while a phone speaker still returns most of it. */
+private const val MID_LEAKY_BROWN_HZ = 120
+
+/** The bottom of the range: below this a phone speaker gives back too little to judge. */
+private const val DEEP_LEAKY_BROWN_HZ = 60
+
+/**
+ * Every candidate under test, in the order their sliders appear. Adding another experiment is one entry
  * here plus one [NoiseSource]: the service's channels and the Activity's sliders are both built from this
  * list, so nothing else in the app carries a second copy of it.
  */
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
-    NoiseLabCandidate("labPinkNoiseVolume", "labPinkNoiseEnabled", "Pink") { PinkNoise() },
-    NoiseLabCandidate("labLeakyBrownNoiseVolume", "labLeakyBrownNoiseEnabled", "Leaky brown") { LeakyBrownNoise() },
+    leakyBrown(BRIGHT_LEAKY_BROWN_HZ),
+    leakyBrown(MID_LEAKY_BROWN_HZ),
+    leakyBrown(DEEP_LEAKY_BROWN_HZ),
 )

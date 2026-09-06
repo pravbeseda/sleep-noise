@@ -7,7 +7,7 @@ import org.junit.Test
 import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.CURRENT_THEME
-import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
 
 class NoiseLabTest {
     @Test
@@ -21,7 +21,7 @@ class NoiseLabTest {
     fun noCandidateReusesAShippingPreferenceKey() {
         // The theme and language keys share the store and hold Strings, so colliding with one of those
         // would not overwrite a volume but throw ClassCastException out of getFloat.
-        val shipping = setOf(WHITE_NOISE_VOLUME, BROWN_NOISE_VOLUME, CURRENT_THEME, CURRENT_LANGUAGE)
+        val shipping = setOf(PINK_NOISE_VOLUME, BROWN_NOISE_VOLUME, CURRENT_THEME, CURRENT_LANGUAGE)
 
         NOISE_LAB_CANDIDATES.forEach { candidate ->
             assertTrue(
