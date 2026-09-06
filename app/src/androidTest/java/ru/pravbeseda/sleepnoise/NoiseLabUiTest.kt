@@ -94,8 +94,12 @@ class NoiseLabUiTest {
             }
 
             // A different value per slider, so a shared or a swapped key fails here instead of passing by luck.
+            // Spread across the slider's own range rather than stepped by a fixed amount: a fixed step ran off
+            // the end of the seekbar as soon as the lab grew past three candidates, and every value past 100
+            // came back as 100.
+            val step = (LAST_PROGRESS - FIRST_PROGRESS) / NOISE_LAB_CANDIDATES.size
             val progressByKey = NOISE_LAB_CANDIDATES
-                .mapIndexed { index, candidate -> candidate.preferenceKey to FIRST_PROGRESS + index * PROGRESS_STEP }
+                .mapIndexed { index, candidate -> candidate.preferenceKey to FIRST_PROGRESS + index * step }
                 .toMap()
 
             scenario.onActivity { activity ->
@@ -123,7 +127,10 @@ class NoiseLabUiTest {
 
     private companion object {
         const val FIRST_PROGRESS = 23
-        const val PROGRESS_STEP = 31
+
+        /** The top of the seekbar's range, which is where the spread of test values has to stop. */
+        const val LAST_PROGRESS = 100
+
         const val PERCENT_SCALE = 100f
     }
 }
