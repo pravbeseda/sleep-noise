@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml/badge.svg)](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml)
 
-Android app that **synthesizes** white and brown noise in real time to help you fall asleep,
+Android app that **synthesizes** pink and brown noise in real time to help you fall asleep,
 with a countdown timer that stops playback on its own.
 
 Nothing is streamed and nothing is bundled: the samples are generated on the device, so the app
@@ -16,7 +16,7 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 
 ## Features
 
-- **Two independent noise channels** — white and brown, each with its own speaker toggle and volume slider.
+- **Two independent noise channels** — pink and brown, each with its own speaker toggle and volume slider.
   Silence one to hear only the other; its level is kept for the next time you switch it back on. The two
   follow each other: moving the slider switches the noise on, dragging it to zero switches it off, and
   switching a silent noise on gives it the quietest audible level.
@@ -89,7 +89,7 @@ spotless task fails instead of silently checking nothing.
 app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
-├── media/                   # NoiseEngine + NoiseMixer + White/Brown noise sources
+├── media/                   # NoiseEngine + NoiseMixer + Pink/Brown/White noise sources
 ├── playback/                # PlaybackService (foreground) + AudioFocus
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider

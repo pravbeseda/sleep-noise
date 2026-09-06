@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -294,11 +294,11 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `media/NoiseEngine` owns one `AudioTrack` (44.1 kHz, mono, PCM 16-bit, `MODE_STREAM`) and one writer thread that serves every session of the engine's life, and **that thread is the sole owner of the track**: it builds it, plays it and releases it in its own `finally`, so no other thread can ever see a released track. The thread raises its own priority with `Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)`, because Java thread priorities map poorly onto Linux nice values. The track buffer is `getMinBufferSize * 4` **bytes** and one write covers half of it; `BYTES_PER_SAMPLE` is the one place a byte count turns into a sample count, since the code this replaced confused the two (issue #24).
 
-`media/NoiseMixer` holds the mixing law and nothing else — no audio platform, no threading — so it is tested on the JVM: sum each `NoiseSource` scaled by its channel volume, clamp to `[-1, 1]`, convert to PCM 16-bit. The clamp is not decoration: without it the sum of two loud channels wraps the `Short` conversion into an audible crack. The sample math behind `NoiseSource` is plain Kotlin importing nothing from `android.*` and is tested on the JVM too: `media/WhiteNoise` (uniform random) and `media/BrownNoise` (integrates white noise via `lastOut + 0.02 * white`, clamped).
+`media/NoiseMixer` holds the mixing law and nothing else — no audio platform, no threading — so it is tested on the JVM: sum each `NoiseSource` scaled by its channel volume, clamp to `[-1, 1]`, convert to PCM 16-bit. The clamp is not decoration: without it the sum of two loud channels wraps the `Short` conversion into an audible crack. The sample math behind `NoiseSource` is plain Kotlin importing nothing from `android.*` and is tested on the JVM too: `media/PinkNoise` (Kellett's filter bank, normalised to a fixed RMS) and `media/BrownNoise` (integrates white noise via `lastOut + 0.02 * white`, clamped). `media/WhiteNoise` (uniform random) no longer sounds in the app: it stays as the reference `PinkNoiseTest` measures pink's spectral tilt against, and as the source `NoiseEngineHammerTest` drives.
 
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
-`playback/PlaybackService` holds two `NoiseChannel`s (white and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "white noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
+`playback/PlaybackService` holds two `NoiseChannel`s (pink and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "pink noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
 
 With the noise lab switched on the service holds more than two: one further `NoiseChannel` per entry of
 `NOISE_LAB_CANDIDATES` in `media/NoiseLab.kt`, built from the same registry the Activity builds its sliders from.
@@ -306,7 +306,7 @@ The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` —
 experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
 with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
-ships two developer-facing sliders whose English labels are not translated into any of the six locales.
+ships three developer-facing sliders whose English labels are not translated into any of the six locales.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -335,7 +335,7 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 
 ### Preferences
 
-Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `brownNoiseVolume`, `whiteNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `pinkNoiseVolume`, `brownNoiseVolume`, `pinkNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
 Every noise has a `*Enabled` key beside its volume — the two shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
@@ -344,7 +344,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Four more `APP_PREFS` keys belong to the noise lab — `labPinkNoiseVolume` / `labPinkNoiseEnabled` and `labLeakyBrownNoiseVolume` / `labLeakyBrownNoiseEnabled` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: each pair lives on its candidate in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the four is read at all.
+Six more `APP_PREFS` keys belong to the noise lab, a `labLeakyBrown<cutoff>NoiseVolume` / `labLeakyBrown<cutoff>NoiseEnabled` pair for each of the three `LeakyBrownNoise` cutoffs on trial (250, 120 and 60 Hz), and they are the one set that is *not* declared at the top of `MainActivity.kt`: each pair is derived from its candidate's cutoff in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the six is read at all.
 
 ### Theme
 
@@ -375,7 +375,7 @@ speaker, struck through while the noise is off. The style sits on the widget rat
 a level the **user** sets switches the noise on, a level dragged to zero switches it off — and only for
 `fromUser` changes, since restoring a stored level at bind or `recreate()` time must switch nothing on by
 itself. `bind` closes the same circle from the other side: a stored level of zero reads as off however the
-stored flag was left, because white and every lab candidate default to 0 % with their `*Enabled` key set, and a
+stored flag was left, because pink and every lab candidate default to 0 % with their `*Enabled` key set, and a
 sounding speaker over a silent slider says something untrue. The toggle keeps its own end of that bargain —
 switching a silent noise on raises it to `MIN_AUDIBLE_PROGRESS`, 1 %, since a noise switched on at zero would
 read as off again the next time the row is bound.

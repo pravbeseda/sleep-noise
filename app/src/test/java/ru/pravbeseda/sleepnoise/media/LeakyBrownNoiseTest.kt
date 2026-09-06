@@ -32,6 +32,9 @@ class LeakyBrownNoiseTest {
     /** Measured factor across the decade below is ~2.4; 1.5 clears an implementation that ignores its cutoff. */
     private val minimumCutoffFactor = 1.5
 
+    /** Where a single settled value is needed: the brightest cutoff the lab has on trial. */
+    private val cutoffHz = 250.0
+
     private val lowerCutoffHz = 100.0
     private val higherCutoffHz = 1_000.0
 
@@ -39,7 +42,7 @@ class LeakyBrownNoiseTest {
     fun fillProducesSamplesWithinRange() {
         val buffer = FloatArray(bufferSize)
 
-        LeakyBrownNoise(random = Random(seed)).fill(buffer)
+        LeakyBrownNoise(cutoffHz, Random(seed)).fill(buffer)
 
         buffer.forEachIndexed { index, sample ->
             assertTrue("sample $index out of range: $sample", sample >= -1.0f && sample <= 1.0f)
@@ -51,7 +54,7 @@ class LeakyBrownNoiseTest {
     @Test
     fun resetReturnsTheFilterToItsInitialState() {
         val random = RewindableRandom(seed)
-        val source = LeakyBrownNoise(random = random)
+        val source = LeakyBrownNoise(cutoffHz, random)
         source.fill(FloatArray(bufferSize))
 
         source.reset()
@@ -60,13 +63,13 @@ class LeakyBrownNoiseTest {
         source.fill(afterReset)
 
         val fresh = FloatArray(headSize)
-        LeakyBrownNoise(random = Random(seed)).fill(fresh)
+        LeakyBrownNoise(cutoffHz, Random(seed)).fill(fresh)
         assertArrayEquals("a reset source does not start where a fresh one does", fresh, afterReset, 0.0f)
     }
 
     @Test
     fun leakyBrownReachesTheAudibleBandWhereTheShippingWalkDoesNot() {
-        val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(random = Random(seed)).fill(it) }
+        val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(cutoffHz, Random(seed)).fill(it) }
         val walk = FloatArray(bufferSize).also { BrownNoise(Random(seed)).fill(it) }
 
         val leakyEnergy = highBandEnergyAtUnitPeak(leaky)

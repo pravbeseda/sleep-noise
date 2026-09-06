@@ -100,7 +100,7 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
         // Both before their listeners, so restoring the stored state does not count as a change to save.
         slider.progress = (preferences.getFloat(noise.volumeKey, noise.defaultVolume) * PERCENT_SCALE).toInt()
         // A noise at zero is silent whatever its stored flag says, and the speaker says only what is
-        // true: an untouched install has white, and every lab candidate, sitting at 0 %.
+        // true: an untouched install has pink, and every lab candidate, sitting at 0 %.
         noiseToggle.isChecked = preferences.getBoolean(noise.enabledKey, DEFAULT_NOISE_ENABLED) && slider.progress > 0
 
         val show = {

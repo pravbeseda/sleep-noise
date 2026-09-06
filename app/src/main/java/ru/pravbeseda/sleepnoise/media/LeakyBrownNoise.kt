@@ -12,10 +12,10 @@ import kotlin.random.Random
  * subsonic wander no phone speaker reproduces. Moving the corner into the audible band is the lever; adding gain
  * is not, since it only clips.
  *
- * The cutoff is a constructor parameter because it is the knob this class exists to try by ear — production takes
- * the default, the tests drive more than one value.
+ * The cutoff has no default because it is the knob this class exists to try by ear: the lab puts one candidate on
+ * the screen per value it wants judged, so every caller names the value it is judging.
  */
-class LeakyBrownNoise(cutoffHz: Double = DEFAULT_CUTOFF_HZ, private val random: Random = Random.Default) : NoiseSource {
+class LeakyBrownNoise(cutoffHz: Double, private val random: Random = Random.Default) : NoiseSource {
     private val smoothing = exp(-RADIANS_PER_CYCLE * cutoffHz / SAMPLE_RATE_HZ)
 
     /**
@@ -39,9 +39,6 @@ class LeakyBrownNoise(cutoffHz: Double = DEFAULT_CUTOFF_HZ, private val random: 
     }
 
     private companion object {
-        /** Well inside the band a phone speaker reproduces; the value to move first when judging the result by ear. */
-        const val DEFAULT_CUTOFF_HZ = 250.0
-
         const val RADIANS_PER_CYCLE = 2.0 * PI
 
         /** Variance of the uniform white input over `[-1, 1]`. */

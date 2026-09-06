@@ -26,11 +26,11 @@ import ru.pravbeseda.sleepnoise.BROWN_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.DEFAULT_BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.DEFAULT_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.DEFAULT_WHITE_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.DEFAULT_PINK_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.MainActivity
+import ru.pravbeseda.sleepnoise.PINK_NOISE_ENABLED
+import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.WHITE_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.BrownNoise
 import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
@@ -38,7 +38,7 @@ import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.media.WhiteNoise
+import ru.pravbeseda.sleepnoise.media.PinkNoise
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 
 /**
@@ -60,7 +60,7 @@ private fun SharedPreferences.noiseVolume(volumeKey: String, enabledKey: String,
  * and stops, pauses or ducks when the system says something else needs the output.
  */
 class PlaybackService : Service() {
-    private val whiteChannel = NoiseChannel(WhiteNoise())
+    private val pinkChannel = NoiseChannel(PinkNoise())
     private val brownChannel = NoiseChannel(BrownNoise())
 
     /**
@@ -69,7 +69,7 @@ class PlaybackService : Service() {
      */
     private val labCandidates: List<NoiseLabCandidate> = if (NOISE_LAB_ENABLED) NOISE_LAB_CANDIDATES else emptyList()
     private val labChannels: Map<String, NoiseChannel> = labCandidates.associate { it.preferenceKey to NoiseChannel(it.createSource()) }
-    private val noiseEngine = NoiseEngine(listOf(whiteChannel, brownChannel) + labChannels.values)
+    private val noiseEngine = NoiseEngine(listOf(pinkChannel, brownChannel) + labChannels.values)
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
 
@@ -184,8 +184,8 @@ class PlaybackService : Service() {
                 this@PlaybackService.listener = value
             }
 
-        fun setWhiteVolume(volume: Float) {
-            whiteChannel.volume = volume
+        fun setPinkVolume(volume: Float) {
+            pinkChannel.volume = volume
         }
 
         fun setBrownVolume(volume: Float) {
@@ -266,7 +266,7 @@ class PlaybackService : Service() {
             return
         }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        whiteChannel.volume = preferences.noiseVolume(WHITE_NOISE_VOLUME, WHITE_NOISE_ENABLED, DEFAULT_WHITE_NOISE_VOLUME)
+        pinkChannel.volume = preferences.noiseVolume(PINK_NOISE_VOLUME, PINK_NOISE_ENABLED, DEFAULT_PINK_NOISE_VOLUME)
         brownChannel.volume = preferences.noiseVolume(BROWN_NOISE_VOLUME, BROWN_NOISE_ENABLED, DEFAULT_BROWN_NOISE_VOLUME)
         labCandidates.forEach { candidate ->
             labChannels.getValue(candidate.preferenceKey).volume =

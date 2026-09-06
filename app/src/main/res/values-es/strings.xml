@@ -2,9 +2,9 @@
 <resources>
     <string name="lang">es</string>
     <string name="app_name">Ruido para Dormir</string>
-    <string name="white_noise_volume">Ruido blanco: %1$d%%</string>
+    <string name="pink_noise_volume">Ruido rosa: %1$d%%</string>
     <string name="brown_noise_volume">Ruido marrón: %1$d%%</string>
-    <string name="white_noise_name">Ruido blanco</string>
+    <string name="pink_noise_name">Ruido rosa</string>
     <string name="brown_noise_name">Ruido marrón</string>
     <string name="play_button">Reproducir</string>
     <string name="theme_system">Tema del sistema</string>

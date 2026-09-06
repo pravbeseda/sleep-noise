@@ -9,7 +9,7 @@
     android:padding="32dp">
 
     <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-        android:id="@+id/whiteNoiseControl"
+        android:id="@+id/pinkNoiseControl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
