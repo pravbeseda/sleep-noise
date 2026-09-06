@@ -311,8 +311,10 @@ that mix two bands mean what they say.
 The three are normalised on different terms from the steady sources, and the tests say so. Surf is held to
 `NORMALISED_SOURCE_RMS` through its loudest second rather than its average, because a wave source that
 averages to the shared level puts its break far past full scale. Rain and the clatter keep the shared average
-and pay for their peaks in the clamp: ~0.25 % and ~0.47 % of their own samples, where pink measures 0.002 %,
-brown 0.004 % and surf 0.0005 % alone. They are the first sources here to spend any of their own samples that
+and pay for their peaks in the clamp: 0.32 % and 0.47 % of their own samples on their tests' own seed, and
+0.25-0.32 % and 0.46-0.57 % across the seeds tried, where pink measures 0.002 %, brown 0.004 % and surf
+0.0001 % alone. Each test bounds the spread rather than the measurement — a bound set at what one seed
+measures asserts the seed. They are the first sources here to spend any of their own samples that
 way, and the shipping pair's ~0.5 % is not the precedent for it — that figure is the pair *mixed*, which
 `ShippingNoiseMixTest` measures through the mixer and bounds at 2 %. What the mix says about these two is
 smaller than it looks: a third source at full volume takes it to ~2.2 % whether that source is rain, the

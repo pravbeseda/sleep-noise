@@ -99,15 +99,17 @@ class RainNoiseTest {
     private companion object {
         /**
          * A drop is a peak, and a source held to the shared RMS cannot also keep every peak inside full scale.
-         * This is the first source in the project to spend any of its own samples in the clamp, and it is
-         * deliberate: rain measures ~0.25 % of its own and the clatter ~0.47 %, where pink measures 0.002 %,
-         * brown 0.004 % and surf 0.0005 %, all of them alone. The shipping pair's ~0.5 % is not the precedent
-         * for that — it is a figure for the pair *mixed*, which is a different measurement. What the mix says
-         * about these two is smaller than it looks: three sources at full volume clip ~2.2 % of the mix whether
-         * the third is rain, the clatter or the steady `Leaky brown 250 Hz` already on trial.
+         * Rain and the clatter are the first sources here to spend any of their own samples in the clamp, and
+         * it is deliberate: on this test's seed rain measures 0.32 % of its own samples and the clatter 0.47 %,
+         * where pink measures 0.002 %, brown 0.004 % and surf 0.0001 %, all of them alone. The shipping pair's
+         * ~0.5 % is not the precedent for that — it is a figure for the pair *mixed*, a different measurement.
+         * What the mix says about these two is smaller than it looks: three sources at full volume clip ~2.2 %
+         * of the mix whether the third is rain, the clatter or the steady `Leaky brown 250 Hz` already on trial.
          *
-         * The bound is set at twice what the louder of the two measures. Tightening it to where nothing clips
-         * would mean flattening the drops and the thumps, which are what these sources are.
+         * The bound is a budget, not the measurement: it has to fail a source that has started clipping grossly
+         * and pass the spread this one actually has, which is 0.25-0.32 % across the seeds tried. Setting it at
+         * the measured figure would make it pass on this seed and fail on the next, which asserts the seed
+         * rather than the source — the clatter's own bound was exactly that and was raised for it.
          */
         const val MAX_CLAMPED_SHARE = 0.005
 

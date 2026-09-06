@@ -116,8 +116,16 @@ class WheelClatterNoiseTest {
     private fun rms(buffer: FloatArray): Double = sqrt(buffer.sumOf { it.toDouble() * it } / buffer.size)
 
     private companion object {
-        /** A thump is a peak, on the same terms as rain's drops. */
-        const val MAX_CLAMPED_SHARE = 0.005
+        /**
+         * A thump is a peak, on the same terms as rain's drops — see the bound in `RainNoiseTest` for why a
+         * source of them spends samples in the clamp at all.
+         *
+         * Higher than rain's because the clatter clips more: 0.46-0.57 % of its own samples across the seeds
+         * tried, 0.47 % on the one pinned here. At rain's 0.5 % this passed on this seed and failed on three of
+         * six others, which is a bound that asserts the seed rather than the source. Whether the thumps should
+         * simply be quieter is a judgement to make by ear, and the lab is where that is made.
+         */
+        const val MAX_CLAMPED_SHARE = 0.008
 
         /** Between the two gaps the source produces, and nowhere near either of them. */
         const val BOGIE_GAP_LIMIT_SECONDS = 0.8
