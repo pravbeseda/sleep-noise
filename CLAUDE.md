@@ -298,6 +298,22 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 Two sources no longer sound in the app and stay as the references their tests measure against. `media/WhiteNoise` (uniform random) is what `PinkNoiseTest` measures pink's spectral tilt against, and the source `NoiseEngineHammerTest` drives. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where the shipping pair clips ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
 
+The lab's own sources are three, and each is built rather than sampled — the app ships no audio assets, and a
+generated one is a few constants instead of a few megabytes. `media/SurfNoise` is two bands under one wave
+envelope: a rumble that only breathes and a spray that belongs to the break, with each wave's length drawn as
+it starts, since surf on a fixed period is heard as a machine. `media/RainNoise` is a bright sheet with the
+weight of the downpour under it and drops struck out of the same bright band — a burst, not a pitched ping.
+`media/WheelClatterNoise` is the rumble of a carriage with thumps in pairs: two axles of a bogie a third of a
+second apart, the next joint seconds away, both intervals jittered. All three share `media/OnePole`, which
+carries the gains that put either half of a split back at the level of the white it came from, so the weights
+that mix two bands mean what they say.
+
+The two impulsive ones are normalised on different terms from the steady sources, and the tests say so: surf
+is held to `NORMALISED_SOURCE_RMS` through its loudest second rather than its average, because a wave source
+that averages to the shared level puts its break far past full scale; rain and the clatter keep the shared
+average and spend about a third of a percent of their samples in the clamp, which is the trade the shipping
+pair already makes at ~0.5 %.
+
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
 `playback/PlaybackService` holds two `NoiseChannel`s (pink and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "pink noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
@@ -346,7 +362,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Four more `APP_PREFS` keys belong to the noise lab, a `labLeakyBrown<cutoff>NoiseVolume` / `labLeakyBrown<cutoff>NoiseEnabled` pair for each of the two `LeakyBrownNoise` cutoffs still on trial (250 and 120 Hz; 60 Hz left the lab when it became the shipping brown), and they are the one set that is *not* declared at the top of `MainActivity.kt`: each pair is derived from its candidate's cutoff in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the four is read at all.
+Ten more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the five candidates on trial — `LeakyBrown250` and `LeakyBrown120` (60 Hz left the lab when it became the shipping brown), plus `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the ten is read at all.
 
 ### Theme
 

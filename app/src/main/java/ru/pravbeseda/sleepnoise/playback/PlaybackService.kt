@@ -40,6 +40,7 @@ import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.media.shippingBrownNoise
 import ru.pravbeseda.sleepnoise.media.shippingPinkNoise
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
+import kotlin.random.Random
 
 /**
  * A noise's level as the mix should hear it: a switched-off noise keeps the level its slider shows
@@ -68,7 +69,8 @@ class PlaybackService : Service() {
      * a lab volume left in the preferences must not go on playing once its slider is gone.
      */
     private val labCandidates: List<NoiseLabCandidate> = if (NOISE_LAB_ENABLED) NOISE_LAB_CANDIDATES else emptyList()
-    private val labChannels: Map<String, NoiseChannel> = labCandidates.associate { it.preferenceKey to NoiseChannel(it.createSource()) }
+    private val labChannels: Map<String, NoiseChannel> =
+        labCandidates.associate { it.preferenceKey to NoiseChannel(it.createSource(Random.Default)) }
     private val noiseEngine = NoiseEngine(listOf(pinkChannel, brownChannel) + labChannels.values)
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())

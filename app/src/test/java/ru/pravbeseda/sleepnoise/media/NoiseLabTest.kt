@@ -1,5 +1,6 @@
 package ru.pravbeseda.sleepnoise.media
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
@@ -8,6 +9,7 @@ import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.CURRENT_THEME
 import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
+import kotlin.random.Random
 
 class NoiseLabTest {
     @Test
@@ -36,53 +38,53 @@ class NoiseLabTest {
         NOISE_LAB_CANDIDATES.forEach { candidate ->
             assertNotSame(
                 "${candidate.label} hands out one shared source, so two channels would drive one filter",
-                candidate.createSource(),
-                candidate.createSource(),
+                candidate.createSource(Random(SEED)),
+                candidate.createSource(Random(SEED)),
             )
         }
     }
 
     /**
-     * A filter that has just been built is still settling, so its first sample carries far less energy than a
-     * running one's. Averaged over enough sources the comparison is about their state and not about the noise:
-     * a source holding its state anywhere but in itself would hand the next one a filter already at full level.
+     * A source depends on nothing but itself and the generator it was handed: built after another one of its
+     * kind has run for a while, it produces exactly what the first one produced.
+     *
+     * State kept anywhere but in the instance — a `companion object`, a top-level `var` — is what this fails
+     * on, and it is worth failing on: the service builds one source per channel from this very factory, so a
+     * filter shared behind their backs would have two channels driving one of them.
+     *
+     * The comparison is exact rather than statistical because the factory takes the generator. The test this
+     * replaced measured the opening against a running level instead, which held only for sources that settle
+     * slowly: a source with a high band opens at full level with nothing shared at all, and failed it.
      */
     @Test
-    fun aNewSourceStartsFromSilenceRatherThanFromTheLastOnesState() {
+    fun aSourceBuiltAfterAnotherHasRunProducesWhatTheFirstOneDid() {
         NOISE_LAB_CANDIDATES.forEach { candidate ->
-            val cold = FloatArray(TRIALS)
-            val warm = FloatArray(TRIALS)
-            val warmUp = FloatArray(WARM_UP_SAMPLES)
-            val sample = FloatArray(1)
+            val first = FloatArray(COMPARED_SAMPLES)
+            candidate.createSource(Random(SEED)).fill(first)
 
-            repeat(TRIALS) { trial ->
-                val source = candidate.createSource()
-                source.fill(sample)
-                cold[trial] = sample[0]
-                source.fill(warmUp)
-                source.fill(sample)
-                warm[trial] = sample[0]
-            }
+            candidate.createSource(Random(DECOY_SEED)).fill(FloatArray(WARM_UP_SAMPLES))
+            val afterTheDecoy = FloatArray(COMPARED_SAMPLES)
+            candidate.createSource(Random(SEED)).fill(afterTheDecoy)
 
-            val coldEnergy = meanSquare(cold)
-            val warmEnergy = meanSquare(warm)
-            assertTrue(
-                "${candidate.label} starts at $coldEnergy against a running $warmEnergy: its state outlives the source",
-                coldEnergy * SETTLING_MARGIN < warmEnergy,
+            assertArrayEquals(
+                "${candidate.label} came out differently after another of its own sources had run: its state outlives it",
+                first,
+                afterTheDecoy,
+                0.0f,
             )
         }
     }
 
-    private fun meanSquare(samples: FloatArray): Double = samples.sumOf { (it * it).toDouble() } / samples.size
-
     private companion object {
-        /** Sources built per candidate. Enough that the energy comparison below clears its margin by six sigma. */
-        const val TRIALS = 512
+        const val SEED = 20260906
 
-        /** Several time constants of the slowest section in either candidate, so "warm" means fully settled. */
-        const val WARM_UP_SAMPLES = 4096
+        /** Anything but [SEED], so the decoy cannot accidentally leave the state the comparison expects. */
+        const val DECOY_SEED = 767
 
-        /** Both candidates start below half the running energy; the factor is the room left for the noise. */
-        const val SETTLING_MARGIN = 2.0
+        /** A wave of surf and several joints of the clatter, so every candidate's slow state is well under way. */
+        const val WARM_UP_SAMPLES = 16 * SAMPLE_RATE_HZ
+
+        /** Long enough to cover the opening of the slowest filter here, short enough to stay a cheap comparison. */
+        const val COMPARED_SAMPLES = 8192
     }
 }
