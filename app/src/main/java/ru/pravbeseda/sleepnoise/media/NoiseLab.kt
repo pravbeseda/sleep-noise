@@ -12,7 +12,7 @@ import kotlin.random.Random
  * deliberately stay in the tree too, which makes the next experiment a rebuild rather than a
  * re-implementation.
  */
-const val NOISE_LAB_ENABLED = true
+const val NOISE_LAB_ENABLED = false
 
 /** What an unmoved lab slider is worth, so an existing install sounds exactly as it does today. */
 const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
@@ -42,26 +42,11 @@ private fun candidate(name: String, label: String, createSource: (Random) -> Noi
     NoiseLabCandidate("lab${name}NoiseVolume", "lab${name}NoiseEnabled", label, createSource)
 
 /**
- * One [LeakyBrownNoise] on trial at [cutoffHz], which is the only thing that separates one of them from the
- * next: the cutoff is in the key and in the label, so the rows cannot be told apart by their position alone.
- */
-private fun leakyBrown(cutoffHz: Int) =
-    candidate("LeakyBrown$cutoffHz", "Leaky brown $cutoffHz Hz") { random -> LeakyBrownNoise(cutoffHz.toDouble(), random) }
-
-/** Bright enough to sit close to pink: the top of the range worth judging by ear. */
-private const val BRIGHT_LEAKY_BROWN_HZ = 250
-
-/** Between the two, where the spectrum darkens while a phone speaker still returns most of it. */
-private const val MID_LEAKY_BROWN_HZ = 120
-
-/**
  * Every candidate under test, in the order their sliders appear. Adding another experiment is one entry
  * here plus one [NoiseSource]: the service's channels and the Activity's sliders are both built from this
  * list, so nothing else in the app carries a second copy of it.
  */
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
-    leakyBrown(BRIGHT_LEAKY_BROWN_HZ),
-    leakyBrown(MID_LEAKY_BROWN_HZ),
     candidate("Surf", "Surf") { random -> SurfNoise(random) },
     candidate("Rain", "Rain") { random -> RainNoise(random) },
     candidate("WheelClatter", "Wheel clatter") { random -> WheelClatterNoise(random) },

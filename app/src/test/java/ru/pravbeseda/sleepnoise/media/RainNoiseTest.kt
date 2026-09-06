@@ -104,7 +104,8 @@ class RainNoiseTest {
          * where pink measures 0.002 %, brown 0.004 % and surf 0.0001 %, all of them alone. The shipping pair's
          * ~0.5 % is not the precedent for that — it is a figure for the pair *mixed*, a different measurement.
          * What the mix says about these two is smaller than it looks: three sources at full volume clip ~2.2 %
-         * of the mix whether the third is rain, the clatter or the steady `Leaky brown 250 Hz` already on trial.
+         * of the mix whether the third is rain, the clatter or a steady leaky brown at 250 Hz, measured while
+         * that one was still on trial.
          *
          * The bound is a budget, not the measurement: it has to fail a source that has started clipping grossly
          * and pass the spread this one actually has, which is 0.25-0.32 % across the seeds tried. Setting it at
