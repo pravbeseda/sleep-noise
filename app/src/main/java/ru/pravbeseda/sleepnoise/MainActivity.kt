@@ -51,7 +51,7 @@ const val BROWN_NOISE_ENABLED = "brownNoiseEnabled"
 const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
-/** A noise ships switched on, so an install made before the switches existed sounds exactly as it did. */
+/** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
 const val DEFAULT_NOISE_ENABLED = true
 
 class MainActivity : AppCompatActivity() {
@@ -329,7 +329,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * One candidate, one [NoiseControlView] — the same component the shipping noises use, so an
-     * experiment gets its switch for nothing.
+     * experiment gets its checkbox for nothing.
      *
      * The registry is read straight from `media/NoiseLab` rather than through the service binder: this runs in
      * onCreate and the binder does not arrive until after onStart, so a registry behind it would draw nothing.

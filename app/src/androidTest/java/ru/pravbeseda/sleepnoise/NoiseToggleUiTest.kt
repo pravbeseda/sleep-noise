@@ -4,7 +4,7 @@ import android.content.Context
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
-import androidx.appcompat.widget.SwitchCompat
+import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.edit
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,15 +20,15 @@ import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**
- * Every noise on the screen carries the same controls, and its switch turns it off without touching
- * its level: the slider keeps its position, the stored volume keeps its value, and only the switch's
+ * Every noise on the screen carries the same controls, and its checkbox turns it off without touching
+ * its level: the slider keeps its position, the stored volume keeps its value, and only the checkbox's
  * own preference changes.
  *
  * Nothing here presses play, so no foreground service and no audio outlives the test. What the
- * service makes of a stored switch is therefore not covered — see the PR description.
+ * service makes of a stored checkbox is therefore not covered — see the PR description.
  */
 @RunWith(AndroidJUnit4::class)
-class NoiseSwitchUiTest {
+class NoiseToggleUiTest {
     private val preferences = InstrumentationRegistry.getInstrumentation()
         .targetContext
         .getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
@@ -56,7 +56,7 @@ class NoiseSwitchUiTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.eachNoiseControl().forEach { control ->
-                    assertTrue("a switch on an untouched install", control.noiseSwitch().isChecked)
+                    assertTrue("a checkbox on an untouched install", control.noiseToggle().isChecked)
                     assertEquals("the controls' alpha", 1f, control.controls().alpha, 0f)
                 }
             }
@@ -69,7 +69,7 @@ class NoiseSwitchUiTest {
             scenario.onActivity { activity ->
                 val white = activity.noiseControl(R.id.whiteNoiseControl)
                 white.slider().progress = CHOSEN_PROGRESS
-                white.noiseSwitch().isChecked = false
+                white.noiseToggle().isChecked = false
 
                 assertEquals(
                     "the level stored while the noise is off",
@@ -78,7 +78,7 @@ class NoiseSwitchUiTest {
                     0f,
                 )
                 assertEquals("the slider left where the user put it", CHOSEN_PROGRESS, white.slider().progress)
-                assertFalse("the switch stored as off", preferences.getBoolean(WHITE_NOISE_ENABLED, true))
+                assertFalse("the checkbox stored as off", preferences.getBoolean(WHITE_NOISE_ENABLED, true))
                 assertTrue("the controls of a switched-off noise are dimmed", white.controls().alpha < 1f)
             }
         }
@@ -88,7 +88,7 @@ class NoiseSwitchUiTest {
      * A theme or a language change goes through `recreate()`, which saves and restores the view
      * hierarchy. Every row inflates the same layout, so its children share their ids: left to the
      * default dispatch, Android would collapse the four sliders into one entry keyed by
-     * `noiseSlider` and hand the last row's value back to all of them — over the levels the switch
+     * `noiseSlider` and hand the last row's value back to all of them — over the levels the checkbox
      * exists to preserve, and into each noise's preferences, since the listeners are already on.
      */
     @Test
@@ -97,7 +97,7 @@ class NoiseSwitchUiTest {
             scenario.onActivity { activity ->
                 val white = activity.noiseControl(R.id.whiteNoiseControl)
                 white.slider().progress = CHOSEN_PROGRESS
-                white.noiseSwitch().isChecked = false
+                white.noiseToggle().isChecked = false
             }
 
             scenario.recreate()
@@ -105,7 +105,7 @@ class NoiseSwitchUiTest {
             scenario.onActivity { activity ->
                 val white = activity.noiseControl(R.id.whiteNoiseControl)
                 assertEquals("white's slider after a recreate", CHOSEN_PROGRESS, white.slider().progress)
-                assertFalse("white's switch after a recreate", white.noiseSwitch().isChecked)
+                assertFalse("white's checkbox after a recreate", white.noiseToggle().isChecked)
                 assertEquals(
                     "white's stored level after a recreate",
                     CHOSEN_PROGRESS / PERCENT_SCALE,
@@ -116,20 +116,20 @@ class NoiseSwitchUiTest {
                 val brown = activity.noiseControl(R.id.brownNoiseControl)
                 val brownProgress = (DEFAULT_BROWN_NOISE_VOLUME * PERCENT_SCALE).toInt()
                 assertEquals("brown's slider after a recreate", brownProgress, brown.slider().progress)
-                assertTrue("brown's switch after a recreate", brown.noiseSwitch().isChecked)
+                assertTrue("brown's checkbox after a recreate", brown.noiseToggle().isChecked)
             }
         }
     }
 
-    /** One noise's switch gates that noise only: the other keeps both its state and its level. */
+    /** One noise's checkbox gates that noise only: the other keeps both its state and its level. */
     @Test
     fun switchingOneNoiseOffLeavesTheOtherAlone() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                activity.noiseControl(R.id.whiteNoiseControl).noiseSwitch().isChecked = false
+                activity.noiseControl(R.id.whiteNoiseControl).noiseToggle().isChecked = false
 
                 val brown = activity.noiseControl(R.id.brownNoiseControl)
-                assertTrue("the brown noise switch", brown.noiseSwitch().isChecked)
+                assertTrue("the brown noise checkbox", brown.noiseToggle().isChecked)
                 assertEquals("brown controls alpha", 1f, brown.controls().alpha, 0f)
                 assertFalse("brown's own preference was written", preferences.contains(BROWN_NOISE_ENABLED))
             }
@@ -149,7 +149,7 @@ class NoiseSwitchUiTest {
     }
 
     // Views inside a NoiseControlView share their ids across instances, so they are looked up on the row itself.
-    private fun NoiseControlView.noiseSwitch(): SwitchCompat = findViewById(R.id.noiseSwitch)
+    private fun NoiseControlView.noiseToggle(): AppCompatCheckBox = findViewById(R.id.noiseToggle)
 
     private fun NoiseControlView.controls(): View = findViewById(R.id.noiseControls)
 

@@ -16,8 +16,8 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 
 ## Features
 
-- **Two independent noise channels** — white and brown, each with its own switch and volume slider.
-  Switch one off to hear only the other; its level is kept for the next time you switch it back on.
+- **Two independent noise channels** — white and brown, each with its own checkbox and volume slider.
+  Clear one to hear only the other; its level is kept for the next time you tick it back on.
 - **Sleep timer** — up to several hours in 30-minute steps; playback stops when it runs out.
 - **Plays through the night** — the noise and the timer live in a foreground service, so leaving
   the app, locking the screen or switching theme does not stop them. The ongoing notification
@@ -90,7 +90,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── media/                   # NoiseEngine + NoiseMixer + White/Brown noise sources
 ├── playback/                # PlaybackService (foreground) + AudioFocus
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
-├── ui/                      # NoiseControlView — one noise's switch, label and slider
+├── ui/                      # NoiseControlView — one noise's checkbox, label and slider
 ├── models/ · adapters/
 ```
 

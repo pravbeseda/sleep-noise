@@ -22,7 +22,7 @@ import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**
  * The lab screen is what the registry says it is: one [NoiseControlView] per entry of
- * [NOISE_LAB_CANDIDATES] — the same row the shipping noises get, switch included — each persisting
+ * [NOISE_LAB_CANDIDATES] — the same row the shipping noises get, checkbox included — each persisting
  * under that entry's own preference key.
  *
  * Both sides of the flag are asserted rather than skipped, so the class keeps its meaning when

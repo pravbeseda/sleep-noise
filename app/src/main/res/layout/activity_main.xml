@@ -47,21 +47,25 @@
                 android:id="@+id/playButton"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
+                android:background="@drawable/play_button_background"
                 android:contentDescription="@string/play_button"
                 android:text=""
-                android:tint="@color/cardview_dark_background"
                 android:gravity="center"
                 android:padding="16dp"
                 android:drawableTop="@drawable/ic_play"
+                android:drawableTint="@android:color/white"
                 android:layout_gravity="center"/>
         </LinearLayout>
 
+        <!-- The end inset the noise rows carry themselves, so the timer slider ends where they do. -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingStart="0dp"
+            android:paddingEnd="@dimen/content_horizontal_inset">
 
             <ru.pravbeseda.sleepnoise.timer.TimerView
                 android:id="@+id/timerView"

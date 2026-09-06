@@ -24,7 +24,7 @@ const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
  */
 class NoiseLabCandidate(
     val preferenceKey: String,
-    /** Where this candidate's switch is stored. Its own key, so switching one experiment off leaves the rest alone. */
+    /** Where this candidate's checkbox is stored. Its own key, so switching one experiment off leaves the rest alone. */
     val enabledPreferenceKey: String,
     /** Developer-facing debug copy. The lab never reaches a user, so this is deliberately never translated. */
     val label: String,
