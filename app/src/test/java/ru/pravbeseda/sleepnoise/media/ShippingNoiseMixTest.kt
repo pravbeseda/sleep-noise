@@ -32,6 +32,28 @@ class ShippingNoiseMixTest {
         )
     }
 
+    /**
+     * The mixing law alone cannot hold the corner where it was put: the source normalises to
+     * [NORMALISED_SOURCE_RMS] from its own pole, so the clipped share above barely moves with the cutoff and the
+     * bound there still passes with the corner set back to the walk's own ~3 Hz. This is what holds it, in the
+     * measure [LeakyBrownNoiseTest] judges a cutoff by: the shipping brown has to reach the audible band.
+     */
+    @Test
+    fun theShippingBrownReachesTheAudibleBandWhereTheRandomWalkDoesNot() {
+        val brown = FloatArray(MEASURED_SAMPLES).also { shippingBrownNoise(Random(BROWN_SEED)).fill(it) }
+        val walk = FloatArray(MEASURED_SAMPLES).also { BrownNoise(Random(BROWN_SEED)).fill(it) }
+
+        val brownEnergy = highBandEnergyAtUnitPeak(brown, BAND_SPLIT_HZ)
+        val walkEnergy = highBandEnergyAtUnitPeak(walk, BAND_SPLIT_HZ)
+
+        val factor = brownEnergy / walkEnergy
+        assertTrue(
+            "the shipping corner carries only $factor times the walk's energy above $BAND_SPLIT_HZ Hz: " +
+                "it has drifted back towards the subsonic wander this replaced",
+            factor > MIN_HIGH_BAND_FACTOR,
+        )
+    }
+
     private companion object {
         const val PINK_SEED = 20260906
         const val BROWN_SEED = 20260907
@@ -48,5 +70,17 @@ class ShippingNoiseMixTest {
          * The bound sits between them with an order of magnitude of room on either side.
          */
         const val MAX_CLIPPED_SHARE = 0.02
+
+        /** Where LeakyBrownNoiseTest splits audible from subsonic, so the two tests judge a cutoff the same way. */
+        const val BAND_SPLIT_HZ = 200.0
+
+        const val MEASURED_SAMPLES = 1 shl 16
+
+        /**
+         * Measured 6.4-8.2 for the shipping 60 Hz across seeds, 3.7-5.1 for 30 Hz and 1.0 for the walk itself.
+         * The floor sits below the shipping corner's worst seed and above the next octave down, so it fails on a
+         * corner moved back towards the subsonic and not on an unlucky seed.
+         */
+        const val MIN_HIGH_BAND_FACTOR = 5.0
     }
 }

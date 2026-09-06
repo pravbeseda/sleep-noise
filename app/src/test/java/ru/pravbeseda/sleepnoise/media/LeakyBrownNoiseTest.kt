@@ -4,9 +4,6 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.exp
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -14,7 +11,6 @@ class LeakyBrownNoiseTest {
     private val bufferSize = 1 shl 16
     private val headSize = 64
     private val seed = 20260905
-    private val sampleRate = SAMPLE_RATE_HZ.toDouble()
 
     /**
      * The normalisation target, pinned from both sides: a floor on the peak alone passes a gain three times too
@@ -72,8 +68,8 @@ class LeakyBrownNoiseTest {
         val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(cutoffHz, Random(seed)).fill(it) }
         val walk = FloatArray(bufferSize).also { BrownNoise(Random(seed)).fill(it) }
 
-        val leakyEnergy = highBandEnergyAtUnitPeak(leaky)
-        val walkEnergy = highBandEnergyAtUnitPeak(walk)
+        val leakyEnergy = highBandEnergyAtUnitPeak(leaky, bandSplitHz)
+        val walkEnergy = highBandEnergyAtUnitPeak(walk, bandSplitHz)
 
         assertTrue(
             "at equal peak level the leaky source should carry far more energy above $bandSplitHz Hz: " +
@@ -87,33 +83,14 @@ class LeakyBrownNoiseTest {
         val higher = FloatArray(bufferSize).also { LeakyBrownNoise(higherCutoffHz, Random(seed)).fill(it) }
         val lower = FloatArray(bufferSize).also { LeakyBrownNoise(lowerCutoffHz, Random(seed)).fill(it) }
 
-        val higherEnergy = highBandEnergyAtUnitPeak(higher)
-        val lowerEnergy = highBandEnergyAtUnitPeak(lower)
+        val higherEnergy = highBandEnergyAtUnitPeak(higher, bandSplitHz)
+        val lowerEnergy = highBandEnergyAtUnitPeak(lower, bandSplitHz)
 
         assertTrue(
             "$higherCutoffHz Hz should put more energy above $bandSplitHz Hz than $lowerCutoffHz Hz: " +
                 "higher $higherEnergy, lower $lowerEnergy, factor ${higherEnergy / lowerEnergy}",
             higherEnergy > minimumCutoffFactor * lowerEnergy,
         )
-    }
-
-    /**
-     * Scales the signal to a peak of exactly 1 — the level the mixer's headroom actually constrains — then splits it
-     * with a one-pole low-pass and its complementary high-pass and reports the mean energy of the high half.
-     * Cheaper than an FFT and enough for a claim about how much of a spectrum is audible at all.
-     */
-    private fun highBandEnergyAtUnitPeak(signal: FloatArray): Double {
-        val scale = 1.0 / signal.maxOf { abs(it) }
-        val smoothing = exp(-2.0 * PI * bandSplitHz / sampleRate)
-        var low = 0.0
-        var highEnergy = 0.0
-        for (sample in signal) {
-            val scaled = sample * scale
-            low = (smoothing * low) + ((1.0 - smoothing) * scaled)
-            val high = scaled - low
-            highEnergy += high * high
-        }
-        return highEnergy / signal.size
     }
 
     private fun rms(buffer: FloatArray): Double = sqrt(buffer.sumOf { it.toDouble() * it } / buffer.size)
