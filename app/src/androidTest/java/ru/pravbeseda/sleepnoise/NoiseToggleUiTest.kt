@@ -84,7 +84,7 @@ class NoiseToggleUiTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val white = activity.noiseControl(R.id.whiteNoiseControl)
-                white.noiseToggle().isChecked = false
+                assertFalse("white starts silent on an untouched install", white.noiseToggle().isChecked)
 
                 white.setSliderByUser(CHOSEN_PROGRESS)
 
