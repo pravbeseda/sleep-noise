@@ -5,8 +5,9 @@ import kotlin.math.exp
 import kotlin.math.sqrt
 
 /**
- * The one-pole low-pass every filtered source in this package is built from, and the high-pass that is
- * whatever it leaves behind.
+ * The one-pole low-pass the lab's three own sources are built from — surf, rain and the clatter — and the
+ * high-pass that is whatever it leaves behind. [LeakyBrownNoise], which ships, still carries its own copy of
+ * the same pole: folding it onto this is a change to a shipping source and belongs in its own PR.
  *
  * It carries its own normalising gains rather than leaving them to the caller: a band's level follows from
  * its cutoff, so a source that mixes two of them can only weigh them against each other once both are back

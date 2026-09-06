@@ -308,11 +308,17 @@ second apart, the next joint seconds away, both intervals jittered. All three sh
 carries the gains that put either half of a split back at the level of the white it came from, so the weights
 that mix two bands mean what they say.
 
-The two impulsive ones are normalised on different terms from the steady sources, and the tests say so: surf
-is held to `NORMALISED_SOURCE_RMS` through its loudest second rather than its average, because a wave source
-that averages to the shared level puts its break far past full scale; rain and the clatter keep the shared
-average and spend about a third of a percent of their samples in the clamp, which is the trade the shipping
-pair already makes at ~0.5 %.
+The three are normalised on different terms from the steady sources, and the tests say so. Surf is held to
+`NORMALISED_SOURCE_RMS` through its loudest second rather than its average, because a wave source that
+averages to the shared level puts its break far past full scale. Rain and the clatter keep the shared average
+and pay for their peaks in the clamp: ~0.25 % and ~0.47 % of their own samples, where pink measures 0.002 %,
+brown 0.004 % and surf 0.0005 % alone. They are the first sources here to spend any of their own samples that
+way, and the shipping pair's ~0.5 % is not the precedent for it — that figure is the pair *mixed*, which
+`ShippingNoiseMixTest` measures through the mixer and bounds at 2 %. What the mix says about these two is
+smaller than it looks: a third source at full volume takes it to ~2.2 % whether that source is rain, the
+clatter or the steady `Leaky brown 250 Hz` already on trial. Promoting either of them out of the lab means
+revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
+that does.
 
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 

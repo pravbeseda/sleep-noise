@@ -98,10 +98,16 @@ class RainNoiseTest {
 
     private companion object {
         /**
-         * A drop is a peak, and a source held to the shared RMS cannot also keep every peak inside full scale:
-         * the two are the same trade the shipping pair already makes, and it clips about half a percent of its
-         * samples where this clips a third of one. Tightening this any further would flatten the drops, which
-         * are the source.
+         * A drop is a peak, and a source held to the shared RMS cannot also keep every peak inside full scale.
+         * This is the first source in the project to spend any of its own samples in the clamp, and it is
+         * deliberate: rain measures ~0.25 % of its own and the clatter ~0.47 %, where pink measures 0.002 %,
+         * brown 0.004 % and surf 0.0005 %, all of them alone. The shipping pair's ~0.5 % is not the precedent
+         * for that — it is a figure for the pair *mixed*, which is a different measurement. What the mix says
+         * about these two is smaller than it looks: three sources at full volume clip ~2.2 % of the mix whether
+         * the third is rain, the clatter or the steady `Leaky brown 250 Hz` already on trial.
+         *
+         * The bound is set at twice what the louder of the two measures. Tightening it to where nothing clips
+         * would mean flattening the drops and the thumps, which are what these sources are.
          */
         const val MAX_CLAMPED_SHARE = 0.005
 
