@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Checkboxes, sliders and the play button: one accent for all of them, in both themes. -->
+    <color name="colorAccent">#7E57C2</color>
     <color name="colorControlNormal">#222222</color>
     <color name="colorOnPrimary">#000000</color>
     <color name="splash_background">#430985</color>

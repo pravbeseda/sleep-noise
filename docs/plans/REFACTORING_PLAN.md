@@ -562,7 +562,7 @@ present requirement; the lint finding is about the cycle after it.
 - [ ] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.
 - [ ] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
       `NewerVersionAvailable` 2).
-- [ ] Replace the odd `android:tint="@color/cardview_dark_background"` on the play button
+- [x] Replace the odd `android:tint="@color/cardview_dark_background"` on the play button
       with a project colour.
 
 ---

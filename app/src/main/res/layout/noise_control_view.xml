@@ -5,11 +5,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:parentTag="android.widget.LinearLayout">
 
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/noiseSwitch"
+    <androidx.appcompat.widget.AppCompatCheckBox
+        android:id="@+id/noiseToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/noise_switch_spacing"/>
+        android:layout_marginEnd="@dimen/noise_toggle_spacing"/>
 
     <LinearLayout
         android:id="@+id/noiseControls"
