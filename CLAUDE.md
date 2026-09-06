@@ -338,7 +338,7 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `brownNoiseVolume`, `whiteNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
 Every noise has a `*Enabled` key beside its volume — the two shipping ones here, each lab candidate on its own
-descriptor — and they default to `true`, so an install made before the checkboxes existed sounds exactly as it did.
+descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
 A switched-off noise **keeps its stored level**: the gate is applied where the volume is handed to the engine,
 never by writing 0 over the level. That gate is written twice on purpose — `ui/NoiseControlView` applies it to the
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
@@ -363,11 +363,22 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`ui/NoiseControlView` is the one row every noise gets: a checkbox, a label and a slider, bound to that noise's own
-preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the volume the mix
-should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per candidate in code,
-and neither knows how a checkbox is persisted or how a switched-off row is dimmed. A new noise that wires its own
-slider by hand is the mistake this replaced.
+`ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
+noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
+volume the mix should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per
+candidate in code, and neither knows how the toggle is persisted or how a switched-off row is dimmed. A new noise
+that wires its own slider by hand is the mistake this replaced.
+
+The toggle is still an `AppCompatCheckBox`, wearing `Widget.SleepNoise.NoiseToggle`: the button drawable is a
+speaker, struck through while the noise is off. The style sits on the widget rather than on the theme's
+`checkboxStyle`, so a checkbox added anywhere else still looks like a checkbox. The slider drives it both ways —
+a level the **user** sets switches the noise on, a level dragged to zero switches it off — and only for
+`fromUser` changes, since restoring a stored level at bind or `recreate()` time must switch nothing on by
+itself. `bind` closes the same circle from the other side: a stored level of zero reads as off however the
+stored flag was left, because white and every lab candidate default to 0 % with their `*Enabled` key set, and a
+sounding speaker over a silent slider says something untrue. The toggle keeps its own end of that bargain —
+switching a silent noise on raises it to `MIN_AUDIBLE_PROGRESS`, 1 %, since a noise switched on at zero would
+read as off again the next time the row is bound.
 
 ## Versioning and releasing
 

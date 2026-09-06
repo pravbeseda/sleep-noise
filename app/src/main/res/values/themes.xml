@@ -6,30 +6,29 @@
     </style>
 
     <style name="Theme.SleepNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="checkboxStyle">@style/Widget.SleepNoise.CheckBox</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
 
     <style name="Theme.SleepNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="checkboxStyle">@style/Widget.SleepNoise.CheckBox</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
 
     <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="checkboxStyle">@style/Widget.SleepNoise.CheckBox</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
     </style>
 
-    <!-- The platform checkbox cuts its tick out of the box, which paints it in the window background;
-         ours draws a white one instead, so it stays legible on the accent fill in either theme. -->
-    <style name="Widget.SleepNoise.CheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
-        <item name="android:button">@drawable/checkbox_button</item>
+    <!-- A noise row toggles a sound, not a setting, so its checkbox wears a speaker that is struck
+         through when the noise is off. The colour is baked into the two vectors, hence no tint.
+         It is set on the widget rather than as the theme's checkboxStyle: a checkbox added anywhere
+         else in the app should look like a checkbox. -->
+    <style name="Widget.SleepNoise.NoiseToggle" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:button">@drawable/noise_toggle_button</item>
         <item name="android:buttonTint">@null</item>
     </style>
 
