@@ -318,7 +318,8 @@ measures asserts the seed. They are the first sources here to spend any of their
 way, and the shipping pair's ~0.5 % is not the precedent for it — that figure is the pair *mixed*, which
 `ShippingNoiseMixTest` measures through the mixer and bounds at 2 %. What the mix says about these two is
 smaller than it looks: a third source at full volume takes it to ~2.2 % whether that source is rain, the
-clatter or the steady `Leaky brown 250 Hz` already on trial. Promoting either of them out of the lab means
+clatter or a steady leaky brown at 250 Hz, measured while that one was still on trial. Promoting either of
+them out of the lab means
 revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
 that does.
 
@@ -332,7 +333,9 @@ The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` —
 experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
 with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
-ships three developer-facing sliders whose English labels are not translated into any of the six locales.
+ships three developer-facing sliders whose English labels are not translated into any of the six locales. It is
+`false` as the project stands — the three candidates are parked rather than deleted, so putting them back on trial
+is that one edit.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -370,7 +373,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Ten more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the five candidates on trial — `LeakyBrown250` and `LeakyBrown120` (60 Hz left the lab when it became the shipping brown), plus `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the ten is read at all.
+Six more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the three candidates left on trial — `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the six is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
 ### Theme
 
