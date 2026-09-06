@@ -43,12 +43,12 @@ class ShippingNoiseMixTest {
         val brown = FloatArray(MEASURED_SAMPLES).also { shippingBrownNoise(Random(BROWN_SEED)).fill(it) }
         val walk = FloatArray(MEASURED_SAMPLES).also { BrownNoise(Random(BROWN_SEED)).fill(it) }
 
-        val brownEnergy = highBandEnergyAtUnitPeak(brown, BAND_SPLIT_HZ)
-        val walkEnergy = highBandEnergyAtUnitPeak(walk, BAND_SPLIT_HZ)
+        val brownEnergy = highBandEnergyAtUnitPeak(brown)
+        val walkEnergy = highBandEnergyAtUnitPeak(walk)
 
         val factor = brownEnergy / walkEnergy
         assertTrue(
-            "the shipping corner carries only $factor times the walk's energy above $BAND_SPLIT_HZ Hz: " +
+            "the shipping corner carries only $factor times the walk's energy above $AUDIBLE_BAND_SPLIT_HZ Hz: " +
                 "it has drifted back towards the subsonic wander this replaced",
             factor > MIN_HIGH_BAND_FACTOR,
         )
@@ -71,15 +71,13 @@ class ShippingNoiseMixTest {
          */
         const val MAX_CLIPPED_SHARE = 0.02
 
-        /** Where LeakyBrownNoiseTest splits audible from subsonic, so the two tests judge a cutoff the same way. */
-        const val BAND_SPLIT_HZ = 200.0
-
         const val MEASURED_SAMPLES = 1 shl 16
 
         /**
-         * Measured 6.4-8.2 for the shipping 60 Hz across seeds, 3.7-5.1 for 30 Hz and 1.0 for the walk itself.
-         * The floor sits below the shipping corner's worst seed and above the next octave down, so it fails on a
-         * corner moved back towards the subsonic and not on an unlucky seed.
+         * The shipping corner measures 7.09 on this seed, against 1.0 for the walk by definition. Verified to
+         * bite where it matters: the test fails at 30 Hz and below and passes from 45 Hz up. Across seeds the two
+         * ranges do overlap a little — 6.4-8.2 at 60 Hz against 3.7-5.1 at 30 Hz — so what separates them here is
+         * the pinned seed and not the bound.
          */
         const val MIN_HIGH_BAND_FACTOR = 5.0
     }

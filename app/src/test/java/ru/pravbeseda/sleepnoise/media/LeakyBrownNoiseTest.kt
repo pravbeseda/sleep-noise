@@ -19,9 +19,6 @@ class LeakyBrownNoiseTest {
     private val expectedRms = NORMALISED_SOURCE_RMS
     private val rmsTolerance = 0.025
 
-    /** Above the random walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
-    private val bandSplitHz = 200.0
-
     /** Measured factor on this seed is ~16; half of it is clear of the noise and still fails a corner left subsonic. */
     private val minimumHighBandFactor = 8.0
 
@@ -68,11 +65,11 @@ class LeakyBrownNoiseTest {
         val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(cutoffHz, Random(seed)).fill(it) }
         val walk = FloatArray(bufferSize).also { BrownNoise(Random(seed)).fill(it) }
 
-        val leakyEnergy = highBandEnergyAtUnitPeak(leaky, bandSplitHz)
-        val walkEnergy = highBandEnergyAtUnitPeak(walk, bandSplitHz)
+        val leakyEnergy = highBandEnergyAtUnitPeak(leaky)
+        val walkEnergy = highBandEnergyAtUnitPeak(walk)
 
         assertTrue(
-            "at equal peak level the leaky source should carry far more energy above $bandSplitHz Hz: " +
+            "at equal peak level the leaky source should carry far more energy above $AUDIBLE_BAND_SPLIT_HZ Hz: " +
                 "leaky $leakyEnergy, walk $walkEnergy, factor ${leakyEnergy / walkEnergy}",
             leakyEnergy > minimumHighBandFactor * walkEnergy,
         )
@@ -83,11 +80,11 @@ class LeakyBrownNoiseTest {
         val higher = FloatArray(bufferSize).also { LeakyBrownNoise(higherCutoffHz, Random(seed)).fill(it) }
         val lower = FloatArray(bufferSize).also { LeakyBrownNoise(lowerCutoffHz, Random(seed)).fill(it) }
 
-        val higherEnergy = highBandEnergyAtUnitPeak(higher, bandSplitHz)
-        val lowerEnergy = highBandEnergyAtUnitPeak(lower, bandSplitHz)
+        val higherEnergy = highBandEnergyAtUnitPeak(higher)
+        val lowerEnergy = highBandEnergyAtUnitPeak(lower)
 
         assertTrue(
-            "$higherCutoffHz Hz should put more energy above $bandSplitHz Hz than $lowerCutoffHz Hz: " +
+            "$higherCutoffHz Hz should put more energy above $AUDIBLE_BAND_SPLIT_HZ Hz than $lowerCutoffHz Hz: " +
                 "higher $higherEnergy, lower $lowerEnergy, factor ${higherEnergy / lowerEnergy}",
             higherEnergy > minimumCutoffFactor * lowerEnergy,
         )
