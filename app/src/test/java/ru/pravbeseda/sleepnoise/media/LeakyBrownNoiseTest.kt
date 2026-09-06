@@ -23,7 +23,7 @@ class LeakyBrownNoiseTest {
     private val expectedRms = NORMALISED_SOURCE_RMS
     private val rmsTolerance = 0.025
 
-    /** Above the shipping walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
+    /** Above the random walk's ~3 Hz corner and below the leaky source's, so the two land on opposite sides of it. */
     private val bandSplitHz = 200.0
 
     /** Measured factor on this seed is ~16; half of it is clear of the noise and still fails a corner left subsonic. */
@@ -68,7 +68,7 @@ class LeakyBrownNoiseTest {
     }
 
     @Test
-    fun leakyBrownReachesTheAudibleBandWhereTheShippingWalkDoesNot() {
+    fun leakyBrownReachesTheAudibleBandWhereTheRandomWalkDoesNot() {
         val leaky = FloatArray(bufferSize).also { LeakyBrownNoise(cutoffHz, Random(seed)).fill(it) }
         val walk = FloatArray(bufferSize).also { BrownNoise(Random(seed)).fill(it) }
 

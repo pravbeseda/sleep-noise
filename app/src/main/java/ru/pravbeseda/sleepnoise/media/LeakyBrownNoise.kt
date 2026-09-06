@@ -8,12 +8,13 @@ import kotlin.random.Random
 /**
  * Brown noise as a one-pole low-pass on white noise: flat below the corner frequency and 1/f^2 above it.
  *
- * `BrownNoise` is a clamped random walk whose corner sits around 3 Hz, so almost all of its power is spent on a
- * subsonic wander no phone speaker reproduces. Moving the corner into the audible band is the lever; adding gain
- * is not, since it only clips.
+ * This is the brown noise the app ships, at [BROWN_NOISE_CUTOFF_HZ]. [BrownNoise], the clamped random walk it
+ * replaced, corners around 3 Hz, so almost all of its power is spent on a subsonic wander no phone speaker
+ * reproduces — power the mixer's clamp charged the other channels for. Moving the corner into the audible band is
+ * the lever; adding gain is not, since it only clips.
  *
- * The cutoff has no default because it is the knob this class exists to try by ear: the lab puts one candidate on
- * the screen per value it wants judged, so every caller names the value it is judging.
+ * The cutoff has no default because it is the knob this class is judged by: the shipping caller names its constant
+ * and the lab puts one candidate on the screen per further value it wants judged.
  */
 class LeakyBrownNoise(cutoffHz: Double, private val random: Random = Random.Default) : NoiseSource {
     private val smoothing = exp(-RADIANS_PER_CYCLE * cutoffHz / SAMPLE_RATE_HZ)
