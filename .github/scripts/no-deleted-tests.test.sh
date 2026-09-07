@@ -44,8 +44,9 @@ fixture() {
 
 # Builds the shape a pull request actually has — a branch off main, and a main
 # that may have moved on since — and prints "<dir> <base sha>". BASE_SHA is the
-# head of the base branch, never the merge base: that is the distinction the
-# "base branch moved on" case below covers.
+# head of the base branch and HEAD is the branch itself, which is the shape of a
+# local run: the "base branch moved on" case below is the one where that differs
+# from the merge base.
 prepare() { # <branch-mutation> [<base-branch-mutation>]
   local mutate=$1 mutate_base=${2:-}
   local dir; dir=$(fixture)
@@ -91,6 +92,10 @@ nothing() { :; }
 delete_method()    { test_class PinkNoiseTest 3 > "$unit/media/PinkNoiseTest.kt"; }
 delete_file()      { rm "$unit/media/PinkNoiseTest.kt"; }
 delete_helper()    { rm "$unit/media/RewindableRandom.kt"; }
+# Switching a test off by commenting the annotation out leaves the line in place
+# and adds no @Ignore, so it is invisible to every other step of the job.
+comment_out()      { sed -i.bak 's|    @Test|    // @Test|' "$unit/media/PinkNoiseTest.kt"
+                     rm "$unit/media/PinkNoiseTest.kt.bak"; }
 add_tests()        { test_class PinkNoiseTest 6 > "$unit/media/PinkNoiseTest.kt"; }
 rename_method()    { sed -i.bak 's/fun case1(/fun clampsToUnitRange(/' "$unit/media/PinkNoiseTest.kt"
                      rm "$unit/media/PinkNoiseTest.kt.bak"; }
@@ -117,6 +122,7 @@ check "an untouched branch passes"            pass nothing
 check "a deleted test method fails"           fail delete_method
 check "a deleted test file fails"             fail delete_file
 check "a deleted helper carrying no test passes" pass delete_helper
+check "a commented-out test fails"            fail comment_out
 check "added tests pass"                      pass add_tests
 check "a renamed test passes"                 pass rename_method
 check "a test moved to another file passes"   pass move_between_files
@@ -126,8 +132,10 @@ check "a split test class passes"             pass split_class
 # see. Asserted rather than left to be discovered, because a check nobody can
 # state the edges of is a check nobody trusts.
 check "one test deleted and another added passes" pass swap_test
-# Without the merge base this fails: BASE_SHA is the head of main, and a test
-# added to main after the branch left it would read as one the branch deleted.
+# Without the merge base this fails: BASE_SHA is the head of the base branch,
+# and a test added there after the branch left would read as one the branch
+# deleted. This is the shape a local run has — on CI HEAD is the merge ref and
+# the two are the same commit.
 check "a base branch that moved on passes"    pass nothing base_gains_a_test
 
 # The message is half the check: a red job that does not say what disappeared

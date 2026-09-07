@@ -27,9 +27,13 @@ annotation='@([[:alnum:]_]+\.)*Test\b'
 # quote and the whole script stops parsing.
 : "${BASE_SHA:?BASE_SHA, the base commit of the pull request, is required}"
 
-# The merge base, not BASE_SHA itself. pull_request.base.sha is the head of the
-# base branch when the event fired, so a test added to main after this branch
-# left it would otherwise count as one this branch deleted.
+# The merge base, not BASE_SHA itself — a no-op on CI and load-bearing off it.
+# The Guardrails job checks out with no ref:, so on a pull_request event HEAD is
+# refs/pull/N/merge, whose first parent is base.sha; the merge base is then
+# base.sha itself and the two readings agree. Run by hand on the branch with
+# BASE_SHA=origin/main they do not: main has moved on, and every test it gained
+# since would read as one this branch deleted. That is the shape the test builds
+# and the one the pull request description exercised.
 base=$(git merge-base "$BASE_SHA" HEAD)
 
 # Kotlin and Java only. Everything else under those roots — a fixture, a
@@ -40,7 +44,11 @@ test_files_at() { # <ref>
 
 count_at() { # <ref> <path>
   git cat-file -e "$1:$2" 2>/dev/null || { echo 0; return; }
-  git show "$1:$2" | grep -cE "$annotation" || true
+  # Commented-out lines are dropped before the count. A test switched off with
+  # // @Test no longer runs, so counting it would leave the floor open at
+  # exactly the point it exists to close: the @Ignore step next to this one
+  # sees an added annotation, and nothing sees two added slashes.
+  git show "$1:$2" | grep -vE '^[[:space:]]*(//|\*|/\*)' | grep -cE "$annotation" || true
 }
 
 before=0

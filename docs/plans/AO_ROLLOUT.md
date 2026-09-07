@@ -411,7 +411,7 @@ whether the rules and `Guardrails` are enough to keep a red build from being
 fixed by lowering the bar.
 
 **Criterion to move on:** three red builds repaired by the agent alone, none of
-which came down to weakening a check. `Guardrails` now catches two of the ways
+which came down to weakening a check. `Guardrails` now catches three of the ways
 that could happen; the rest is still verified by reading the diff.
 
 **Rollback:** there is no key to flip back. What is left is to stop leaving a
