@@ -422,11 +422,18 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`activity_main.xml` is a `ConstraintLayout` with a `Guideline` across it at 0.45: the noise rows own
-the height above the line and scroll inside it, and the play button with the timer centres in what is
-left between the line and the picture, which sits on top of the version line at the bottom. So an
-empty screen spreads its emptiness over three bands instead of banking it all into one, and no block
-takes its height from what another block happened to leave.
+`activity_main.xml` is a `ConstraintLayout` stacked from the bottom up: the version line, the picture
+on it, then the play button with the timer, each keeping its own height. **The noise rows take the
+whole remainder above them and scroll only once there is more than that.** They are the only block
+here whose height depends on how many noises the app has, so they are the only one the remainder can
+go to — and nothing else can take it, which is what separates this from the two layouts below that
+also gave the remainder away: the picture is capped and the play block wraps its content.
+
+A `Guideline` at 0.45 held that share until the noise lab put a third row on the screen. Two rows fit
+in 45 % and a third did not, so the `ScrollView` cut it in half while the band under the line stood
+mostly empty — and a clipped row with no scrollbar reads as a rendering bug rather than as an
+invitation to scroll. `requiresFadingEdge` is the other half of that fix: a row that really is cut
+off now fades out instead of ending mid-glyph, which is what says there is more below.
 
 **No size on this screen comes from a resource a rotation would change: what is left is percentages,
 one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
@@ -444,11 +451,15 @@ between it and the version line. `cats_max_height` (96dp) is what keeps that wid
 honest on a wide window, where 70 % of the width would otherwise be most of the height — the picture
 is decoration and the first thing to give way.
 
-Three layouts got the short screen wrong before this one, each in its own way. The weighted
+Four layouts got this screen wrong before the current one, each in its own way. The weighted
 `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the play button.
 A `ConstraintLayout` chain fixed the hole and let the picture take whatever height its width dictated
 — at 2400x1080 that was the whole screen, sliders gone and the play button a sliver under the action
-bar. Config-qualified shares then fixed *that* and survived only until a rotation.
+bar. Config-qualified shares then fixed *that* and survived only until a rotation. The 0.45 guideline
+that replaced them survived a rotation and not a third noise: a fixed share cannot answer a question
+whose answer is the number of rows. Giving the rows the remainder is the first of the four that can,
+and it is safe here only because the two blocks that once took the remainder for themselves are now
+both bounded.
 `androidx.constraintlayout` is a direct dependency for it rather than the transitive one material
 pulls in.
 

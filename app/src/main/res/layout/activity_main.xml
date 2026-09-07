@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  A guideline across the screen at 0.45 says where the noise rows stop: they own the height above it
-  and scroll inside it, and the play button with the timer centres in what is left between that line
-  and the picture, which sits on the version line at the bottom. So an empty screen spreads its
-  emptiness over three bands instead of banking it all into one, and no block takes its height from
-  what another block happened to leave — the mistake of the weighted layout, and of the chain that
-  replaced it.
+  The blocks are placed from the bottom up: the version line, the picture on it, then the play
+  button with the timer, each keeping its own height. The noise rows take whatever is left above
+  them and scroll only once there is more than that — which is the one thing a fixed share of the
+  screen could not do. A guideline at 0.45 held that share until a third row arrived and was cut in
+  half by it, while the band below stood mostly empty: the rows are the only block here whose height
+  depends on how many noises the app has, so they are the only one that can be given the remainder.
+
+  Nothing else takes the remainder, which is what separates this from the weighted layout and the
+  chain that came before it: the picture is capped and the play block wraps its content, so neither
+  can grow into the space the rows are asking for.
 
   Every size here is resolved at measure time: two percentages, one aspect ratio, one dp cap. None of
   it is read out of a resource a rotation would change, because MainActivity declares configChanges
@@ -20,26 +24,20 @@
     android:fitsSystemWindows="true"
     android:padding="32dp">
 
-    <!-- The line the rows stop at, so their height is a share of the screen and not a leftover. -->
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/rowsBottom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.45"/>
-
     <ScrollView
         android:id="@+id/noiseScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="@dimen/screen_block_spacing"
         android:fillViewport="true"
+        android:requiresFadingEdge="vertical"
+        android:fadingEdgeLength="@dimen/scroll_fade_length"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/rowsBottom"
+        app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- fillViewport above makes this at least as tall as the region, so the centring has room to act. -->
+        <!-- fillViewport makes this at least as tall as the region, so few rows centre in it instead of stacking at the top. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -75,7 +73,6 @@
         android:baselineAligned="false"
         android:orientation="horizontal"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="@id/rowsBottom"
         app:layout_constraintBottom_toTopOf="@id/cats"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">

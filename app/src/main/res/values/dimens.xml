@@ -6,6 +6,9 @@
     <dimen name="noise_toggle_spacing">16dp</dimen>
     <!-- The gap activity_main leaves above and below the play button with the timer. -->
     <dimen name="screen_block_spacing">24dp</dimen>
+
+    <!-- How far a clipped noise row fades out, so a cut-off row reads as more to scroll to. -->
+    <dimen name="scroll_fade_length">24dp</dimen>
     <!-- The narrow-screen size of the round play button; values-sw320dp carries the one every ordinary phone uses. -->
     <dimen name="play_button_size">56dp</dimen>
     <!-- Leaves the icon at ~60 % of the circle, whichever of the two sizes the circle takes. -->
