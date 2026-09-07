@@ -42,13 +42,44 @@ test_files_at() { # <ref>
   git ls-tree -r --name-only "$1" -- "${roots[@]}" | grep -E '\.(kt|java)$' || true
 }
 
+# Comments are cut out before anything is counted. A test switched off by
+# commenting it out no longer runs, so counting its annotation would leave the
+# floor open at exactly the point it exists to close: the @Ignore step next to
+# this one sees an added annotation, and nothing sees an added comment marker.
+#
+# Both forms an editor produces are handled, because both are one keystroke:
+# // per line, and a /* */ block, whose lines carry no leading star when the IDE
+# writes it. A prefix match on the line is not enough for the second — it was
+# what this replaced, and it counted the @Test inside such a block as live.
+strip_comments() {
+  awk '
+    {
+      line = $0
+      out = ""
+      while (1) {
+        if (inblock) {
+          i = index(line, "*/")
+          if (i == 0) { line = ""; break }
+          line = substr(line, i + 2)
+          inblock = 0
+        } else {
+          i = index(line, "/*")
+          j = index(line, "//")
+          if (j > 0 && (i == 0 || j < i)) { out = out substr(line, 1, j - 1); break }
+          if (i == 0) { out = out line; break }
+          out = out substr(line, 1, i - 1)
+          line = substr(line, i + 2)
+          inblock = 1
+        }
+      }
+      print out
+    }
+  '
+}
+
 count_at() { # <ref> <path>
   git cat-file -e "$1:$2" 2>/dev/null || { echo 0; return; }
-  # Commented-out lines are dropped before the count. A test switched off with
-  # // @Test no longer runs, so counting it would leave the floor open at
-  # exactly the point it exists to close: the @Ignore step next to this one
-  # sees an added annotation, and nothing sees two added slashes.
-  git show "$1:$2" | grep -vE '^[[:space:]]*(//|\*|/\*)' | grep -cE "$annotation" || true
+  git show "$1:$2" | strip_comments | grep -cE "$annotation" || true
 }
 
 before=0

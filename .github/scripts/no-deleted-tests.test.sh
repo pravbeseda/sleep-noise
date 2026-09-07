@@ -96,6 +96,15 @@ delete_helper()    { rm "$unit/media/RewindableRandom.kt"; }
 # and adds no @Ignore, so it is invisible to every other step of the job.
 comment_out()      { sed -i.bak 's|    @Test|    // @Test|' "$unit/media/PinkNoiseTest.kt"
                      rm "$unit/media/PinkNoiseTest.kt.bak"; }
+# The other keystroke: a /* */ block with no leading star on its lines, which is
+# what an IDE writes when a whole method is commented out at once.
+block_comment_out() {
+  { echo "package ru.pravbeseda.sleepnoise"; echo; echo "class PinkNoiseTest {"; echo "/*"
+    sed -n '/    @Test/,$p' "$unit/media/PinkNoiseTest.kt" | sed '$d'
+    echo "*/"; echo "}"
+  } > "$unit/media/PinkNoiseTest.kt.new"
+  mv "$unit/media/PinkNoiseTest.kt.new" "$unit/media/PinkNoiseTest.kt"
+}
 add_tests()        { test_class PinkNoiseTest 6 > "$unit/media/PinkNoiseTest.kt"; }
 rename_method()    { sed -i.bak 's/fun case1(/fun clampsToUnitRange(/' "$unit/media/PinkNoiseTest.kt"
                      rm "$unit/media/PinkNoiseTest.kt.bak"; }
@@ -123,6 +132,7 @@ check "a deleted test method fails"           fail delete_method
 check "a deleted test file fails"             fail delete_file
 check "a deleted helper carrying no test passes" pass delete_helper
 check "a commented-out test fails"            fail comment_out
+check "a test inside a block comment fails"   fail block_comment_out
 check "added tests pass"                      pass add_tests
 check "a renamed test passes"                 pass rename_method
 check "a test moved to another file passes"   pass move_between_files
