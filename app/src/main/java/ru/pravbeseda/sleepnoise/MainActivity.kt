@@ -42,12 +42,17 @@ import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
+const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
 const val PINK_NOISE_VOLUME = "pinkNoiseVolume"
 const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
+const val WHITE_NOISE_ENABLED = "whiteNoiseEnabled"
 const val PINK_NOISE_ENABLED = "pinkNoiseEnabled"
 const val BROWN_NOISE_ENABLED = "brownNoiseEnabled"
+
+/** White is the newest of the three and starts silent, so an existing install sounds exactly as it did. */
+const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
 const val DEFAULT_PINK_NOISE_VOLUME = 0.0f
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
@@ -121,6 +126,15 @@ class MainActivity : AppCompatActivity() {
 
         timerView = findViewById(R.id.timerView)
 
+        bindNoiseControl(
+            findViewById(R.id.whiteNoiseControl),
+            NoiseControl(
+                WHITE_NOISE_VOLUME,
+                WHITE_NOISE_ENABLED,
+                DEFAULT_WHITE_NOISE_VOLUME,
+                getString(R.string.white_noise_name),
+            ) { percent -> getString(R.string.white_noise_volume, percent) },
+        ) { volume -> playbackBinder?.setWhiteVolume(volume) }
         bindNoiseControl(
             findViewById(R.id.pinkNoiseControl),
             NoiseControl(

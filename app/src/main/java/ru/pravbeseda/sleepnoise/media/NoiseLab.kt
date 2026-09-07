@@ -48,6 +48,9 @@ private fun candidate(name: String, label: String, createSource: (Random) -> Noi
  */
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
     candidate("Violet", "Violet") { random -> VioletNoise(random) },
+    candidate("Blue", "Blue") { random -> BlueNoise(random) },
+    candidate("Grey", "Grey") { random -> GreyNoise(random) },
+    candidate("Green", "Green") { random -> GreenNoise(random) },
     candidate("Surf", "Surf") { random -> SurfNoise(random) },
     candidate("Rain", "Rain") { random -> RainNoise(random) },
     candidate("WheelClatter", "Wheel clatter") { random -> WheelClatterNoise(random) },

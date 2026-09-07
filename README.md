@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml/badge.svg)](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml)
 
-Android app that **synthesizes** pink and brown noise in real time to help you fall asleep,
+Android app that **synthesizes** white, pink and brown noise in real time to help you fall asleep,
 with a countdown timer that stops playback on its own.
 
 Nothing is streamed and nothing is bundled: the samples are generated on the device, so the app
@@ -16,10 +16,10 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 
 ## Features
 
-- **Two independent noise channels** — pink and brown, each with its own speaker toggle and volume slider.
-  Silence one to hear only the other; its level is kept for the next time you switch it back on. The two
-  follow each other: moving the slider switches the noise on, dragging it to zero switches it off, and
-  switching a silent noise on gives it the quietest audible level.
+- **Three independent noise channels** — white, pink and brown, each with its own speaker toggle and
+  volume slider. Silence one to hear only the others; its level is kept for the next time you switch it
+  back on. Slider and toggle follow each other: moving the slider switches the noise on, dragging it to
+  zero switches it off, and switching a silent noise on gives it the quietest audible level.
 - **Sleep timer** — up to several hours in 30-minute steps; playback stops when it runs out.
 - **Plays through the night** — the noise and the timer live in a foreground service, so leaving
   the app, locking the screen or switching theme does not stop them. The ongoing notification

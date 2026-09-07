@@ -1,14 +1,18 @@
 package ru.pravbeseda.sleepnoise.media
 
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class WhiteNoiseTest {
-    private val bufferSize = 1024
+    /** Long enough for the RMS below to be the distribution's and not the seed's. */
+    private val bufferSize = 1 shl 16
     private val seed = 42
+    private val rmsTolerance = 0.025
 
     @Test
     fun fillProducesSamplesWithinRange() {
@@ -19,6 +23,7 @@ class WhiteNoiseTest {
         buffer.forEachIndexed { index, sample ->
             assertTrue("sample $index out of range: $sample", sample >= -1.0f && sample <= 1.0f)
         }
+        assertEquals("normalisation missed its target level", NORMALISED_SOURCE_RMS, rms(buffer), rmsTolerance)
     }
 
     @Test
@@ -42,4 +47,6 @@ class WhiteNoiseTest {
 
         assertFalse("both seeds produced the same buffer", first.contentEquals(other))
     }
+
+    private fun rms(buffer: FloatArray): Double = sqrt(buffer.sumOf { it.toDouble() * it } / buffer.size)
 }

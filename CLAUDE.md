@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white, pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -297,9 +297,11 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `media/NoiseEngine` owns one `AudioTrack` (44.1 kHz, mono, PCM 16-bit, `MODE_STREAM`) and one writer thread that serves every session of the engine's life, and **that thread is the sole owner of the track**: it builds it, plays it and releases it in its own `finally`, so no other thread can ever see a released track. The thread raises its own priority with `Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)`, because Java thread priorities map poorly onto Linux nice values. The track buffer is `getMinBufferSize * 4` **bytes** and one write covers half of it; `BYTES_PER_SAMPLE` is the one place a byte count turns into a sample count, since the code this replaced confused the two (issue #24).
 
-`media/NoiseMixer` holds the mixing law and nothing else — no audio platform, no threading — so it is tested on the JVM: sum each `NoiseSource` scaled by its channel volume, clamp to `[-1, 1]`, convert to PCM 16-bit. The clamp is not decoration: without it the sum of two loud channels wraps the `Short` conversion into an audible crack. The sample math behind `NoiseSource` is plain Kotlin importing nothing from `android.*` and is tested on the JVM too: `media/PinkNoise` (Kellett's filter bank, normalised to a fixed RMS) and `media/LeakyBrownNoise` (a one-pole low-pass on white, normalised to the same RMS from its own pole). Which source each shipping slider drives is `media/ShippingNoises.kt`, and it is named there rather than in the service so a JVM test can mix exactly what a user hears — `ShippingNoiseMixTest` does, and asserts two things about it: that the pair at full volume barely reaches the mixer's clamp, and that the shipping corner still reaches the audible band. The second is not redundant — the source normalises to `NORMALISED_SOURCE_RMS` from its own pole, so the clipped share barely moves with the cutoff and the first assertion passes with the corner put back to the walk's own ~3 Hz.
+`media/NoiseMixer` holds the mixing law and nothing else — no audio platform, no threading — so it is tested on the JVM: sum each `NoiseSource` scaled by its channel volume, clamp to `[-1, 1]`, convert to PCM 16-bit. The clamp is not decoration: without it the sum of two loud channels wraps the `Short` conversion into an audible crack. The sample math behind `NoiseSource` is plain Kotlin importing nothing from `android.*` and is tested on the JVM too: `media/WhiteNoise` (uniform draws, normalised to a fixed RMS), `media/PinkNoise` (Kellett's filter bank, normalised to the same one) and `media/LeakyBrownNoise` (a one-pole low-pass on white, normalised to it from its own pole). Which source each shipping slider drives is `media/ShippingNoises.kt`, and it is named there rather than in the service so a JVM test can mix exactly what a user hears — `ShippingNoiseMixTest` does, and asserts two things about it: that all three at full volume barely reach the mixer's clamp, and that the shipping corner still reaches the audible band. The second is not redundant — the source normalises to `NORMALISED_SOURCE_RMS` from its own pole, so the clipped share barely moves with the cutoff and the first assertion passes with the corner put back to the walk's own ~3 Hz.
 
-Two sources no longer sound in the app and stay as the references their tests measure against. `media/WhiteNoise` (uniform random) is what `PinkNoiseTest` measures pink's spectral tilt against, and the source `NoiseEngineHammerTest` drives. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where the shipping pair clips ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
+`media/WhiteNoise` (uniform random) both ships and serves as the reference `PinkNoiseTest` measures pink's spectral tilt against, and the source `NoiseEngineHammerTest` drives. It was **not** held to `NORMALISED_SOURCE_RMS` until it got a slider: raw uniform draws on `[-1, 1]` come out at `1/sqrt(3)`, which is 2.3 times the shared level — harmless while every test that read it compared ratios, and wrong the moment a user could hear it beside another source. Its gain is derived from the distribution rather than measured, and at the shared level its peak is 0.43 of full scale, so like `VioletNoise` it cannot clip and carries no clamp.
+
+One source no longer sounds in the app and stays as the reference its test measures against. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where pink and brown together clip ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
 
 Three of the lab's sources are textures, each built rather than sampled — the app ships no audio assets, and a
 generated one is a few constants instead of a few megabytes. `media/SurfNoise` is two bands under one wave
@@ -318,7 +320,7 @@ and pay for their peaks in the clamp: 0.32 % and 0.47 % of their own samples on 
 0.25-0.32 % and 0.46-0.57 % across the seeds tried, where pink measures 0.002 %, brown 0.004 % and surf
 0.0001 % alone. Each test bounds the spread rather than the measurement — a bound set at what one seed
 measures asserts the seed. They are the first sources here to spend any of their own samples that
-way, and the shipping pair's ~0.5 % is not the precedent for it — that figure is the pair *mixed*, which
+way, and pink-and-brown's ~0.5 % is not the precedent for it — that figure is the two *mixed*, which
 `ShippingNoiseMixTest` measures through the mixer and bounds at 2 %. What the mix says about these two is
 smaller than it looks: a third source at full volume takes it to ~2.2 % whether that source is rain, the
 clatter or a steady leaky brown at 250 Hz, measured while that one was still on trial. Promoting either of
@@ -326,30 +328,52 @@ them out of the lab means
 revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
 that does.
 
-The fourth candidate is a colour rather than a texture. `media/VioletNoise` is the first difference of uniform
-white — `f^2`, the mirror of what `BrownNoise` does by integrating the same input, and the brightest of the named
-colours. It is also the one source here that cannot clip: differencing two independent draws doubles their
-variance and at most doubles their bound, so normalising to `NORMALISED_SOURCE_RMS` lands the peak at 0.61 of full
-scale, a crest factor of 2.4 where every other source here runs near 5. There is no clamp in it — not a clamp that
-never fires, but a bound the arithmetic already carries, and `VioletNoiseTest` asserts the headroom rather than
-trusting it. Its gain is derived from the distribution the way `OnePole`'s are derived from the pole, so no
-measured constant stands in for one. It is on trial because bright is the one direction this app has never gone,
-and violet is reached for to mask tinnitus far more often than to sleep: whether it is bearable at all is an ear
-question, which is what the lab is for.
+The other four candidates are colours rather than textures, and together with the three that ship they cover
+the ladder from `f^-2` to `f^2`.
+
+- `media/VioletNoise` is the first difference of uniform white — `f^2`, the mirror of what `BrownNoise` does by
+  integrating the same input, and the brightest of the named colours. It is also the one source here that
+  cannot clip: differencing two independent draws doubles their variance and at most doubles their bound, so
+  normalising to `NORMALISED_SOURCE_RMS` lands the peak at 0.61 of full scale, a crest factor of 2.4 where every
+  other source here runs near 5. There is no clamp in it — not a clamp that never fires, but a bound the
+  arithmetic already carries — and its gain is derived from the distribution the way `OnePole`'s are derived
+  from the pole, so no measured constant stands in for one.
+- `media/BlueNoise` is the first difference of **pink**, which is `f^1/2` and the midpoint between white and
+  violet: differencing lifts a spectrum by 6 dB per octave and pink falls at 3. Built on the pink bank rather
+  than on a second set of coefficients, so its tilt is the one `PinkNoiseTest` already measures, reflected.
+  Its own test pins it to both neighbours at once — steeper than white, shallower than violet — because a
+  source that merely tilted upwards would pass half of that.
+- `media/GreyNoise` is white with a low shelf and a smaller high shelf added on top, a coarse stand-in for the
+  inverse of an equal-loudness contour. It is the one source here whose constants are set by ear rather than
+  fitted to anything, and promoting it means fitting the real curve first.
+- `media/GreenNoise` is the middle of the band kept and both ends dropped, the band an outdoor ambience carries
+  its weight in.
+
+Two facts about one-pole filters were paid for here and are worth not paying for twice. **A single pole does not
+confine energy:** green with one pole a side put more of its output above 2 kHz than inside its own 250-1200 Hz
+passband, because the band above the corner is fifteen times wider than the band under it and a 6 dB/octave tail
+is not steep enough to make up the difference. It takes two poles a side to make the passband the loudest part of
+the spectrum. **And a single pole does not confine a boost either:** grey's low shelf reaches into the middle of
+the band whatever its corner, so grey's top can never out-weigh grey's own middle — which is why `GreyNoiseTest`
+measures that top against *pink's* instead, the comparison that actually says what being grey rather than pink
+means. The test-side splitter in `BandShares.kt` learned the same lesson from the other end: at one pole per
+split it read grey's leaked bass as a cut top end, and it now cascades two.
 
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
-`playback/PlaybackService` holds two `NoiseChannel`s (pink and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "pink noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
+`playback/PlaybackService` holds three `NoiseChannel`s (white, pink and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "pink noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops all of them.
 
-With the noise lab switched on the service holds more than two: one further `NoiseChannel` per entry of
+**Three shipping sources spend most of the mixer's headroom.** `ShippingNoiseMixTest` measures 1.97 % of samples clipped with all three at full volume, where the pink-and-brown pair sat at 0.4-0.6 %. Nobody is likely to run all three at the top, but it is a reachable state, and the next source to ship is the one that has to move `NORMALISED_SOURCE_RMS` down rather than spend what is left. The test's bound is deliberately loose around that figure, so the number is what to read and not the pass.
+
+With the noise lab switched on the service holds more than those three: one further `NoiseChannel` per entry of
 `NOISE_LAB_CANDIDATES` in `media/NoiseLab.kt`, built from the same registry the Activity builds its sliders from.
 The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` — editing it to `false` puts the
-experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
-with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
+experiment away without deleting a source, a key or a test, and the service is back to the three channels it
+ships with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
-ships four developer-facing sliders whose English labels are not translated into any of the six locales. It is
-`true` as the project stands, with violet on trial and the three parked candidates showing beside it — putting the
-lab away again is that one edit, and it deletes no source, key or test either way.
+ships seven developer-facing sliders whose English labels are not translated into any of the six locales. It is
+`true` as the project stands, with four colours on trial and the three texture candidates showing beside them —
+putting the lab away again is that one edit, and it deletes no source, key or test either way.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -378,16 +402,18 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 
 ### Preferences
 
-Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `pinkNoiseVolume`, `brownNoiseVolume`, `pinkNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds `whiteNoiseVolume`, `pinkNoiseVolume`, `brownNoiseVolume`, `whiteNoiseEnabled`, `pinkNoiseEnabled`, `brownNoiseEnabled`, `selectedTheme`, `selectedLanguage`. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
-Every noise has a `*Enabled` key beside its volume — the two shipping ones here, each lab candidate on its own
+Every noise has a `*Enabled` key beside its volume — the three shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
+White's *volume* defaults to 0 for the same reason one step further on: the key did not exist before its slider
+did, so an existing install opens with white silent and sounds exactly as it did too.
 A switched-off noise **keeps its stored level**: the gate is applied where the volume is handed to the engine,
 never by writing 0 over the level. That gate is written twice on purpose — `ui/NoiseControlView` applies it to the
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
+Fourteen more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the seven candidates on trial — `Violet`, `Blue`, `Grey`, `Green`, `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the fourteen is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
 ### Theme
 
@@ -422,11 +448,18 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`activity_main.xml` is a `ConstraintLayout` with a `Guideline` across it at 0.45: the noise rows own
-the height above the line and scroll inside it, and the play button with the timer centres in what is
-left between the line and the picture, which sits on top of the version line at the bottom. So an
-empty screen spreads its emptiness over three bands instead of banking it all into one, and no block
-takes its height from what another block happened to leave.
+`activity_main.xml` is a `ConstraintLayout` stacked from the bottom up: the version line, the picture
+on it, then the play button with the timer, each keeping its own height. **The noise rows take the
+whole remainder above them and scroll only once there is more than that.** They are the only block
+here whose height depends on how many noises the app has, so they are the only one the remainder can
+go to — and nothing else can take it, which is what separates this from the two layouts below that
+also gave the remainder away: the picture is capped and the play block wraps its content.
+
+A `Guideline` at 0.45 held that share until the noise lab put a third row on the screen. Two rows fit
+in 45 % and a third did not, so the `ScrollView` cut it in half while the band under the line stood
+mostly empty — and a clipped row with no scrollbar reads as a rendering bug rather than as an
+invitation to scroll. `requiresFadingEdge` is the other half of that fix: a row that really is cut
+off now fades out instead of ending mid-glyph, which is what says there is more below.
 
 **No size on this screen comes from a resource a rotation would change: what is left is percentages,
 one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
@@ -444,11 +477,15 @@ between it and the version line. `cats_max_height` (96dp) is what keeps that wid
 honest on a wide window, where 70 % of the width would otherwise be most of the height — the picture
 is decoration and the first thing to give way.
 
-Three layouts got the short screen wrong before this one, each in its own way. The weighted
+Four layouts got this screen wrong before the current one, each in its own way. The weighted
 `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the play button.
 A `ConstraintLayout` chain fixed the hole and let the picture take whatever height its width dictated
 — at 2400x1080 that was the whole screen, sliders gone and the play button a sliver under the action
-bar. Config-qualified shares then fixed *that* and survived only until a rotation.
+bar. Config-qualified shares then fixed *that* and survived only until a rotation. The 0.45 guideline
+that replaced them survived a rotation and not a third noise: a fixed share cannot answer a question
+whose answer is the number of rows. Giving the rows the remainder is the first of the four that can,
+and it is safe here only because the two blocks that once took the remainder for themselves are now
+both bounded.
 `androidx.constraintlayout` is a direct dependency for it rather than the transitive one material
 pulls in.
 
@@ -460,11 +497,11 @@ smaller circle would clip it; `scaleType="fitCenter"` scales the icon with the c
 
 `ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
 noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
-volume the mix should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per
+volume the mix should hear. The three shipping noises declare it in `activity_main.xml`, the lab builds one per
 candidate in code, and neither knows how the toggle is persisted or how a switched-off row is dimmed. A new noise
 that wires its own slider by hand is the mistake this replaced.
 
-Every slider in the app — the two noise rows, each lab candidate and the timer — wears
+Every slider in the app — the three noise rows, each lab candidate and the timer — wears
 `Widget.SleepNoise.Slider`: a 4dp groove with a 14dp round thumb, drawn white and coloured by the
 style's tints, so one drawable serves both themes and the unfilled half reads as a groove rather than
 as `colorControlNormal`. It is applied per widget rather than as the theme's `seekBarStyle` for the

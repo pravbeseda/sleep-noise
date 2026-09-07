@@ -13,8 +13,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The noise rows own the height above the guideline and no more: rows that outgrow that region scroll
- * inside it rather than pushing the play button off the bottom of the screen.
+ * The noise rows own the height left above the play button and no more: rows that outgrow that region
+ * scroll inside it rather than pushing the play button off the bottom of the screen.
  *
  * The overflow is made here rather than waited for — the lab decides how many rows an install shows,
  * and a test that only passes while some flag adds enough of them asserts the flag, not the layout.

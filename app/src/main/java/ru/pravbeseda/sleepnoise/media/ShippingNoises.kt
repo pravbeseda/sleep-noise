@@ -10,10 +10,12 @@ import kotlin.random.Random
 const val BROWN_NOISE_CUTOFF_HZ = 60.0
 
 /**
- * What the two shipping sliders are wired to. Named here rather than built inside the service because the
- * service is Android plumbing no JVM test can construct, and how the shipping pair shares the mixer's headroom
- * is exactly the kind of claim a JVM test should be making.
+ * What the three shipping sliders are wired to. Named here rather than built inside the service because the
+ * service is Android plumbing no JVM test can construct, and how the three share the mixer's headroom is
+ * exactly the kind of claim a JVM test should be making.
  */
+fun shippingWhiteNoise(random: Random = Random.Default): NoiseSource = WhiteNoise(random)
+
 fun shippingPinkNoise(random: Random = Random.Default): NoiseSource = PinkNoise(random)
 
 fun shippingBrownNoise(random: Random = Random.Default): NoiseSource = LeakyBrownNoise(BROWN_NOISE_CUTOFF_HZ, random)

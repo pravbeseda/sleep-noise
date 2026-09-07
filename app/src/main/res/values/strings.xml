@@ -2,8 +2,10 @@
 <resources>
     <string name="lang">en</string>
     <string name="app_name">Sleep Noise</string>
+    <string name="white_noise_volume">White Noise: %1$d%%</string>
     <string name="pink_noise_volume">Pink Noise: %1$d%%</string>
     <string name="brown_noise_volume">Brown Noise: %1$d%%</string>
+    <string name="white_noise_name">White noise</string>
     <string name="pink_noise_name">Pink noise</string>
     <string name="brown_noise_name">Brown noise</string>
     <string name="play_button">Play</string>
