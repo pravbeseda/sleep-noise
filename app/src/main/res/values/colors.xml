@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One block per theme, because both themes now run in night mode: a values-night qualifier would
-  answer for both of them at once, so the colours are picked by the style in themes.xml instead.
+  One block per theme, because both themes are dark ones: a values-night qualifier would answer for
+  both of them at once, so the colours are picked by the style in themes.xml instead.
 -->
 <resources>
     <!-- Dark: the theme this app shipped with, unchanged apart from the slider track. -->
