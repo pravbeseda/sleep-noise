@@ -343,7 +343,8 @@ counts `@Test` annotations across both source sets at the merge base and at the
 branch head and fails when the total drops. The fear that opened that issue —
 that a bare count would fail the `ExampleUnitTest` removal the quality plan
 schedules — did not survive measurement: the pull request carrying that removal
-added six tests elsewhere, and none of the 38 merged so far drops the total.
+added seven tests elsewhere against the one it took away, and none of the 38
+merged so far drops the total.
 
 **Order that matters:** merge the job first, watch it run green on a pull
 request, add it to the branch protection last. A required check that no run
