@@ -403,8 +403,8 @@ one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` 
 `configChanges="orientation|screenSize"` and is therefore never recreated on a rotation, so a `-land`
 or `-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest
 of the session — a layout that leans on either is correct only until the user turns the phone. This
-is not a style preference; it is the bug this screen shipped twice. `values-sw320dp` is the one
-qualifier here that is safe, and the reason is the whole of the rule: `smallestScreenWidth` is the
+is not a style preference; it is the bug two drafts of this screen hit before either was merged.
+`values-sw320dp` is the one qualifier here that is safe, and the reason is the whole of the rule: `smallestScreenWidth` is the
 same number in both orientations, so the play button's size cannot go stale where a `-land` or `-h`
 one would.
 

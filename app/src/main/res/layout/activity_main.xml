@@ -4,7 +4,8 @@
   and scroll inside it, and the play button with the timer centres in what is left between that line
   and the picture, which sits on the version line at the bottom. So an empty screen spreads its
   emptiness over three bands instead of banking it all into one, and no block takes its height from
-  what another block happened to leave — the mistake of the weighted layout and the chain before it.
+  what another block happened to leave — the mistake of the weighted layout, and of the chain that
+  replaced it.
 
   Every size here is resolved at measure time: two percentages, one aspect ratio, one dp cap. None of
   it is read out of a resource a rotation would change, because MainActivity declares configChanges
