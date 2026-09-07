@@ -328,8 +328,8 @@ them out of the lab means
 revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
 that does.
 
-The other four candidates are colours rather than textures, and together with the two that ship they cover the
-ladder from `f^-2` to `f^2`.
+The other four candidates are colours rather than textures, and together with the three that ship they cover
+the ladder from `f^-2` to `f^2`.
 
 - `media/VioletNoise` is the first difference of uniform white — `f^2`, the mirror of what `BrownNoise` does by
   integrating the same input, and the brightest of the named colours. It is also the one source here that
@@ -501,7 +501,7 @@ volume the mix should hear. The three shipping noises declare it in `activity_ma
 candidate in code, and neither knows how the toggle is persisted or how a switched-off row is dimmed. A new noise
 that wires its own slider by hand is the mistake this replaced.
 
-Every slider in the app — the two noise rows, each lab candidate and the timer — wears
+Every slider in the app — the three noise rows, each lab candidate and the timer — wears
 `Widget.SleepNoise.Slider`: a 4dp groove with a 14dp round thumb, drawn white and coloured by the
 style's tints, so one drawable serves both themes and the unfilled half reads as a groove rather than
 as `colorControlNormal`. It is applied per widget rather than as the theme's `seekBarStyle` for the
