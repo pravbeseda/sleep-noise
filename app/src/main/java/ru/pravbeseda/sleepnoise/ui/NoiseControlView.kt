@@ -43,7 +43,7 @@ class NoiseControl(
  * One noise's settings: a speaker that silences the noise without touching its level, and a slider
  * that sets that level, with the level itself read out above it.
  *
- * Every noise on the screen is one of these — the two the app ships with and each experiment of the
+ * Every noise on the screen is one of these — the three the app ships with and each experiment of the
  * noise lab alike — so a new noise gets its toggle, its spacing and its persistence by existing
  * rather than by being wired up a second time.
  */

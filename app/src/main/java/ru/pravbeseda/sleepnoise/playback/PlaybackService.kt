@@ -70,7 +70,7 @@ class PlaybackService : Service() {
     private val brownChannel = NoiseChannel(shippingBrownNoise())
 
     /**
-     * Empty while the lab is switched off, and the engine then mixes exactly the two channels it ships with:
+     * Empty while the lab is switched off, and the engine then mixes exactly the three channels it ships with:
      * a lab volume left in the preferences must not go on playing once its slider is gone.
      */
     private val labCandidates: List<NoiseLabCandidate> = if (NOISE_LAB_ENABLED) NOISE_LAB_CANDIDATES else emptyList()

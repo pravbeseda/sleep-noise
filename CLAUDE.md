@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white, pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -301,7 +301,7 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 `media/WhiteNoise` (uniform random) both ships and serves as the reference `PinkNoiseTest` measures pink's spectral tilt against, and the source `NoiseEngineHammerTest` drives. It was **not** held to `NORMALISED_SOURCE_RMS` until it got a slider: raw uniform draws on `[-1, 1]` come out at `1/sqrt(3)`, which is 2.3 times the shared level — harmless while every test that read it compared ratios, and wrong the moment a user could hear it beside another source. Its gain is derived from the distribution rather than measured, and at the shared level its peak is 0.43 of full scale, so like `VioletNoise` it cannot clip and carries no clamp.
 
-One source no longer sounds in the app and stays as the reference its test measures against. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where the shipping pair clips ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
+One source no longer sounds in the app and stays as the reference its test measures against. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where pink and brown together clip ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
 
 Three of the lab's sources are textures, each built rather than sampled — the app ships no audio assets, and a
 generated one is a few constants instead of a few megabytes. `media/SurfNoise` is two bands under one wave
@@ -320,7 +320,7 @@ and pay for their peaks in the clamp: 0.32 % and 0.47 % of their own samples on 
 0.25-0.32 % and 0.46-0.57 % across the seeds tried, where pink measures 0.002 %, brown 0.004 % and surf
 0.0001 % alone. Each test bounds the spread rather than the measurement — a bound set at what one seed
 measures asserts the seed. They are the first sources here to spend any of their own samples that
-way, and the shipping pair's ~0.5 % is not the precedent for it — that figure is the pair *mixed*, which
+way, and pink-and-brown's ~0.5 % is not the precedent for it — that figure is the two *mixed*, which
 `ShippingNoiseMixTest` measures through the mixer and bounds at 2 %. What the mix says about these two is
 smaller than it looks: a third source at full volume takes it to ~2.2 % whether that source is rain, the
 clatter or a steady leaky brown at 250 Hz, measured while that one was still on trial. Promoting either of
@@ -365,11 +365,11 @@ split it read grey's leaked bass as a cut top end, and it now cascades two.
 
 **Three shipping sources spend most of the mixer's headroom.** `ShippingNoiseMixTest` measures 1.97 % of samples clipped with all three at full volume, where the pink-and-brown pair sat at 0.4-0.6 %. Nobody is likely to run all three at the top, but it is a reachable state, and the next source to ship is the one that has to move `NORMALISED_SOURCE_RMS` down rather than spend what is left. The test's bound is deliberately loose around that figure, so the number is what to read and not the pass.
 
-With the noise lab switched on the service holds more than two: one further `NoiseChannel` per entry of
+With the noise lab switched on the service holds more than those three: one further `NoiseChannel` per entry of
 `NOISE_LAB_CANDIDATES` in `media/NoiseLab.kt`, built from the same registry the Activity builds its sliders from.
 The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` — editing it to `false` puts the
-experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
-with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
+experiment away without deleting a source, a key or a test, and the service is back to the three channels it
+ships with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
 ships seven developer-facing sliders whose English labels are not translated into any of the six locales. It is
 `true` as the project stands, with four colours on trial and the three texture candidates showing beside them —
