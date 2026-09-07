@@ -301,7 +301,7 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 
 Two sources no longer sound in the app and stay as the references their tests measure against. `media/WhiteNoise` (uniform random) is what `PinkNoiseTest` measures pink's spectral tilt against, and the source `NoiseEngineHammerTest` drives. `media/BrownNoise` (a random walk, `lastOut + 0.02 * white`, clamped) is what `LeakyBrownNoiseTest` measures the audible-band difference against: it corners at ~3 Hz, so nearly all of its level is a subsonic wander no speaker returns, and the mixer's clamp charged the other channels for it — at full volume beside pink it clipped ~10 % of the samples where the shipping pair clips ~0.5 %. `BROWN_NOISE_CUTOFF_HZ` is 60 Hz, the darkest of the three the lab put on trial and the one that was indistinguishable from the walk by ear.
 
-The lab's own sources are three, and each is built rather than sampled — the app ships no audio assets, and a
+Three of the lab's sources are textures, each built rather than sampled — the app ships no audio assets, and a
 generated one is a few constants instead of a few megabytes. `media/SurfNoise` is two bands under one wave
 envelope: a rumble that only breathes and a spray that belongs to the break, with each wave's length drawn as
 it starts, since surf on a fixed period is heard as a machine. `media/RainNoise` is a bright sheet with the
@@ -326,6 +326,17 @@ them out of the lab means
 revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
 that does.
 
+The fourth candidate is a colour rather than a texture. `media/VioletNoise` is the first difference of uniform
+white — `f^2`, the mirror of what `BrownNoise` does by integrating the same input, and the brightest of the named
+colours. It is also the one source here that cannot clip: differencing two independent draws doubles their
+variance and at most doubles their bound, so normalising to `NORMALISED_SOURCE_RMS` lands the peak at 0.61 of full
+scale, a crest factor of 2.4 where every other source here runs near 5. There is no clamp in it — not a clamp that
+never fires, but a bound the arithmetic already carries, and `VioletNoiseTest` asserts the headroom rather than
+trusting it. Its gain is derived from the distribution the way `OnePole`'s are derived from the pole, so no
+measured constant stands in for one. It is on trial because bright is the one direction this app has never gone,
+and violet is reached for to mask tinnitus far more often than to sleep: whether it is bearable at all is an ear
+question, which is what the lab is for.
+
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
 `playback/PlaybackService` holds two `NoiseChannel`s (pink and brown) and one `NoiseEngine` over them, started and stopped as a whole. A volume slider writes `NoiseChannel.volume` — a `@Volatile` field clamped to `[0, 1]` that the writer thread reads once per cycle — and nothing outside the writer thread touches the track. A channel at volume 0 is not generated at all, so "pink noise only" costs nothing — the design this replaced kept the muted track running at full rate, which is why the note here used to warn that muting is not stopping. It is now, for the channel; stopping playback is still `stop()` on the engine, which stops both.
@@ -336,9 +347,9 @@ The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` —
 experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
 with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
-ships three developer-facing sliders whose English labels are not translated into any of the six locales. It is
-`false` as the project stands — the three candidates are parked rather than deleted, so putting them back on trial
-is that one edit.
+ships four developer-facing sliders whose English labels are not translated into any of the six locales. It is
+`true` as the project stands, with violet on trial and the three parked candidates showing beside it — putting the
+lab away again is that one edit, and it deletes no source, key or test either way.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -376,7 +387,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Six more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the three candidates left on trial — `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the six is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
+Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
 ### Theme
 
