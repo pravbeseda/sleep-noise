@@ -399,8 +399,14 @@ leave — a match_constraint that cannot outgrow it and scrolls inside it instea
 rather than stranded because they are centred in that gap (`fillViewport` on the `ScrollView`, the
 content centred), not because anything distributes leftover height.
 
-The picture's box is the drawing itself: `layout_constraintDimensionRatio` carries the vector's own
-585.62 x 170.1, so there is no letterbox between it and the version line. It is the one block here
+The split between the rows and the button is a `Guideline` at `rows_bottom_percent` — 0.42 in
+`values-h500dp`, 0.62 in the default bucket, where the rows need most of the screen and 0.42 cut a
+landscape phone's second slider off. The button with the timer centres in what is left between that
+line and the picture, so an empty screen spreads its emptiness over three bands instead of banking
+it all above the button.
+
+The picture's box is the drawing itself: 70 % of the width, and `layout_constraintDimensionRatio`
+carrying the vector's own 585.62 x 170.1, so there is no letterbox between it and the version line. It is the one block here
 that is given up whole rather than squeezed — `MainActivity` sets it `GONE` where `R.bool.show_cats`
 is false, which is the default bucket every screen under the 500dp of height `values-h500dp` names: a
 phone in landscape, or a portrait one at an accessibility display scale. Squeezing it instead is what

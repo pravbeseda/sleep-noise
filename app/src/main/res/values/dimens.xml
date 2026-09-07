@@ -10,6 +10,12 @@
     <dimen name="play_button_size">56dp</dimen>
     <!-- Leaves the icon at ~60 % of the circle, whichever of the two sizes the circle takes. -->
     <dimen name="play_button_padding">12dp</dimen>
+    <!--
+      Where the noise rows stop and the play button's half of the screen starts. 0.62 here: this is
+      the bucket for every screen under the 500dp of height values-h500dp names, and on one of those
+      the rows need most of it — at 0.42 a landscape phone cut the second slider off.
+    -->
+    <item name="rows_bottom_percent" format="float" type="dimen">0.62</item>
     <!-- Side inset shared by everything the noise rows and the timer put on screen, so their edges line up. -->
     <dimen name="content_horizontal_inset">32dp</dimen>
 </resources>

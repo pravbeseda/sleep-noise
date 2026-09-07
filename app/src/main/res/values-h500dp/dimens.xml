@@ -1,0 +1,4 @@
+<resources>
+    <!-- Height enough to give the button's half its own room; the default bucket in values/ leaves the rows more. -->
+    <item name="rows_bottom_percent" format="float" type="dimen">0.42</item>
+</resources>

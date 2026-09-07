@@ -6,8 +6,10 @@
   a chain distributes leftover height, which is the wrong question on a screen that has none: on a
   short one the picture kept its full height and left the rows nothing at all.
 
-  So the rows are a match_constraint that cannot outgrow its gap and scrolls inside it instead, and
-  what makes two rows look placed rather than stranded is that they are centred in it.
+  The split between the rows and the button is a guideline rather than a gap left over from something
+  else: the rows own the share of the height rows_bottom_percent names and scroll inside it, the
+  button with the timer centres in what is left between that line and the picture. So an empty screen spreads its emptiness over three even
+  bands instead of banking it all above the button.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -17,6 +19,14 @@
     android:fitsSystemWindows="true"
     android:padding="32dp">
 
+    <!-- The line the rows stop at, so their height is a share of the screen and not a leftover. -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/rowsBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="@dimen/rows_bottom_percent"/>
+
     <ScrollView
         android:id="@+id/noiseScroll"
         android:layout_width="0dp"
@@ -24,7 +34,7 @@
         android:layout_marginBottom="@dimen/screen_block_spacing"
         android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
+        app:layout_constraintBottom_toTopOf="@id/rowsBottom"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -64,6 +74,7 @@
         android:baselineAligned="false"
         android:orientation="horizontal"
         android:gravity="center"
+        app:layout_constraintTop_toTopOf="@id/rowsBottom"
         app:layout_constraintBottom_toTopOf="@id/cats"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -111,8 +122,8 @@
     </LinearLayout>
 
     <!--
-      The box is the drawing: its height comes from the vector's own 585.62 x 170.1, so there is no
-      letterbox between the picture and the version line under it. MainActivity hides it outright
+      The box is the drawing: 70 % of the width, and a height that follows from the vector's own
+      585.62 x 170.1, so there is no letterbox between the picture and the version line under it. MainActivity hides it outright
       where R.bool.show_cats says the screen is too short for decoration — it is the one block here
       that can be given up whole rather than squeezed, and squeezing it is what broke the short
       screen before.
@@ -121,6 +132,8 @@
         android:id="@+id/cats"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        app:layout_constraintWidth_default="percent"
+        app:layout_constraintWidth_percent="0.7"
         app:layout_constraintDimensionRatio="H,585.62:170.1"
         android:scaleType="fitCenter"
         android:src="@drawable/cats"
