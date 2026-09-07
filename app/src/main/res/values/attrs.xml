@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Two colours the platform has no attribute for, and both themes have to answer differently. -->
+<!-- Three colours the platform has no attribute for, and both themes have to answer differently. -->
 <resources>
     <!-- What is drawn *on* an accent-coloured surface: the play triangle on its circle. -->
     <attr name="colorOnAccent" format="color"/>
     <!-- The unfilled part of a slider, which is not colorControlNormal: it belongs to the accent. -->
     <attr name="colorSliderTrack" format="color"/>
+    <!--
+      The version line, and not android:textColorSecondary: that attribute also colours the language
+      dialog's rows, which sit on AppCompat's grey #424242 rather than on the window — a tone picked
+      to be dim over black reaches 2.04:1 there.
+    -->
+    <attr name="colorVersionText" format="color"/>
 </resources>

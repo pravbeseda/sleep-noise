@@ -11,6 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/timer"
+        android:textColor="?android:attr/textColorPrimary"
         android:paddingTop="0dp"
         android:paddingBottom="0dp"/>
 
@@ -19,6 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
+        android:textColor="?android:attr/textColorPrimary"
         android:textSize="18sp"
         android:textStyle="bold"
         android:paddingBottom="0dp"
@@ -38,6 +40,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
+        android:textColor="?android:attr/textColorPrimary"
         android:textSize="16sp"
         android:visibility="gone"/>
 

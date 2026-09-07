@@ -23,7 +23,8 @@
             android:id="@+id/noiseLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"/>
+            android:layout_gravity="center_horizontal"
+            android:textColor="?android:attr/textColorPrimary"/>
 
         <SeekBar
             android:id="@+id/noiseSlider"
