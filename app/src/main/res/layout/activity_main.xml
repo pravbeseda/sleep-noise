@@ -21,6 +21,7 @@
         android:id="@+id/noiseScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/screen_block_spacing"
         android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
@@ -59,7 +60,6 @@
         android:id="@+id/playTimerContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/screen_block_spacing"
         android:layout_marginBottom="@dimen/screen_block_spacing"
         android:baselineAligned="false"
         android:orientation="horizontal"
@@ -113,14 +113,15 @@
     <!--
       A share of the screen rather than a height of its own: the vector is 3.4 times as wide as it is
       tall, so a width-driven height is whatever the screen is wide, and on a short screen that was
-      the whole of it. fitCenter keeps the proportions inside the share.
+      the whole of it. fitCenter keeps the proportions inside the share, and the share is zero on a
+      screen under 500dp tall — see cats_height_percent.
     -->
     <ImageView
         android:id="@+id/cats"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintHeight_default="percent"
-        app:layout_constraintHeight_percent="0.25"
+        app:layout_constraintHeight_percent="@dimen/cats_height_percent"
         android:scaleType="fitCenter"
         android:src="@drawable/cats"
         app:layout_constraintBottom_toTopOf="@id/version_text"

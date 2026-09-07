@@ -1,0 +1,4 @@
+<resources>
+    <!-- Room enough for the picture: the default bucket in values/ gives it up on shorter screens. -->
+    <item name="cats_height_percent" format="float" type="dimen">0.25</item>
+</resources>
