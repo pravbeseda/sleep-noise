@@ -135,6 +135,23 @@ swap_test() { # one deleted, one added elsewhere: the net count is what is check
   test_class PinkNoiseTest 3 > "$unit/media/PinkNoiseTest.kt"
   test_class SleepTimerTest 9 > "$unit/timer/SleepTimerTest.kt"
 }
+# A block-comment delimiter inside a string must not open a comment: it once
+# swallowed the rest of the file on both sides of the comparison at once, which
+# is the shape that hides a deletion instead of reporting one.
+# A block-comment delimiter inside a string must not open a comment: it once
+# swallowed the rest of the file on both sides of the comparison at once, which
+# is the shape that hides a deletion instead of reporting one.
+marked_class() { # <count>
+  { echo "package ru.pravbeseda.sleepnoise"; echo
+    echo "class PinkNoiseTest {"
+    echo '    val marker = "/*"'
+    local i
+    for ((i = 1; i <= $1; i++)); do printf '    @Test\n    fun case%d() = Unit\n' "$i"; done
+    echo "}"
+  } > "$unit/media/PinkNoiseTest.kt"
+}
+add_a_marker_string()             { marked_class 4; }
+delete_beside_a_marker_string()   { marked_class 3; }
 base_gains_a_test() { test_class NoiseMixerTest 5 > "$unit/media/NoiseMixerTest.kt"; }
 
 check "an untouched branch passes"            pass nothing
@@ -144,6 +161,8 @@ check "a deleted helper carrying no test passes" pass delete_helper
 check "a commented-out test fails"            fail comment_out
 check "a test inside a block comment fails"   fail block_comment_out
 check "a nested block comment fails too"      fail nested_comment_out
+check "a comment opener in a string is not one" fail delete_beside_a_marker_string
+check "adding such a string alone passes"     pass add_a_marker_string
 check "added tests pass"                      pass add_tests
 check "a renamed test passes"                 pass rename_method
 check "a test moved to another file passes"   pass move_between_files

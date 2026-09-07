@@ -71,7 +71,15 @@ strip_comments() {
           depth--
           line = substr(line, i + 2)
         } else {
-          i = index(line, "/*")
+          # A block comment counts as opening only where one starts a line,
+          # which is where an editor puts it. Anywhere else the /* is far more
+          # likely to be inside a string — val marker = "/*" opened a comment
+          # that never closed, and every annotation after it in the file went
+          # uncounted on both sides of the comparison, so a real deletion read
+          # as no change. Recognising a string properly means lexing Kotlin,
+          # raw strings and escapes included, which is not what a floor is for.
+          i = 0
+          if (match(line, /^[ \t]*\/\*/)) i = index(line, "/*")
           j = index(line, "//")
           if (j > 0 && (i == 0 || j < i)) { out = out substr(line, 1, j - 1); break }
           if (i == 0) { out = out line; break }
