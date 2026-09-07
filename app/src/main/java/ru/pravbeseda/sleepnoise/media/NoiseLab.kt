@@ -12,7 +12,7 @@ import kotlin.random.Random
  * deliberately stay in the tree too, which makes the next experiment a rebuild rather than a
  * re-implementation.
  */
-const val NOISE_LAB_ENABLED = false
+const val NOISE_LAB_ENABLED = true
 
 /** What an unmoved lab slider is worth, so an existing install sounds exactly as it does today. */
 const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
@@ -47,6 +47,7 @@ private fun candidate(name: String, label: String, createSource: (Random) -> Noi
  * list, so nothing else in the app carries a second copy of it.
  */
 val NOISE_LAB_CANDIDATES: List<NoiseLabCandidate> = listOf(
+    candidate("Violet", "Violet") { random -> VioletNoise(random) },
     candidate("Surf", "Surf") { random -> SurfNoise(random) },
     candidate("Rain", "Rain") { random -> RainNoise(random) },
     candidate("WheelClatter", "Wheel clatter") { random -> WheelClatterNoise(random) },
