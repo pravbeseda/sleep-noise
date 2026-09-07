@@ -398,12 +398,15 @@ left between the line and the picture, which sits on top of the version line at 
 empty screen spreads its emptiness over three bands instead of banking it all into one, and no block
 takes its height from what another block happened to leave.
 
-**Every size on this screen is resolved at measure time — percentages, one aspect ratio, one dp cap —
-and none of it comes from a configuration-qualified resource.** `MainActivity` declares
-`configChanges="orientation|screenSize"` and is therefore never recreated on a rotation: a `-land` or
-`-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest of
-the session, and a layout that leans on either is correct only until the user turns the phone. This
-is not a style preference; it is the bug this screen shipped twice.
+**No size on this screen comes from a resource a rotation would change: what is left is percentages,
+one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
+`configChanges="orientation|screenSize"` and is therefore never recreated on a rotation, so a `-land`
+or `-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest
+of the session — a layout that leans on either is correct only until the user turns the phone. This
+is not a style preference; it is the bug this screen shipped twice. `values-sw320dp` is the one
+qualifier here that is safe, and the reason is the whole of the rule: `smallestScreenWidth` is the
+same number in both orientations, so the play button's size cannot go stale where a `-land` or `-h`
+one would.
 
 The picture's box is the drawing itself: 70 % of the width and a height from
 `layout_constraintDimensionRatio` carrying the vector's own 585.62 x 170.1, so no letterbox opens

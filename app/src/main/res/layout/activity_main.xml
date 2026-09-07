@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Bottom-up, and every block's height is decided rather than negotiated: the version line sits on the
-  bottom, the picture takes a fixed share of the screen above it, the play button with the timer sits
-  above the picture, and the noise rows take exactly the gap that leaves. No chain and no weights —
-  a chain distributes leftover height, which is the wrong question on a screen that has none: on a
-  short one the picture kept its full height and left the rows nothing at all.
+  A guideline across the screen at 0.45 says where the noise rows stop: they own the height above it
+  and scroll inside it, and the play button with the timer centres in what is left between that line
+  and the picture, which sits on the version line at the bottom. So an empty screen spreads its
+  emptiness over three bands instead of banking it all into one, and no block takes its height from
+  what another block happened to leave — the mistake of the weighted layout and the chain before it.
 
-  The split between the rows and the button is a guideline rather than a gap left over from something
-  else: the rows own the share of the height rows_bottom_percent names and scroll inside it, the
-  button with the timer centres in what is left between that line and the picture. So an empty screen spreads its emptiness over three even
-  bands instead of banking it all above the button.
+  Every size here is resolved at measure time: two percentages, one aspect ratio, one dp cap. None of
+  it is read out of a resource a rotation would change, because MainActivity declares configChanges
+  for orientation|screenSize and is never recreated — a -land or -h value, or anything read once in
+  onCreate, stays the portrait one for the rest of the session.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -123,10 +123,10 @@
 
     <!--
       The box is the drawing: 70 % of the width, and a height that follows from the vector's own
-      585.62 x 170.1, so there is no letterbox between the picture and the version line under it. MainActivity hides it outright
-      where R.bool.show_cats says the screen is too short for decoration — it is the one block here
-      that can be given up whole rather than squeezed, and squeezing it is what broke the short
-      screen before.
+      585.62 x 170.1, so there is no letterbox between the picture and the version line under it.
+      cats_max_height caps that width-driven height on a wide window, where 70 % of the width would
+      otherwise come to most of the height — the picture is decoration and the first thing to give
+      way, and a picture that would not give way is what broke the short screen before.
     -->
     <ImageView
         android:id="@+id/cats"
