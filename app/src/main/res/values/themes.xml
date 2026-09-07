@@ -12,11 +12,17 @@
       qualifier: that qualifier would answer for both at once.
     -->
     <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat">
+        <!-- Black window and black action bar: AppCompat's own dark is #303030, one shade short. -->
+        <item name="android:windowBackground">@color/dark_background</item>
+        <item name="colorPrimary">@color/dark_background</item>
+        <item name="colorPrimaryDark">@color/dark_background</item>
         <item name="colorAccent">@color/dark_accent</item>
-        <item name="colorControlNormal">@color/dark_control</item>
-        <item name="colorOnPrimary">@color/dark_on_primary</item>
+        <item name="colorControlNormal">@color/dark_foreground</item>
+        <item name="colorOnPrimary">@color/dark_foreground</item>
         <item name="colorOnAccent">@color/dark_on_accent</item>
         <item name="colorSliderTrack">@color/dark_slider_track</item>
+        <item name="android:textColorPrimary">@color/dark_foreground</item>
+        <item name="android:textColorSecondary">@color/dark_foreground_dim</item>
     </style>
 
     <!-- The splash colour carried into the app: the window is the gradient it ends on. -->
