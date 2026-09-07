@@ -22,7 +22,7 @@
         <item name="colorOnAccent">@color/dark_on_accent</item>
         <item name="colorSliderTrack">@color/dark_slider_track</item>
         <item name="android:textColorPrimary">@color/dark_foreground</item>
-        <item name="android:textColorSecondary">@color/dark_foreground_dim</item>
+        <item name="colorVersionText">@color/dark_foreground_dim</item>
     </style>
 
     <!-- The splash colour carried into the app: the window is the gradient it ends on. -->
@@ -37,6 +37,7 @@
         <item name="colorSliderTrack">@color/purple_slider_track</item>
         <item name="android:textColorPrimary">@color/purple_foreground</item>
         <item name="android:textColorSecondary">@color/purple_foreground_dim</item>
+        <item name="colorVersionText">@color/purple_foreground_dim</item>
     </style>
 
     <!--
