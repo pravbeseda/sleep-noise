@@ -14,4 +14,7 @@
     <dimen name="cats_max_height">96dp</dimen>
     <!-- Side inset shared by everything the noise rows and the timer put on screen, so their edges line up. -->
     <dimen name="content_horizontal_inset">32dp</dimen>
+    <!-- The groove a slider draws, in both themes. -->
+    <dimen name="slider_track_height">4dp</dimen>
+    <dimen name="slider_thumb_size">14dp</dimen>
 </resources>

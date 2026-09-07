@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- A step lighter than the day accent, which reads too dark against the dark background. -->
-    <color name="colorAccent">#9575CD</color>
-    <color name="colorControlNormal">#DDDDDD</color>
-    <color name="colorOnPrimary">#FFFFFF</color>
-</resources>

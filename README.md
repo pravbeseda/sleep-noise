@@ -10,9 +10,9 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 
 <a href="https://play.google.com/store/apps/details?id=ru.pravbeseda.sleepnoise">Get it on Google Play</a>
 
-| Dark theme, idle | Light theme, playing |
+| Purple theme, idle | Dark theme, playing |
 |---|---|
-| <img src="graph/Screenshot_20250106_182502.png" width="280" alt="Dark theme, playback stopped"> | <img src="graph/Screenshot_20250106_182551.png" width="280" alt="Light theme, playing with countdown"> |
+| <img src="graph/screenshot-purple-idle.png" width="280" alt="Purple theme, playback stopped"> | <img src="graph/screenshot-dark-playing.png" width="280" alt="Dark theme, playing with countdown"> |
 
 ## Features
 
@@ -26,7 +26,7 @@ has no audio assets, needs no network access, and never runs out of loop to repe
   counts the timer down and carries a Stop action.
 - **Gets out of the way** — an incoming call silences the noise and it comes back afterwards;
   unplugging the headphones stops it instead of moving it to the speaker.
-- **Three themes** — system, light, dark (dark by default).
+- **Two themes** — purple and dark (purple by default), cycled by the action-bar button.
 - **Six languages** — English, Arabic, German, Spanish, Russian, Ukrainian, with full RTL support.
 - **No ads, no accounts, no audio files.**
 

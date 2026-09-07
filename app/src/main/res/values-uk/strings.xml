@@ -7,9 +7,7 @@
     <string name="pink_noise_name">Рожевий шум</string>
     <string name="brown_noise_name">Коричневий шум</string>
     <string name="play_button">Відтворити</string>
-    <string name="theme_system">Системна тема</string>
-    <string name="theme_light">Світла тема</string>
-    <string name="theme_dark">Темна тема</string>
+    <string name="theme_switch">Змінити тему</string>
     <string name="language">Мова</string>
     <string name="select_language">Виберіть мову</string>
     <string name="title_language_need">Нам потрібна допомога з перекладом</string>

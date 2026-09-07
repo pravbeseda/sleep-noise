@@ -7,9 +7,7 @@
     <string name="pink_noise_name">Ruido rosa</string>
     <string name="brown_noise_name">Ruido marrón</string>
     <string name="play_button">Reproducir</string>
-    <string name="theme_system">Tema del sistema</string>
-    <string name="theme_light">Tema claro</string>
-    <string name="theme_dark">Tema oscuro</string>
+    <string name="theme_switch">Cambiar tema</string>
     <string name="language">Idioma</string>
     <string name="select_language">Seleccionar idioma</string>
     <string name="title_language_need">Necesitamos ayuda para traducir</string>

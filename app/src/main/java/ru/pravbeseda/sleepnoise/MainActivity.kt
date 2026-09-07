@@ -24,7 +24,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
@@ -34,6 +33,7 @@ import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
+import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.timer.TimerView
@@ -102,15 +102,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
-        applyTheme(currentTheme)
+        applyTheme(storedTheme())
         applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         WindowCompat.enableEdgeToEdge(window)
-        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = currentTheme != "dark"
+        // Both themes are dark ones, so the status bar always wants light icons on top of them.
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
 
         supportActionBar?.title = getString(R.string.app_name)
 
@@ -177,7 +177,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.theme_button -> {
-            showThemePopup(findViewById(R.id.theme_button))
+            setThemePreference(storedTheme().next())
             true
         }
 
@@ -256,75 +256,31 @@ class MainActivity : AppCompatActivity() {
 
     private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
 
-    private fun showThemePopup(anchor: View) {
-        val popup = PopupMenu(this, anchor)
-        popup.menuInflater.inflate(R.menu.menu_theme_popup, popup.menu)
+    private fun storedTheme(): AppTheme = AppTheme.fromKey(preferences.getString(CURRENT_THEME, null))
 
-        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
-        when (currentTheme) {
-            "system" -> popup.menu.findItem(R.id.theme_system).isChecked = true
-            "light" -> popup.menu.findItem(R.id.theme_light).isChecked = true
-            "dark" -> popup.menu.findItem(R.id.theme_dark).isChecked = true
-        }
-
-        popup.setOnMenuItemClickListener { menuItem ->
-            for (i in 0 until popup.menu.size()) {
-                popup.menu.getItem(i).isChecked = false
-            }
-            menuItem.isChecked = true
-
-            when (menuItem.itemId) {
-                R.id.theme_system -> {
-                    setThemePreference("system")
-                }
-
-                R.id.theme_light -> {
-                    setThemePreference("light")
-                }
-
-                R.id.theme_dark -> {
-                    setThemePreference("dark")
-                }
-            }
-            true
-        }
-
-        popup.show()
-    }
-
-    private fun setThemePreference(theme: String) {
-        preferences.edit().putString(CURRENT_THEME, theme).apply()
+    private fun setThemePreference(theme: AppTheme) {
+        preferences.edit().putString(CURRENT_THEME, theme.key).apply()
         recreate()
     }
 
-    private fun applyTheme(theme: String) {
-        when (theme) {
-            "system" -> {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                setTheme(R.style.Theme_SleepNoise_System)
-            }
-
-            "light" -> {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                setTheme(R.style.Theme_SleepNoise_Light)
-            }
-
-            "dark" -> {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                setTheme(R.style.Theme_SleepNoise_Dark)
-            }
-        }
+    private fun applyTheme(theme: AppTheme) {
+        // Neither theme is a light one, so night mode is on for both and only the style differs.
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        setTheme(
+            when (theme) {
+                AppTheme.PURPLE -> R.style.Theme_SleepNoise_Purple
+                AppTheme.DARK -> R.style.Theme_SleepNoise_Dark
+            },
+        )
     }
 
+    /** The icon names the theme in force, so the button says where the last press landed. */
     private fun updateThemeIcon(menu: Menu?) {
-        val currentTheme = preferences.getString(CURRENT_THEME, "dark") ?: "dark"
-        val themeItem = menu?.findItem(R.id.theme_button)
-
-        when (currentTheme) {
-            "system" -> themeItem?.setIcon(R.drawable.ic_theme_system)
-            "light" -> themeItem?.setIcon(R.drawable.ic_theme_light)
-            "dark" -> themeItem?.setIcon(R.drawable.ic_theme_dark)
+        val icon = when (storedTheme()) {
+            AppTheme.PURPLE -> R.drawable.ic_theme_purple
+            AppTheme.DARK -> R.drawable.ic_theme_dark
         }
+        menu?.findItem(R.id.theme_button)?.setIcon(icon)
     }
 
     /**

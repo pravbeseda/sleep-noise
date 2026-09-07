@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A 4dp groove with a 4dp fill, both drawn white and coloured by the style's tints, so one drawable
+  serves both themes. The height comes from the style's min/maxHeight: a shape's own size is ignored
+  here, since a progress drawable is stretched to the track.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <corners android:radius="2dp"/>
+            <solid android:color="@android:color/white"/>
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="2dp"/>
+                <solid android:color="@android:color/white"/>
+            </shape>
+        </clip>
+    </item>
+</layer-list>

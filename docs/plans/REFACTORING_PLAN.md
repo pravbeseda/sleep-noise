@@ -490,15 +490,15 @@ Rotating the device or changing the theme mid-playback keeps the UI state consis
 **Goal:** one source of truth per setting.
 
 Two stores exist without a real reason: `AppPreferences` (volumes, theme, language) and
-`timer_prefs` (timer value). Theme is passed around as the magic strings `"dark"` /
-`"light"` / `"system"` in five places. The active language has two sources that can
+`timer_prefs` (timer value). The active language has two sources that can
 disagree — `preferences.getString(CURRENT_LANGUAGE)` and the per-locale
 `getString(R.string.lang)` — which drift apart when the user changes the system language.
 
 ### Tasks
 
-- [ ] `enum class AppTheme(val key: String)` with `SYSTEM("system")`, `LIGHT("light")`,
-      `DARK("dark")`. Keep the string keys: installed users already have them stored.
+- [x] `enum class AppTheme(val key: String)` — done ahead of this phase by the purple-theme
+      change, with `PURPLE("purple")` and `DARK("dark")`. `SYSTEM` and `LIGHT` are gone rather
+      than kept: both themes were removed, and `fromKey` maps their stored keys onto the default.
 - [ ] `SettingsRepository` as the single facade over preferences.
 - [ ] Migrate `timer_prefs` into the main store on first launch, reading the old value if
       present so existing users keep their timer.
@@ -510,7 +510,7 @@ disagree — `preferences.getString(CURRENT_LANGUAGE)` and the per-locale
 
 ### Done when
 
-No string literal `"dark"` remains outside the enum, and upgrading from 1.0.3 preserves
+No string literal for a language remains outside a constant, and upgrading from 1.0.3 preserves
 volumes, theme, language, and timer.
 
 ---

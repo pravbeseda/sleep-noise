@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  One block per theme, because both themes now run in night mode: a values-night qualifier would
+  answer for both of them at once, so the colours are picked by the style in themes.xml instead.
+-->
 <resources>
-    <!-- Checkboxes, sliders and the play button: one accent for all of them, in both themes. -->
-    <color name="colorAccent">#7E57C2</color>
-    <color name="colorControlNormal">#222222</color>
-    <color name="colorOnPrimary">#000000</color>
+    <!-- Dark: the theme this app shipped with, unchanged apart from the slider track. -->
+    <color name="dark_accent">#9575CD</color>
+    <color name="dark_control">#DDDDDD</color>
+    <color name="dark_on_primary">#FFFFFF</color>
+    <color name="dark_on_accent">#FFFFFF</color>
+    <!-- The unfilled half of a slider: the accent at 30 %, dim enough to read as a groove. -->
+    <color name="dark_slider_track">#4D9575CD</color>
+
+    <!-- Purple: the splash colour carried into the app, over a slightly darker top. -->
+    <color name="purple_background_top">#25064F</color>
+    <color name="purple_background_bottom">#430985</color>
+    <color name="purple_action_bar">#1D0440</color>
+    <color name="purple_accent">#C7A9FF</color>
+    <!-- Text, icons and the cats alike: one foreground, since they all sit on the same window. -->
+    <color name="purple_foreground">#EFE7FF</color>
+    <!-- The play triangle sits on the accent circle, which is far too light to carry white. -->
+    <color name="purple_on_accent">#25064F</color>
+    <color name="purple_slider_track">#4DC7A9FF</color>
+    <color name="purple_foreground_dim">#B49BDD</color>
+
     <color name="splash_background">#430985</color>
     <color name="credits_text_color">#DDDDDD</color>
 </resources>

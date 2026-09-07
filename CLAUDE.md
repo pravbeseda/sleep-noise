@@ -282,8 +282,9 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 - **No `!!`.** There is currently not one in the project, which is worth keeping. `?.let`,
   `requireNotNull(x) { "why" }`, or an early return say the same thing without the crash.
 - **Preference keys and theme/language values are constants, not literals at the call site.** The
-  string `"dark"` appears throughout `MainActivity` as key, default and comparison at once; phase 5
-  turns those into an enum. Do not add the twentieth occurrence in the meantime.
+  theme is `models/AppTheme` and its `key` is the only place `"dark"` is spelled out; the language is
+  still a literal in several places, and phase 5 of the plan is where that ends. Do not add the
+  twentieth occurrence in the meantime.
 - **New dependencies go through `gradle/libs.versions.toml`,** with a line in the PR description
   saying why. The Compose stack is the cautionary tale: seven artifacts on the classpath, none used.
 - **`versionCode`, `app/version.properties` and the versioning block of `app/build.gradle.kts` are
@@ -379,7 +380,21 @@ Six more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `l
 
 ### Theme
 
-Three explicit themes (`system` / `light` / `dark`, default **dark**) rather than relying on system night mode alone. `applyTheme` runs **before** `super.onCreate` and sets both `AppCompatDelegate.setDefaultNightMode` and an explicit `setTheme(...)`; changing the theme calls `recreate()`. Edge-to-edge and the status-bar appearance flag are set in `onCreate` from the same stored value.
+Two themes, `purple` and `dark`, named by `models/AppTheme` and cycled by the action-bar button — one
+press, no popup, in the enum's own order. **`purple` is the default**, so a fresh install opens in the
+colour the splash screen ends on. `AppTheme.fromKey` maps anything else to that default, which is how
+an install that stored the retired `light` or `system` is carried across.
+
+Both themes are dark ones, so `applyTheme` sets `MODE_NIGHT_YES` for either and only the style differs.
+That is why **there is no `values-night/`**: a night qualifier would answer for both themes at once, so
+every colour that separates them is named in the style instead. `applyTheme` still runs **before**
+`super.onCreate`, and changing the theme still calls `recreate()`. The status bar is told to use light
+icons unconditionally — neither theme has a light background left for dark ones to sit on.
+
+`Theme.SleepNoise.Purple` puts the splash colour on the window as a gradient
+(`drawable/window_background_purple`, `#25064F` down to the splash's own `#430985`) and darkens the
+action bar under it. Its accent is light enough that the play triangle has to be dark on it, which is
+what `colorOnAccent` is for: `colorOnPrimary` is the cats and the text, and those want the opposite.
 
 ### Localization
 
@@ -435,6 +450,13 @@ noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -
 volume the mix should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per
 candidate in code, and neither knows how the toggle is persisted or how a switched-off row is dimmed. A new noise
 that wires its own slider by hand is the mistake this replaced.
+
+Every slider in the app — the two noise rows, each lab candidate and the timer — wears
+`Widget.SleepNoise.Slider`: a 4dp groove with a 14dp round thumb, drawn white and coloured by the
+style's tints, so one drawable serves both themes and the unfilled half reads as a groove rather than
+as `colorControlNormal`. It is applied per widget rather than as the theme's `seekBarStyle` for the
+same reason the toggle below is, and there is no slider in this app that should look like anything
+else.
 
 The toggle is still an `AppCompatCheckBox`, wearing `Widget.SleepNoise.NoiseToggle`: the button drawable is a
 speaker, struck through while the noise is off. The style sits on the widget rather than on the theme's
