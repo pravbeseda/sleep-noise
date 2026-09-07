@@ -326,16 +326,36 @@ them out of the lab means
 revisiting the level — a shipping source that clips on its own is a different thing from a lab candidate
 that does.
 
-The fourth candidate is a colour rather than a texture. `media/VioletNoise` is the first difference of uniform
-white — `f^2`, the mirror of what `BrownNoise` does by integrating the same input, and the brightest of the named
-colours. It is also the one source here that cannot clip: differencing two independent draws doubles their
-variance and at most doubles their bound, so normalising to `NORMALISED_SOURCE_RMS` lands the peak at 0.61 of full
-scale, a crest factor of 2.4 where every other source here runs near 5. There is no clamp in it — not a clamp that
-never fires, but a bound the arithmetic already carries, and `VioletNoiseTest` asserts the headroom rather than
-trusting it. Its gain is derived from the distribution the way `OnePole`'s are derived from the pole, so no
-measured constant stands in for one. It is on trial because bright is the one direction this app has never gone,
-and violet is reached for to mask tinnitus far more often than to sleep: whether it is bearable at all is an ear
-question, which is what the lab is for.
+The other four candidates are colours rather than textures, and together with the two that ship they cover the
+ladder from `f^-2` to `f^2`.
+
+- `media/VioletNoise` is the first difference of uniform white — `f^2`, the mirror of what `BrownNoise` does by
+  integrating the same input, and the brightest of the named colours. It is also the one source here that
+  cannot clip: differencing two independent draws doubles their variance and at most doubles their bound, so
+  normalising to `NORMALISED_SOURCE_RMS` lands the peak at 0.61 of full scale, a crest factor of 2.4 where every
+  other source here runs near 5. There is no clamp in it — not a clamp that never fires, but a bound the
+  arithmetic already carries — and its gain is derived from the distribution the way `OnePole`'s are derived
+  from the pole, so no measured constant stands in for one.
+- `media/BlueNoise` is the first difference of **pink**, which is `f^1/2` and the midpoint between white and
+  violet: differencing lifts a spectrum by 6 dB per octave and pink falls at 3. Built on the pink bank rather
+  than on a second set of coefficients, so its tilt is the one `PinkNoiseTest` already measures, reflected.
+  Its own test pins it to both neighbours at once — steeper than white, shallower than violet — because a
+  source that merely tilted upwards would pass half of that.
+- `media/GreyNoise` is white with a low shelf and a smaller high shelf added on top, a coarse stand-in for the
+  inverse of an equal-loudness contour. It is the one source here whose constants are set by ear rather than
+  fitted to anything, and promoting it means fitting the real curve first.
+- `media/GreenNoise` is the middle of the band kept and both ends dropped, the band an outdoor ambience carries
+  its weight in.
+
+Two facts about one-pole filters were paid for here and are worth not paying for twice. **A single pole does not
+confine energy:** green with one pole a side put more of its output above 2 kHz than inside its own 250-1200 Hz
+passband, because the band above the corner is fifteen times wider than the band under it and a 6 dB/octave tail
+is not steep enough to make up the difference. It takes two poles a side to make the passband the loudest part of
+the spectrum. **And a single pole does not confine a boost either:** grey's low shelf reaches into the middle of
+the band whatever its corner, so grey's top can never out-weigh grey's own middle — which is why `GreyNoiseTest`
+measures that top against *pink's* instead, the comparison that actually says what being grey rather than pink
+means. The test-side splitter in `BandShares.kt` learned the same lesson from the other end: at one pole per
+split it read grey's leaked bass as a cut top end, and it now cascades two.
 
 `NoiseSource.reset()` still has no production caller. The engine never resets its sources, so a stop/start cycle resumes the brown integrator where it left off — the behaviour the app has always had. Zeroing it is a behaviour change and needs to be asked for, not slipped into a refactoring.
 
@@ -347,9 +367,9 @@ The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` —
 experiment away without deleting a source, a key or a test, and the service is back to the two channels it ships
 with. A lab volume defaults to 0, so an install nobody has touched sounds exactly as it did before the lab existed.
 Nothing enforces the flag's value per build type, so **a release PR sets it to `false`**: left on, a Play release
-ships four developer-facing sliders whose English labels are not translated into any of the six locales. It is
-`true` as the project stands, with violet on trial and the three parked candidates showing beside it — putting the
-lab away again is that one edit, and it deletes no source, key or test either way.
+ships seven developer-facing sliders whose English labels are not translated into any of the six locales. It is
+`true` as the project stands, with four colours on trial and the three texture candidates showing beside them —
+putting the lab away again is that one edit, and it deletes no source, key or test either way.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -387,7 +407,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
+Fourteen more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the seven candidates on trial — `Violet`, `Blue`, `Grey`, `Green`, `Surf`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` none of the fourteen is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
 ### Theme
 
