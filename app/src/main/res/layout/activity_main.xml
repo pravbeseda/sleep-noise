@@ -111,17 +111,17 @@
     </LinearLayout>
 
     <!--
-      A share of the screen rather than a height of its own: the vector is 3.4 times as wide as it is
-      tall, so a width-driven height is whatever the screen is wide, and on a short screen that was
-      the whole of it. fitCenter keeps the proportions inside the share, and the share is zero on a
-      screen under 500dp tall — see cats_height_percent.
+      The box is the drawing: its height comes from the vector's own 585.62 x 170.1, so there is no
+      letterbox between the picture and the version line under it. MainActivity hides it outright
+      where R.bool.show_cats says the screen is too short for decoration — it is the one block here
+      that can be given up whole rather than squeezed, and squeezing it is what broke the short
+      screen before.
     -->
     <ImageView
         android:id="@+id/cats"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintHeight_default="percent"
-        app:layout_constraintHeight_percent="@dimen/cats_height_percent"
+        app:layout_constraintDimensionRatio="H,585.62:170.1"
         android:scaleType="fitCenter"
         android:src="@drawable/cats"
         app:layout_constraintBottom_toTopOf="@id/version_text"

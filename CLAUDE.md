@@ -393,17 +393,18 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
 `activity_main.xml` is a `ConstraintLayout`, built bottom-up with every block's height decided
-rather than negotiated: the version line on the bottom, the picture at `layout_constraintHeight_percent`
-above it, the play button with the timer above that, and the noise rows in exactly the gap those
+rather than negotiated: the version line on the bottom, the picture at its own aspect ratio above it,
+the play button with the timer above that, and the noise rows in exactly the gap those
 leave — a match_constraint that cannot outgrow it and scrolls inside it instead. Two rows look placed
 rather than stranded because they are centred in that gap (`fillViewport` on the `ScrollView`, the
 content centred), not because anything distributes leftover height.
 
-That percentage is `cats_height_percent`, and it is 0.25 in `values-h500dp` and **0** in the default
-bucket every shorter screen falls back to — a phone in landscape, or a portrait one at an accessibility
-display scale. The picture is decoration, and the only thing on this screen that can be given up whole
-rather than squeezed; at zero the play button and the timer keep their `screen_block_spacing` clear of
-the rows above and the version line below, which is the room a short screen actually needs.
+The picture's box is the drawing itself: `layout_constraintDimensionRatio` carries the vector's own
+585.62 x 170.1, so there is no letterbox between it and the version line. It is the one block here
+that is given up whole rather than squeezed — `MainActivity` sets it `GONE` where `R.bool.show_cats`
+is false, which is the default bucket every screen under the 500dp of height `values-h500dp` names: a
+phone in landscape, or a portrait one at an accessibility display scale. Squeezing it instead is what
+broke the short screen twice, once per layout.
 
 Both layouts this replaced tried to distribute it and got it wrong on the screen that has none. The
 weighted `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the
