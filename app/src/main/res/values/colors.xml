@@ -12,8 +12,8 @@
     <color name="dark_foreground_dim">#736E80</color>
     <!-- The play triangle on the accent circle: lighter than the text, or the button reads as disabled. -->
     <color name="dark_on_accent">#D6D0E0</color>
-    <!-- The unfilled half of a slider: the accent at 30 %, dim enough to read as a groove. -->
-    <color name="dark_slider_track">#4D6D4FA8</color>
+    <!-- The unfilled half of a slider: the accent at 40 %, since 30 % of it over black is 1.24:1. -->
+    <color name="dark_slider_track">#666D4FA8</color>
 
     <!-- Purple: the splash colour carried into the app, over a slightly darker top. -->
     <color name="purple_background_top">#25064F</color>
