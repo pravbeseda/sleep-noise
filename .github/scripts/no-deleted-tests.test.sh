@@ -138,9 +138,6 @@ swap_test() { # one deleted, one added elsewhere: the net count is what is check
 # A block-comment delimiter inside a string must not open a comment: it once
 # swallowed the rest of the file on both sides of the comparison at once, which
 # is the shape that hides a deletion instead of reporting one.
-# A block-comment delimiter inside a string must not open a comment: it once
-# swallowed the rest of the file on both sides of the comparison at once, which
-# is the shape that hides a deletion instead of reporting one.
 marked_class() { # <count>
   { echo "package ru.pravbeseda.sleepnoise"; echo
     echo "class PinkNoiseTest {"
