@@ -144,7 +144,9 @@ them; both are named so that a reader can see the tests run at all.
 
 Five tasks, four of the seven required checks: coverage has no job of its own and rides in `Unit
 tests`. The other three are deliberately not on that line. Guardrails compares the PR against its
-base commit, so there is nothing local to run at all. `Instrumented tests (API 26)` and
+base commit, so nothing about it belongs on a pre-push line — its scripts do run here, one of them
+against `BASE_SHA=origin/main`, but only against a `main` a fetch has just moved.
+`Instrumented tests (API 26)` and
 `(API 36)` are the remaining two, and unlike Guardrails they *can* be run here —
 `connectedAndroidTest`, in the Commands section — but they need a device or an emulator, and a
 pre-push line that does not run without one is a line that gets skipped. So a green local run

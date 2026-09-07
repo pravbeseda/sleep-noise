@@ -98,6 +98,16 @@ comment_out()      { sed -i.bak 's|    @Test|    // @Test|' "$unit/media/PinkNoi
                      rm "$unit/media/PinkNoiseTest.kt.bak"; }
 # The other keystroke: a /* */ block with no leading star on its lines, which is
 # what an IDE writes when a whole method is commented out at once.
+# Kotlin nests block comments, so commenting out a method that already carries
+# one leaves the outer block open past the inner terminator.
+nested_comment_out() {
+  { echo "package ru.pravbeseda.sleepnoise"; echo; echo "class PinkNoiseTest {"; echo "/*"
+    echo "    /* why this exists */"
+    sed -n '/    @Test/,$p' "$unit/media/PinkNoiseTest.kt" | sed '$d'
+    echo "*/"; echo "}"
+  } > "$unit/media/PinkNoiseTest.kt.new"
+  mv "$unit/media/PinkNoiseTest.kt.new" "$unit/media/PinkNoiseTest.kt"
+}
 block_comment_out() {
   { echo "package ru.pravbeseda.sleepnoise"; echo; echo "class PinkNoiseTest {"; echo "/*"
     sed -n '/    @Test/,$p' "$unit/media/PinkNoiseTest.kt" | sed '$d'
@@ -133,6 +143,7 @@ check "a deleted test file fails"             fail delete_file
 check "a deleted helper carrying no test passes" pass delete_helper
 check "a commented-out test fails"            fail comment_out
 check "a test inside a block comment fails"   fail block_comment_out
+check "a nested block comment fails too"      fail nested_comment_out
 check "added tests pass"                      pass add_tests
 check "a renamed test passes"                 pass rename_method
 check "a test moved to another file passes"   pass move_between_files

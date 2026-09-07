@@ -51,17 +51,25 @@ test_files_at() { # <ref>
 # // per line, and a /* */ block, whose lines carry no leading star when the IDE
 # writes it. A prefix match on the line is not enough for the second — it was
 # what this replaced, and it counted the @Test inside such a block as live.
+# Nesting is tracked rather than assumed away: Kotlin allows it, so a method
+# that already carries a /* */ comment still comments out as one whole block.
 strip_comments() {
   awk '
     {
       line = $0
       out = ""
       while (1) {
-        if (inblock) {
+        if (depth > 0) {
           i = index(line, "*/")
+          k = index(line, "/*")
+          # Kotlin nests block comments where C does not, so an inner /* raises
+          # the depth and the outer comment survives the inner terminator. A
+          # boolean here ended the comment at the first */ and handed the rest
+          # of a commented-out method back to the count as live code.
+          if (k > 0 && (i == 0 || k < i)) { depth++; line = substr(line, k + 2); continue }
           if (i == 0) { line = ""; break }
+          depth--
           line = substr(line, i + 2)
-          inblock = 0
         } else {
           i = index(line, "/*")
           j = index(line, "//")
@@ -69,7 +77,7 @@ strip_comments() {
           if (i == 0) { out = out line; break }
           out = out substr(line, 1, i - 1)
           line = substr(line, i + 2)
-          inblock = 1
+          depth = 1
         }
       }
       print out
