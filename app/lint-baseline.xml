@@ -167,27 +167,7 @@
             column="9"/>
     </issue>
 
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension property `Menu.size` instead?"
-        errorLine1="            for (i in 0 until popup.menu.size()) {"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt"
-            line="202"
-            column="31"/>
-    </issue>
 
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `Menu.get` instead?"
-        errorLine1="                popup.menu.getItem(i).isChecked = false"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt"
-            line="203"
-            column="17"/>
-    </issue>
 
     <issue
         id="UseKtx"

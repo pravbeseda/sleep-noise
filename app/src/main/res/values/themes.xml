@@ -2,25 +2,60 @@
     <style name="Theme.SleepNoise.Splash" parent="@style/Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="postSplashScreenTheme">@style/Theme.SleepNoise.System</item>
+        <item name="postSplashScreenTheme">@style/Theme.SleepNoise.Purple</item>
     </style>
 
-    <style name="Theme.SleepNoise.System" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">@color/colorControlNormal</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+    <!--
+      Both themes are dark ones, so both are built on plain Theme.AppCompat — which is the dark one,
+      with no day variant for a uiMode to select — rather than on DayNight with night mode forced on.
+      For the same reason every colour that separates them is named here and not in a values-night
+      qualifier: that qualifier would answer for both at once.
+    -->
+    <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat">
+        <item name="colorAccent">@color/dark_accent</item>
+        <item name="colorControlNormal">@color/dark_control</item>
+        <item name="colorOnPrimary">@color/dark_on_primary</item>
+        <item name="colorOnAccent">@color/dark_on_accent</item>
+        <item name="colorSliderTrack">@color/dark_slider_track</item>
     </style>
 
-    <style name="Theme.SleepNoise.Light" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">@color/colorControlNormal</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+    <!-- The splash colour carried into the app: the window is the gradient it ends on. -->
+    <style name="Theme.SleepNoise.Purple" parent="Theme.AppCompat">
+        <item name="android:windowBackground">@drawable/window_background_purple</item>
+        <item name="colorPrimary">@color/purple_action_bar</item>
+        <item name="colorPrimaryDark">@color/purple_action_bar</item>
+        <item name="colorAccent">@color/purple_accent</item>
+        <item name="colorControlNormal">@color/purple_foreground</item>
+        <item name="colorOnPrimary">@color/purple_foreground</item>
+        <item name="colorOnAccent">@color/purple_on_accent</item>
+        <item name="colorSliderTrack">@color/purple_slider_track</item>
+        <item name="android:textColorPrimary">@color/purple_foreground</item>
+        <item name="android:textColorSecondary">@color/purple_foreground_dim</item>
     </style>
 
-    <style name="Theme.SleepNoise.Dark" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">@color/colorControlNormal</item>
-        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+    <!--
+      Every slider in the app: a 4dp groove and a round thumb, the same shape in both themes. It is
+      set on the widget rather than as the theme's seekBarStyle for the reason the toggle below is —
+      but here the reason is narrower, since every slider this app draws is one of these.
+    -->
+    <style name="Widget.SleepNoise.Slider" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressDrawable">@drawable/slider_track</item>
+        <item name="android:thumb">@drawable/slider_thumb</item>
+        <item name="android:progressTint">?attr/colorAccent</item>
+        <item name="android:progressBackgroundTint">?attr/colorSliderTrack</item>
+        <item name="android:thumbTint">?attr/colorAccent</item>
+        <!--
+          A 4dp groove and a 14dp thumb would measure 14dp tall, so the padding is what carries the
+          48dp minimum touch target: the groove stays thin and the row still answers a thumb.
+        -->
+        <item name="android:paddingTop">@dimen/slider_touch_padding</item>
+        <item name="android:paddingBottom">@dimen/slider_touch_padding</item>
+        <item name="android:minHeight">@dimen/slider_track_height</item>
+        <item name="android:maxHeight">@dimen/slider_track_height</item>
+        <!-- Keeps the thumb inside the view's own width, so neither end of the track is clipped. -->
+        <item name="android:thumbOffset">0dp</item>
+        <!-- The track runs under the thumb rather than breaking around it. -->
+        <item name="android:splitTrack">false</item>
     </style>
 
     <!-- A noise row toggles a sound, not a setting, so its checkbox wears a speaker that is struck

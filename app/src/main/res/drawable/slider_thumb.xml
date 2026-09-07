@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- White, and coloured by the style's thumbTint, for the reason the track is. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white"/>
+    <size
+        android:width="@dimen/slider_thumb_size"
+        android:height="@dimen/slider_thumb_size"/>
+</shape>

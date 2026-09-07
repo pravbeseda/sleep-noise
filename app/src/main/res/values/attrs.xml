@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two colours the platform has no attribute for, and both themes have to answer differently. -->
+<resources>
+    <!-- What is drawn *on* an accent-coloured surface: the play triangle on its circle. -->
+    <attr name="colorOnAccent" format="color"/>
+    <!-- The unfilled part of a slider, which is not colorControlNormal: it belongs to the accent. -->
+    <attr name="colorSliderTrack" format="color"/>
+</resources>

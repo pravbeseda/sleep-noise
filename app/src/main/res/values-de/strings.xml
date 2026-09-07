@@ -7,9 +7,7 @@
     <string name="pink_noise_name">Rosa Rauschen</string>
     <string name="brown_noise_name">Braunes Rauschen</string>
     <string name="play_button">Abspielen</string>
-    <string name="theme_system">Systemthema</string>
-    <string name="theme_light">Helles Thema</string>
-    <string name="theme_dark">Dunkles Thema</string>
+    <string name="theme_switch">Design wechseln</string>
     <string name="language">Sprache</string>
     <string name="select_language">Sprache wählen</string>
     <string name="title_language_need">Wir brauchen Hilfe beim Übersetzen</string>

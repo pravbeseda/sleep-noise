@@ -26,6 +26,7 @@
 
     <SeekBar
         android:id="@+id/timerSeekBar"
+        style="@style/Widget.SleepNoise.Slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="20"

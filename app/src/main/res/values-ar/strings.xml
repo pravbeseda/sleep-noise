@@ -7,9 +7,7 @@
     <string name="pink_noise_name">الضوضاء الوردية</string>
     <string name="brown_noise_name">الضوضاء البنية</string>
     <string name="play_button">تشغيل</string>
-    <string name="theme_system">سمة النظام</string>
-    <string name="theme_light">سمة فاتحة</string>
-    <string name="theme_dark">سمة داكنة</string>
+    <string name="theme_switch">تغيير السمة</string>
     <string name="language">اللغة</string>
     <string name="select_language">اختر اللغة</string>
     <string name="title_language_need">نحتاج إلى مساعدة في الترجمة</string>

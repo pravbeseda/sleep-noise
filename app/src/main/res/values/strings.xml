@@ -7,9 +7,7 @@
     <string name="pink_noise_name">Pink noise</string>
     <string name="brown_noise_name">Brown noise</string>
     <string name="play_button">Play</string>
-    <string name="theme_system">System Theme</string>
-    <string name="theme_light">Light Theme</string>
-    <string name="theme_dark">Dark Theme</string>
+    <string name="theme_switch">Switch theme</string>
     <string name="language">Language</string>
     <string name="select_language">Select Language</string>
     <string name="title_language_need">We need help to translate</string>
