@@ -185,7 +185,7 @@ It checks out with `fetch-depth: 0` because `versionCode` is the commit count an
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 24 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 22 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **Both baselines only ever shrink** — `app/lint-baseline.xml` and `config/detekt/baseline.xml` alike. Regenerating one to make a new warning disappear converts a
 five-minute fix into permanent debt, and does it invisibly — the build goes green and the count goes
@@ -385,8 +385,10 @@ press, no popup, in the enum's own order. **`purple` is the default**, so a fres
 colour the splash screen ends on. `AppTheme.fromKey` maps anything else to that default, which is how
 an install that stored the retired `light` or `system` is carried across.
 
-Both themes are dark ones, so `applyTheme` sets `MODE_NIGHT_YES` for either and only the style differs.
-That is why **there is no `values-night/`**: a night qualifier would answer for both themes at once, so
+Both themes are dark ones, so both are built on plain `Theme.AppCompat` — the dark one, with no day
+variant for a `uiMode` to select — and **night mode is not touched at all**: a `DayNight` parent held
+in the dark by a forced `MODE_NIGHT_YES` is the same appearance reached the long way round. For the
+same reason **there is no `values-night/`**: that qualifier would answer for both themes at once, so
 every colour that separates them is named in the style instead. `applyTheme` still runs **before**
 `super.onCreate`, and changing the theme still calls `recreate()`. The status bar is told to use light
 icons unconditionally — neither theme has a light background left for dark ones to sit on.
@@ -407,7 +409,7 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 ## UI is Views, not Compose
 
-The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
+The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
 `activity_main.xml` is a `ConstraintLayout` with a `Guideline` across it at 0.45: the noise rows own
 the height above the line and scroll inside it, and the play button with the timer centres in what is

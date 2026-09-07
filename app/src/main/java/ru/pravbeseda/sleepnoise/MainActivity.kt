@@ -264,8 +264,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyTheme(theme: AppTheme) {
-        // Neither theme is a light one, so night mode is on for both and only the style differs.
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         setTheme(
             when (theme) {
                 AppTheme.PURPLE -> R.style.Theme_SleepNoise_Purple
