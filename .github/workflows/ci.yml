@@ -511,6 +511,23 @@ jobs:
           fi
           exit $status
 
+      # Before the check, not beside it. Nothing else on CI exercises these
+      # tests, and this check fails silently when it is wrong: a miscount waves
+      # a deleted test through and still reports green. The same reasoning, and
+      # the same shape, as the tests the decide-work action runs before it
+      # decides.
+      - name: Test the deletion check
+        run: .github/scripts/no-deleted-tests.test.sh
+
+      - name: No test deleted
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # The other half of the stop-list row the step above covers: a removed
+        # test adds no line to the diff, so neither of the steps above can see
+        # one. The rule and the reasoning behind counting the whole tree rather
+        # than each file live in the script.
+        run: .github/scripts/no-deleted-tests.sh
+
   alpha:
     name: Alpha build (Firebase App Distribution)
     runs-on: ubuntu-latest

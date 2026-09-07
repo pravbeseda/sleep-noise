@@ -338,9 +338,13 @@ visible: neither baseline grows (entry counts against the base commit), and no
 `@Ignore` or `@Disabled` is added under the test source sets. It needs no JDK,
 no Android SDK and no Gradle, so it costs seconds rather than minutes.
 
-Deleting a test outright is deliberately not covered — a bare `@Test` count
-would fail the `ExampleUnitTest` removal the quality plan schedules. That half
-needs its own design and has issue #16.
+Deleting a test is covered too, added later under issue #16: a third step
+counts `@Test` annotations across both source sets at the merge base and at the
+branch head and fails when the total drops. The fear that opened that issue —
+that a bare count would fail the `ExampleUnitTest` removal the quality plan
+schedules — did not survive measurement: the pull request carrying that removal
+added seven tests elsewhere against the one it took away, and none of the 38
+merged so far drops the total.
 
 **Order that matters:** merge the job first, watch it run green on a pull
 request, add it to the branch protection last. A required check that no run
@@ -408,7 +412,7 @@ whether the rules and `Guardrails` are enough to keep a red build from being
 fixed by lowering the bar.
 
 **Criterion to move on:** three red builds repaired by the agent alone, none of
-which came down to weakening a check. `Guardrails` now catches two of the ways
+which came down to weakening a check. `Guardrails` now catches three of the ways
 that could happen; the rest is still verified by reading the diff.
 
 **Rollback:** there is no key to flip back. What is left is to stop leaving a
@@ -530,11 +534,11 @@ signals, each taken from the project's own rules and each easy to recognise:
 | The change alters public behaviour rather than the shape of the code | Refactoring and behaviour changes do not share a PR |
 | Reviewer and agent have disagreed twice | A human settles an argument between two models faster than a third model does |
 
-`Guardrails` backs the first row outright and the second one only in part: it
-fails an *added* `@Ignore` or `@Disabled` under the test source sets, and
-nothing else in that row. A deleted test is deliberately not covered — a bare
-`@Test` count would fail the `ExampleUnitTest` removal the quality plan
-schedules, which is issue #16 — and a loosened assertion is not checked at all.
+`Guardrails` backs the first row outright and the second one in most of its
+extent: it fails an *added* `@Ignore` or `@Disabled` under the test source sets,
+and a drop in the `@Test` count across them (issue #16). What is left uncovered
+there is a loosened assertion, and a deletion paid for by an unrelated addition
+in the same pull request — the net count cannot tell that from a move.
 Both of those still depend on someone reading the diff. The next four rows are
 visible in a diff and could be machine-checked on the same terms; the last two
 live in the rule only.
