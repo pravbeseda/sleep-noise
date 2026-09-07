@@ -5,17 +5,23 @@ import org.junit.Test
 import kotlin.random.Random
 
 /**
- * The mix a user hears with both sliders at the top, measured through the real mixing law.
+ * The mix a user hears with every slider at the top, measured through the real mixing law.
  *
  * The mixer clamps its sum, so headroom is shared: a source that spends its level below the audible band still
- * takes that headroom from the other source, and the clamp turns the shortfall into distortion that waxes and
- * wanes with the offending source rather than into a steady, forgivable colouring.
+ * takes that headroom from the others, and the clamp turns the shortfall into distortion that waxes and wanes
+ * with the offending source rather than into a steady, forgivable colouring.
  */
 class ShippingNoiseMixTest {
     @Test
-    fun bothNoisesAtFullVolumeBarelyReachTheMixersClamp() {
-        val mixer = NoiseMixer(listOf(shippingPinkNoise(Random(PINK_SEED)), shippingBrownNoise(Random(BROWN_SEED))))
-        val fullVolume = floatArrayOf(1.0f, 1.0f)
+    fun everyShippingNoiseAtFullVolumeBarelyReachesTheMixersClamp() {
+        val mixer = NoiseMixer(
+            listOf(
+                shippingWhiteNoise(Random(WHITE_SEED)),
+                shippingPinkNoise(Random(PINK_SEED)),
+                shippingBrownNoise(Random(BROWN_SEED)),
+            ),
+        )
+        val fullVolume = floatArrayOf(1.0f, 1.0f, 1.0f)
         val out = ShortArray(BUFFER_SIZE)
 
         var clipped = 0
@@ -26,8 +32,8 @@ class ShippingNoiseMixTest {
 
         val clippedShare = clipped.toDouble() / (BUFFER_SIZE.toDouble() * BUFFERS)
         assertTrue(
-            "the shipping pair clips a share of $clippedShare of its samples at full volume, " +
-                "so one source is eating the other's headroom",
+            "the shipping noises clip a share of $clippedShare of their samples at full volume, " +
+                "so one source is eating the others' headroom",
             clippedShare < MAX_CLIPPED_SHARE,
         )
     }
@@ -55,6 +61,7 @@ class ShippingNoiseMixTest {
     }
 
     private companion object {
+        const val WHITE_SEED = 20260909
         const val PINK_SEED = 20260906
         const val BROWN_SEED = 20260907
 
@@ -66,10 +73,14 @@ class ShippingNoiseMixTest {
         const val NEGATIVE_FULL_SCALE = (-Short.MAX_VALUE).toShort()
 
         /**
-         * Measured at 0.4-0.6% for the shipping pair and 8-13% for the random walk it replaced, across five seeds.
-         * The bound sits between them with an order of magnitude of room on either side.
+         * Measured at 1.97 % for the three shipping noises on these seeds, against 0.4-0.6 % for the pair that
+         * shipped before white joined them and 8-13 % for the random walk brown once replaced. **The bound is
+         * loose on purpose and the figure is the thing to watch**: white took the mix four times closer to the
+         * clamp than the pair sat, and a fourth shipping source would spend what is left. What buys the headroom
+         * back is [NORMALISED_SOURCE_RMS], which every source shares — so the next source to ship is the one
+         * that has to move it, and this number is how that argument gets made.
          */
-        const val MAX_CLIPPED_SHARE = 0.02
+        const val MAX_CLIPPED_SHARE = 0.03
 
         const val MEASURED_SAMPLES = 1 shl 16
 

@@ -2,8 +2,10 @@
 <resources>
     <string name="lang">ar</string>
     <string name="app_name">ضوضاء للنوم</string>
+    <string name="white_noise_volume">الضوضاء البيضاء: %1$d%%</string>
     <string name="pink_noise_volume">الضوضاء الوردية: %1$d%%</string>
     <string name="brown_noise_volume">الضوضاء البنية: %1$d%%</string>
+    <string name="white_noise_name">الضوضاء البيضاء</string>
     <string name="pink_noise_name">الضوضاء الوردية</string>
     <string name="brown_noise_name">الضوضاء البنية</string>
     <string name="play_button">تشغيل</string>

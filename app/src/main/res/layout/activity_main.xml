@@ -45,6 +45,11 @@
             android:gravity="center">
 
             <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+                android:id="@+id/whiteNoiseControl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <ru.pravbeseda.sleepnoise.ui.NoiseControlView
                 android:id="@+id/pinkNoiseControl"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
