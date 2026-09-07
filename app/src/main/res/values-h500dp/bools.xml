@@ -1,4 +1,0 @@
-<resources>
-    <!-- Room enough for decoration; the default bucket in values/ gives it up. -->
-    <bool name="show_cats">true</bool>
-</resources>
