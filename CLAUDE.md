@@ -392,6 +392,22 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
+`activity_main.xml` is a `ConstraintLayout`. The noise rows and the play button with the timer are
+one vertical chain, spread between the top of the screen and the picture, which is pinned directly
+above the version line at the bottom and names no constraint back up — so it is not a chain member,
+and the free height collects above it rather than under it. Spread rather than the weighted
+`LinearLayout` this replaced, whose 4:1 split handed 80 % of the free height to two noise rows and
+left a hole above the play button. The rows carry `layout_constrainedHeight`, so they are what gives
+height up when the chain runs short: the gaps close to `screen_block_spacing` first, then the rows
+scroll, and nothing is pushed off screen. `androidx.constraintlayout` is a direct dependency for it
+rather than the transitive one material pulls in.
+
+The play button is an `ImageButton` sized by `play_button_size`, 80dp in `values-sw320dp` and 56dp in
+the default bucket every narrower screen falls back to — a display or font scale that leaves the
+screen under 320dp wide gets a circle that fits it. It is not a `Button` with a compound drawable,
+because a compound drawable is painted at the icon's own 48dp whatever the button measures, and the
+smaller circle would clip it; `scaleType="fitCenter"` scales the icon with the circle instead.
+
 `ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
 noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
 volume the mix should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per

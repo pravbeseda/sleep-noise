@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<!--
+  One vertical chain — the noise rows, then the play button with the timer — spread between
+  the top of the screen and the picture, which sits directly above the version line at the bottom.
+  Spread rather than weights: the leftover height turns into equal gaps between the two, so two noise
+  rows leave gaps instead of one hole above the play button, and eight rows close the gaps to nothing
+  without pushing anything off screen. The picture is deliberately not a chain member — it names no
+  constraint back to the play button — so the free height collects above it and never under it.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
     android:fitsSystemWindows="true"
     android:padding="32dp">
 
-    <!--
-      The noises take whatever height the play button and the timer leave, and scroll inside it.
-      Weight rather than wrap_content: the lab adds a row per experiment, and rows that outgrow the
-      screen used to push the button off the bottom instead of scrolling. The picture below is
-      weighted too, so what is left over is shared rather than spent on the picture first — on a
-      short screen an unweighted picture keeps its full height and leaves the rows none at all. The
-      4:1 split is what leaves the picture its natural size on a phone in portrait, where it is the
-      narrower dimension that decides how tall it is drawn.
-    -->
     <ScrollView
         android:id="@+id/noiseScroll"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="4">
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_chainStyle="spread"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,13 +55,17 @@
 
     <LinearLayout
         android:id="@+id/playTimerContainer"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:layout_marginBottom="64dp"
+        android:layout_marginTop="@dimen/screen_block_spacing"
+        android:layout_marginBottom="@dimen/screen_block_spacing"
         android:baselineAligned="false"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/noiseScroll"
+        app:layout_constraintBottom_toTopOf="@id/cats"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -67,17 +74,21 @@
             android:gravity="center"
             android:orientation="vertical">
 
-            <Button
+            <!--
+              An ImageButton rather than a Button with a compound drawable: a compound drawable is
+              drawn at the icon's own 48dp and would be clipped by the smaller circle a narrow screen
+              gets, while fitCenter scales it with whatever size the dimen names.
+            -->
+            <ImageButton
                 android:id="@+id/playButton"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="@dimen/play_button_size"
+                android:layout_height="@dimen/play_button_size"
                 android:background="@drawable/play_button_background"
                 android:contentDescription="@string/play_button"
-                android:text=""
-                android:gravity="center"
-                android:padding="16dp"
-                android:drawableTop="@drawable/ic_play"
-                android:drawableTint="@android:color/white"
+                android:padding="@dimen/play_button_padding"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_play"
+                app:tint="@android:color/white"
                 android:layout_gravity="center"/>
         </LinearLayout>
 
@@ -98,14 +109,20 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- fitCenter, so the picture scales down inside whatever share of the height it is given. -->
+    <!--
+      Pinned above the version line and given no top constraint, so it keeps its own proportions
+      (adjustViewBounds against a width the screen decides) and stays where the eye expects it.
+    -->
     <ImageView
         android:id="@+id/cats"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
         android:scaleType="fitCenter"
-        android:src="@drawable/cats"/>
+        android:src="@drawable/cats"
+        app:layout_constraintBottom_toTopOf="@id/version_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <TextView
         android:id="@+id/version_text"
@@ -113,7 +130,9 @@
         android:layout_height="wrap_content"
         android:text="@string/version"
         android:textSize="11sp"
-        android:layout_gravity="center"
-        android:paddingTop="8dp"/>
+        android:paddingTop="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
