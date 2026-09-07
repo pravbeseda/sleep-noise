@@ -392,15 +392,20 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`activity_main.xml` is a `ConstraintLayout`. The noise rows and the play button with the timer are
-one vertical chain, spread between the top of the screen and the picture, which is pinned directly
-above the version line at the bottom and names no constraint back up — so it is not a chain member,
-and the free height collects above it rather than under it. Spread rather than the weighted
-`LinearLayout` this replaced, whose 4:1 split handed 80 % of the free height to two noise rows and
-left a hole above the play button. The rows carry `layout_constrainedHeight`, so they are what gives
-height up when the chain runs short: the gaps close to `screen_block_spacing` first, then the rows
-scroll, and nothing is pushed off screen. `androidx.constraintlayout` is a direct dependency for it
-rather than the transitive one material pulls in.
+`activity_main.xml` is a `ConstraintLayout`, built bottom-up with every block's height decided
+rather than negotiated: the version line on the bottom, the picture at `layout_constraintHeight_percent`
+0.25 above it, the play button with the timer above that, and the noise rows in exactly the gap those
+leave — a match_constraint that cannot outgrow it and scrolls inside it instead. Two rows look placed
+rather than stranded because they are centred in that gap (`fillViewport` on the `ScrollView`, the
+content centred), not because anything distributes leftover height.
+
+Both layouts this replaced tried to distribute it and got it wrong on the screen that has none. The
+weighted `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the
+play button. A `ConstraintLayout` chain then fixed the hole and broke the short screen: the picture
+took whatever height its own width dictated, and at 2400x1080 that was the whole screen — the sliders
+gone, the play button a sliver under the action bar. A percentage cannot do that, which is the point
+of naming one. `androidx.constraintlayout` is a direct dependency for it rather than the transitive
+one material pulls in.
 
 The play button is an `ImageButton` sized by `play_button_size`, 80dp in `values-sw320dp` and 56dp in
 the default bucket every narrower screen falls back to — a display or font scale that leaves the

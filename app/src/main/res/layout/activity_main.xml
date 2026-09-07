@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One vertical chain — the noise rows, then the play button with the timer — spread between
-  the top of the screen and the picture, which sits directly above the version line at the bottom.
-  Spread rather than weights: the leftover height turns into equal gaps between the two, so two noise
-  rows leave gaps instead of one hole above the play button, and eight rows close the gaps to nothing
-  without pushing anything off screen. The picture is deliberately not a chain member — it names no
-  constraint back to the play button — so the free height collects above it and never under it.
+  Bottom-up, and every block's height is decided rather than negotiated: the version line sits on the
+  bottom, the picture takes a fixed share of the screen above it, the play button with the timer sits
+  above the picture, and the noise rows take exactly the gap that leaves. No chain and no weights —
+  a chain distributes leftover height, which is the wrong question on a screen that has none: on a
+  short one the picture kept its full height and left the rows nothing at all.
+
+  So the rows are a match_constraint that cannot outgrow its gap and scrolls inside it instead, and
+  what makes two rows look placed rather than stranded is that they are centred in it.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -18,19 +20,19 @@
     <ScrollView
         android:id="@+id/noiseScroll"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constrainedHeight="true"
-        app:layout_constraintVertical_chainStyle="spread"
+        android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- fillViewport above makes this at least as tall as the region, so the centring has room to act. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:gravity="center">
 
             <ru.pravbeseda.sleepnoise.ui.NoiseControlView
                 android:id="@+id/pinkNoiseControl"
@@ -62,7 +64,6 @@
         android:baselineAligned="false"
         android:orientation="horizontal"
         android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@id/noiseScroll"
         app:layout_constraintBottom_toTopOf="@id/cats"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -110,14 +111,16 @@
     </LinearLayout>
 
     <!--
-      Pinned above the version line and given no top constraint, so it keeps its own proportions
-      (adjustViewBounds against a width the screen decides) and stays where the eye expects it.
+      A share of the screen rather than a height of its own: the vector is 3.4 times as wide as it is
+      tall, so a width-driven height is whatever the screen is wide, and on a short screen that was
+      the whole of it. fitCenter keeps the proportions inside the share.
     -->
     <ImageView
         android:id="@+id/cats"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
+        android:layout_height="0dp"
+        app:layout_constraintHeight_default="percent"
+        app:layout_constraintHeight_percent="0.25"
         android:scaleType="fitCenter"
         android:src="@drawable/cats"
         app:layout_constraintBottom_toTopOf="@id/version_text"

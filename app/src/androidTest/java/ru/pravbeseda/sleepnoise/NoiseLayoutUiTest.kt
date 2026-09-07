@@ -2,7 +2,6 @@ package ru.pravbeseda.sleepnoise
 
 import android.view.View
 import android.view.View.MeasureSpec
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
@@ -27,7 +26,7 @@ class NoiseLayoutUiTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val scroll: ScrollView = activity.findViewById(R.id.noiseScroll)
-                val playButton: Button = activity.findViewById(R.id.playButton)
+                val playButton: View = activity.findViewById(R.id.playButton)
                 assertTrue(
                     "the pink noise row is not inside the scrolling region",
                     activity.findViewById<View>(R.id.pinkNoiseControl).ancestors().contains(scroll),
