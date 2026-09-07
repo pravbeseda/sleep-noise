@@ -1,8 +1,0 @@
-<resources>
-    <!--
-      The picture is decoration and the first thing a short screen gives up: false here, the bucket
-      every screen under the 500dp of height values-h500dp names falls back to — a phone in landscape,
-      or a portrait one at an accessibility display scale.
-    -->
-    <bool name="show_cats">false</bool>
-</resources>

@@ -117,9 +117,6 @@ class MainActivity : AppCompatActivity() {
         val versionTextView: TextView = findViewById(R.id.version_text)
         versionTextView.text = getString(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
 
-        // A screen too short for decoration spends the picture's height on the rows and the button instead.
-        findViewById<View>(R.id.cats).visibility = if (resources.getBoolean(R.bool.show_cats)) View.VISIBLE else View.GONE
-
         playButton = findViewById(R.id.playButton)
 
         timerView = findViewById(R.id.timerView)

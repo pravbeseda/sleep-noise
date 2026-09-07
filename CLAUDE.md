@@ -392,33 +392,32 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`activity_main.xml` is a `ConstraintLayout`, built bottom-up with every block's height decided
-rather than negotiated: the version line on the bottom, the picture at its own aspect ratio above it,
-the play button with the timer above that, and the noise rows in exactly the gap those
-leave — a match_constraint that cannot outgrow it and scrolls inside it instead. Two rows look placed
-rather than stranded because they are centred in that gap (`fillViewport` on the `ScrollView`, the
-content centred), not because anything distributes leftover height.
+`activity_main.xml` is a `ConstraintLayout` with a `Guideline` across it at 0.45: the noise rows own
+the height above the line and scroll inside it, and the play button with the timer centres in what is
+left between the line and the picture, which sits on top of the version line at the bottom. So an
+empty screen spreads its emptiness over three bands instead of banking it all into one, and no block
+takes its height from what another block happened to leave.
 
-The split between the rows and the button is a `Guideline` at `rows_bottom_percent` — 0.42 in
-`values-h500dp`, 0.62 in the default bucket, where the rows need most of the screen and 0.42 cut a
-landscape phone's second slider off. The button with the timer centres in what is left between that
-line and the picture, so an empty screen spreads its emptiness over three bands instead of banking
-it all above the button.
+**Every size on this screen is resolved at measure time — percentages, one aspect ratio, one dp cap —
+and none of it comes from a configuration-qualified resource.** `MainActivity` declares
+`configChanges="orientation|screenSize"` and is therefore never recreated on a rotation: a `-land` or
+`-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest of
+the session, and a layout that leans on either is correct only until the user turns the phone. This
+is not a style preference; it is the bug this screen shipped twice.
 
-The picture's box is the drawing itself: 70 % of the width, and `layout_constraintDimensionRatio`
-carrying the vector's own 585.62 x 170.1, so there is no letterbox between it and the version line. It is the one block here
-that is given up whole rather than squeezed — `MainActivity` sets it `GONE` where `R.bool.show_cats`
-is false, which is the default bucket every screen under the 500dp of height `values-h500dp` names: a
-phone in landscape, or a portrait one at an accessibility display scale. Squeezing it instead is what
-broke the short screen twice, once per layout.
+The picture's box is the drawing itself: 70 % of the width and a height from
+`layout_constraintDimensionRatio` carrying the vector's own 585.62 x 170.1, so no letterbox opens
+between it and the version line. `cats_max_height` (96dp) is what keeps that width-driven height
+honest on a wide window, where 70 % of the width would otherwise be most of the height — the picture
+is decoration and the first thing to give way.
 
-Both layouts this replaced tried to distribute it and got it wrong on the screen that has none. The
-weighted `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the
-play button. A `ConstraintLayout` chain then fixed the hole and broke the short screen: the picture
-took whatever height its own width dictated, and at 2400x1080 that was the whole screen — the sliders
-gone, the play button a sliver under the action bar. A percentage cannot do that, which is the point
-of naming one. `androidx.constraintlayout` is a direct dependency for it rather than the transitive
-one material pulls in.
+Three layouts got the short screen wrong before this one, each in its own way. The weighted
+`LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the play button.
+A `ConstraintLayout` chain fixed the hole and let the picture take whatever height its width dictated
+— at 2400x1080 that was the whole screen, sliders gone and the play button a sliver under the action
+bar. Config-qualified shares then fixed *that* and survived only until a rotation.
+`androidx.constraintlayout` is a direct dependency for it rather than the transitive one material
+pulls in.
 
 The play button is an `ImageButton` sized by `play_button_size`, 80dp in `values-sw320dp` and 56dp in
 the default bucket every narrower screen falls back to — a display or font scale that leaves the
