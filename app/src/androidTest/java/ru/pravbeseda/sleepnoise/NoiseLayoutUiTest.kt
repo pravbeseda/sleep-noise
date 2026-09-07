@@ -2,7 +2,6 @@ package ru.pravbeseda.sleepnoise
 
 import android.view.View
 import android.view.View.MeasureSpec
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
@@ -14,8 +13,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The noise rows own the height the play button and the timer leave, and no more: rows that outgrow
- * that region scroll inside it rather than pushing the button off the bottom of the screen.
+ * The noise rows own the height above the guideline and no more: rows that outgrow that region scroll
+ * inside it rather than pushing the play button off the bottom of the screen.
  *
  * The overflow is made here rather than waited for — the lab decides how many rows an install shows,
  * and a test that only passes while some flag adds enough of them asserts the flag, not the layout.
@@ -27,7 +26,7 @@ class NoiseLayoutUiTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val scroll: ScrollView = activity.findViewById(R.id.noiseScroll)
-                val playButton: Button = activity.findViewById(R.id.playButton)
+                val playButton: View = activity.findViewById(R.id.playButton)
                 assertTrue(
                     "the pink noise row is not inside the scrolling region",
                     activity.findViewById<View>(R.id.pinkNoiseControl).ancestors().contains(scroll),

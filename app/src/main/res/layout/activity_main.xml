@@ -1,33 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<!--
+  A guideline across the screen at 0.45 says where the noise rows stop: they own the height above it
+  and scroll inside it, and the play button with the timer centres in what is left between that line
+  and the picture, which sits on the version line at the bottom. So an empty screen spreads its
+  emptiness over three bands instead of banking it all into one, and no block takes its height from
+  what another block happened to leave — the mistake of the weighted layout, and of the chain that
+  replaced it.
+
+  Every size here is resolved at measure time: two percentages, one aspect ratio, one dp cap. None of
+  it is read out of a resource a rotation would change, because MainActivity declares configChanges
+  for orientation|screenSize and is never recreated — a -land or -h value, or anything read once in
+  onCreate, stays the portrait one for the rest of the session.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
     android:fitsSystemWindows="true"
     android:padding="32dp">
 
-    <!--
-      The noises take whatever height the play button and the timer leave, and scroll inside it.
-      Weight rather than wrap_content: the lab adds a row per experiment, and rows that outgrow the
-      screen used to push the button off the bottom instead of scrolling. The picture below is
-      weighted too, so what is left over is shared rather than spent on the picture first — on a
-      short screen an unweighted picture keeps its full height and leaves the rows none at all. The
-      4:1 split is what leaves the picture its natural size on a phone in portrait, where it is the
-      narrower dimension that decides how tall it is drawn.
-    -->
+    <!-- The line the rows stop at, so their height is a share of the screen and not a leftover. -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/rowsBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.45"/>
+
     <ScrollView
         android:id="@+id/noiseScroll"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="4">
+        android:layout_marginBottom="@dimen/screen_block_spacing"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/rowsBottom"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- fillViewport above makes this at least as tall as the region, so the centring has room to act. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:gravity="center">
 
             <ru.pravbeseda.sleepnoise.ui.NoiseControlView
                 android:id="@+id/pinkNoiseControl"
@@ -52,13 +69,16 @@
 
     <LinearLayout
         android:id="@+id/playTimerContainer"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:layout_marginBottom="64dp"
+        android:layout_marginBottom="@dimen/screen_block_spacing"
         android:baselineAligned="false"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="@id/rowsBottom"
+        app:layout_constraintBottom_toTopOf="@id/cats"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -67,17 +87,21 @@
             android:gravity="center"
             android:orientation="vertical">
 
-            <Button
+            <!--
+              An ImageButton rather than a Button with a compound drawable: a compound drawable is
+              drawn at the icon's own 48dp and would be clipped by the smaller circle a narrow screen
+              gets, while fitCenter scales it with whatever size the dimen names.
+            -->
+            <ImageButton
                 android:id="@+id/playButton"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="@dimen/play_button_size"
+                android:layout_height="@dimen/play_button_size"
                 android:background="@drawable/play_button_background"
                 android:contentDescription="@string/play_button"
-                android:text=""
-                android:gravity="center"
-                android:padding="16dp"
-                android:drawableTop="@drawable/ic_play"
-                android:drawableTint="@android:color/white"
+                android:padding="@dimen/play_button_padding"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_play"
+                app:tint="@android:color/white"
                 android:layout_gravity="center"/>
         </LinearLayout>
 
@@ -98,14 +122,26 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- fitCenter, so the picture scales down inside whatever share of the height it is given. -->
+    <!--
+      The box is the drawing: 70 % of the width, and a height that follows from the vector's own
+      585.62 x 170.1, so there is no letterbox between the picture and the version line under it.
+      cats_max_height caps that width-driven height on a wide window, where 70 % of the width would
+      otherwise come to most of the height — the picture is decoration and the first thing to give
+      way, and a picture that would not give way is what broke the short screen before.
+    -->
     <ImageView
         android:id="@+id/cats"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        app:layout_constraintWidth_default="percent"
+        app:layout_constraintWidth_percent="0.7"
+        app:layout_constraintDimensionRatio="H,585.62:170.1"
+        app:layout_constraintHeight_max="@dimen/cats_max_height"
         android:scaleType="fitCenter"
-        android:src="@drawable/cats"/>
+        android:src="@drawable/cats"
+        app:layout_constraintBottom_toTopOf="@id/version_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <TextView
         android:id="@+id/version_text"
@@ -113,7 +149,9 @@
         android:layout_height="wrap_content"
         android:text="@string/version"
         android:textSize="11sp"
-        android:layout_gravity="center"
-        android:paddingTop="8dp"/>
+        android:paddingTop="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

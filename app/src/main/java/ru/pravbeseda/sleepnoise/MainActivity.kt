@@ -16,7 +16,7 @@ import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,7 +55,7 @@ const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 const val DEFAULT_NOISE_ENABLED = true
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var playButton: Button
+    private lateinit var playButton: ImageButton
     private lateinit var timerView: TimerView
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPlayButtonIcon(playing: Boolean) {
         val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
-        playButton.setCompoundDrawablesWithIntrinsicBounds(0, icon, 0, 0)
+        playButton.setImageResource(icon)
     }
 
     // The contract itself short-circuits when the permission is already held, so there is nothing to check first.

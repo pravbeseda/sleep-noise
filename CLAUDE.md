@@ -392,6 +392,42 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar and theme popup. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
+`activity_main.xml` is a `ConstraintLayout` with a `Guideline` across it at 0.45: the noise rows own
+the height above the line and scroll inside it, and the play button with the timer centres in what is
+left between the line and the picture, which sits on top of the version line at the bottom. So an
+empty screen spreads its emptiness over three bands instead of banking it all into one, and no block
+takes its height from what another block happened to leave.
+
+**No size on this screen comes from a resource a rotation would change: what is left is percentages,
+one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
+`configChanges="orientation|screenSize"` and is therefore never recreated on a rotation, so a `-land`
+or `-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest
+of the session — a layout that leans on either is correct only until the user turns the phone. This
+is not a style preference; it is the bug two drafts of this screen hit before either was merged.
+`values-sw320dp` is the one qualifier here that is safe, and the reason is the whole of the rule: `smallestScreenWidth` is the
+same number in both orientations, so the play button's size cannot go stale where a `-land` or `-h`
+one would.
+
+The picture's box is the drawing itself: 70 % of the width and a height from
+`layout_constraintDimensionRatio` carrying the vector's own 585.62 x 170.1, so no letterbox opens
+between it and the version line. `cats_max_height` (96dp) is what keeps that width-driven height
+honest on a wide window, where 70 % of the width would otherwise be most of the height — the picture
+is decoration and the first thing to give way.
+
+Three layouts got the short screen wrong before this one, each in its own way. The weighted
+`LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the play button.
+A `ConstraintLayout` chain fixed the hole and let the picture take whatever height its width dictated
+— at 2400x1080 that was the whole screen, sliders gone and the play button a sliver under the action
+bar. Config-qualified shares then fixed *that* and survived only until a rotation.
+`androidx.constraintlayout` is a direct dependency for it rather than the transitive one material
+pulls in.
+
+The play button is an `ImageButton` sized by `play_button_size`, 80dp in `values-sw320dp` and 56dp in
+the default bucket every narrower screen falls back to — a display or font scale that leaves the
+screen under 320dp wide gets a circle that fits it. It is not a `Button` with a compound drawable,
+because a compound drawable is painted at the icon's own 48dp whatever the button measures, and the
+smaller circle would clip it; `scaleType="fitCenter"` scales the icon with the circle instead.
+
 `ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
 noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
 volume the mix should hear. The two shipping noises declare it in `activity_main.xml`, the lab builds one per
