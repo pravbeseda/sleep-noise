@@ -2,7 +2,6 @@ package ru.pravbeseda.sleepnoise.media
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
 import kotlin.random.Random
 
 /**
@@ -41,7 +40,7 @@ class ShippingNoiseMixTest {
      */
     @Test
     fun theShippingBrownReachesTheAudibleBandWhereTheRandomWalkDoesNot() {
-        val shippingBrown = SHIPPING_NOISES.first { it.volumeKey == BROWN_NOISE_VOLUME }.createSource(Random(BROWN_SEED))
+        val shippingBrown = BROWN_NOISE.createSource(Random(BROWN_SEED))
         val brown = FloatArray(MEASURED_SAMPLES).also { shippingBrown.fill(it) }
         val walk = FloatArray(MEASURED_SAMPLES).also { BrownNoise(Random(BROWN_SEED)).fill(it) }
 

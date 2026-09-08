@@ -46,10 +46,10 @@ internal class Biquad private constructor(
             val amplitude = amplitudeOf(gainDb)
             return normalised(
                 1.0 + (shape.alpha * amplitude),
-                -TWO * shape.cosine,
+                -(2.0 * shape.cosine),
                 1.0 - (shape.alpha * amplitude),
                 1.0 + (shape.alpha / amplitude),
-                -TWO * shape.cosine,
+                -(2.0 * shape.cosine),
                 1.0 - (shape.alpha / amplitude),
             )
         }
@@ -58,14 +58,14 @@ internal class Biquad private constructor(
         fun lowShelf(frequencyHz: Double, q: Double, gainDb: Double): Biquad {
             val shape = Shape(frequencyHz, q)
             val a = amplitudeOf(gainDb)
-            val slope = TWO * sqrt(a) * shape.alpha
+            val slope = 2.0 * sqrt(a) * shape.alpha
             val cosine = shape.cosine
             return normalised(
                 a * ((a + 1.0) - ((a - 1.0) * cosine) + slope),
-                TWO * a * ((a - 1.0) - ((a + 1.0) * cosine)),
+                2.0 * a * ((a - 1.0) - ((a + 1.0) * cosine)),
                 a * ((a + 1.0) - ((a - 1.0) * cosine) - slope),
                 (a + 1.0) + ((a - 1.0) * cosine) + slope,
-                -TWO * ((a - 1.0) + ((a + 1.0) * cosine)),
+                -(2.0 * ((a - 1.0) + ((a + 1.0) * cosine))),
                 (a + 1.0) + ((a - 1.0) * cosine) - slope,
             )
         }
@@ -74,14 +74,14 @@ internal class Biquad private constructor(
         fun highShelf(frequencyHz: Double, q: Double, gainDb: Double): Biquad {
             val shape = Shape(frequencyHz, q)
             val a = amplitudeOf(gainDb)
-            val slope = TWO * sqrt(a) * shape.alpha
+            val slope = 2.0 * sqrt(a) * shape.alpha
             val cosine = shape.cosine
             return normalised(
                 a * ((a + 1.0) + ((a - 1.0) * cosine) + slope),
-                -TWO * a * ((a - 1.0) + ((a + 1.0) * cosine)),
+                -(2.0 * a * ((a - 1.0) + ((a + 1.0) * cosine))),
                 a * ((a + 1.0) + ((a - 1.0) * cosine) - slope),
                 (a + 1.0) - ((a - 1.0) * cosine) + slope,
-                TWO * ((a - 1.0) - ((a + 1.0) * cosine)),
+                2.0 * ((a - 1.0) - ((a + 1.0) * cosine)),
                 (a + 1.0) - ((a - 1.0) * cosine) - slope,
             )
         }
@@ -91,11 +91,11 @@ internal class Biquad private constructor(
             val shape = Shape(frequencyHz, q)
             val opening = 1.0 - shape.cosine
             return normalised(
-                opening / TWO,
+                opening / 2.0,
                 opening,
-                opening / TWO,
+                opening / 2.0,
                 1.0 + shape.alpha,
-                -TWO * shape.cosine,
+                -(2.0 * shape.cosine),
                 1.0 - shape.alpha,
             )
         }
@@ -104,7 +104,7 @@ internal class Biquad private constructor(
         private class Shape(frequencyHz: Double, q: Double) {
             private val radiansPerSample = RADIANS_PER_CYCLE * frequencyHz / SAMPLE_RATE_HZ
             val cosine = cos(radiansPerSample)
-            val alpha = sin(radiansPerSample) / (TWO * q)
+            val alpha = sin(radiansPerSample) / (2.0 * q)
         }
 
         /** The cookbook's `A`: a gain enters the coefficients as the square root of an amplitude ratio. */
@@ -127,9 +127,6 @@ internal class Biquad private constructor(
         )
 
         private const val RADIANS_PER_CYCLE = 2.0 * PI
-
-        /** The literal 2 the cookbook's coefficients are written with, named because a bare one is a magic number. */
-        private const val TWO = 2.0
 
         private const val DECIBEL_BASE = 10.0
 

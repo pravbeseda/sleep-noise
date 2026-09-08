@@ -46,31 +46,6 @@ import java.util.Locale
 const val APP_PREFS = "AppPreferences"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
-const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
-const val PINK_NOISE_VOLUME = "pinkNoiseVolume"
-const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
-const val SURF_NOISE_VOLUME = "surfNoiseVolume"
-const val GREY_NOISE_VOLUME = "greyNoiseVolume"
-const val GREEN_NOISE_VOLUME = "greenNoiseVolume"
-const val WHITE_NOISE_ENABLED = "whiteNoiseEnabled"
-const val PINK_NOISE_ENABLED = "pinkNoiseEnabled"
-const val BROWN_NOISE_ENABLED = "brownNoiseEnabled"
-const val SURF_NOISE_ENABLED = "surfNoiseEnabled"
-const val GREY_NOISE_ENABLED = "greyNoiseEnabled"
-const val GREEN_NOISE_ENABLED = "greenNoiseEnabled"
-
-/**
- * What a noise opens at when nobody has touched its slider. Every noise but brown starts silent: each of
- * them arrived after the install did, and a key that did not exist yet must not make a running app louder.
- */
-const val DEFAULT_SILENT_NOISE_VOLUME = 0.0f
-
-/**
- * Brown is the one an untouched install can be heard playing. It sits well under half because the level
- * every source shares came down when six of them started sharing the mixer's headroom, and a fresh install
- * should open quiet enough to fall asleep to rather than loud enough to reach for the slider.
- */
-const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
 
 /** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
 const val DEFAULT_NOISE_ENABLED = true

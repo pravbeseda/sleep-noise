@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes white, pink and brown noise in real time for sleep, with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
+Android app (`ru.pravbeseda.sleepnoise`) that synthesizes six noises in real time for sleep — brown, white, pink, surf, grey and green — with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -376,7 +376,7 @@ split it read grey's leaked bass as a cut top end, and it now cascades two.
 
 **Six shipping sources share the mixer's headroom, and the level they share is what pays for them.** `ShippingNoiseMixTest` measures 0.57 % of samples clipped with all six at full volume — the share the pink-and-brown pair sat at before white joined them. Getting there cost `NORMALISED_SOURCE_RMS`, which came down from a quarter of full scale to 0.1575: at the old level six sources clip 8.2 %, which is a crackle rather than a colouring, and every source is now 4 dB quieter than it was. Nobody is likely to run all six at the top, but it is a reachable state, and a seventh shipping source is the one that has to move that level again rather than spend what is left. The test's bound is deliberately loose around the figure, so the number is what to read and not the pass.
 
-With the noise lab switched on the service holds more than those three: one further `NoiseChannel` per entry of
+With the noise lab switched on the service holds more than those six: one further `NoiseChannel` per entry of
 `NOISE_LAB_CANDIDATES` in `media/NoiseLab.kt`, built from the same registry the Activity builds its sliders from.
 The whole lab hangs off one compile-time constant there, `NOISE_LAB_ENABLED` — editing it to `false` puts the
 experiment away without deleting a source, a key or a test, and the service is back to the channels the app
@@ -385,7 +385,10 @@ Nothing enforces the flag's value per build type, so **a release PR checks it is
 release ships developer-facing sliders whose English labels are not translated into any of the six locales. It
 is `false` as the project stands, with four candidates parked behind it — violet and blue, and rain and the
 wheel clatter. Grey, green and surf came out from behind it and ship; their `lab*` keys stay in the store,
-read by nothing, the way the leaky-brown ones did. Bringing the lab back is that one edit either way.
+read by nothing, the way the leaky-brown ones did. Nothing carries a level across from one to the other, and
+nothing needs to: no Play release ever contained the lab — 1.0.4 predates it — so the only installs that can
+hold a `lab*` level above zero are the alpha builds the `qa` group gets on every push to `main`, and setting
+three sliders again once is cheaper than a migration that would live in the code for good. Bringing the lab back is that one edit either way.
 
 `start()`, `stop()` and `release()` are expected on the main thread, the first two are each a no-op when the engine is already in the state they ask for, and **none of the three waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the three takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
@@ -414,7 +417,7 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 
 ### Preferences
 
-Two distinct stores. `APP_PREFS` ("AppPreferences", constants at the top of `MainActivity.kt`) holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`. Which pair belongs to which noise is `SHIPPING_NOISES`, not this list. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+Two distinct stores. `APP_PREFS` ("AppPreferences") holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`, the two that are constants at the top of `MainActivity.kt`. **The noise keys are not:** both are derived from the noise's name inside `media/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
@@ -427,7 +430,7 @@ never by writing 0 over the level. That gate is written twice on purpose — `ui
 live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
 start, because a session begun with no Activity in sight reads nothing else.
 
-Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Blue`, `Rain` and `WheelClatter` — and they are the one set that is *not* declared at the top of `MainActivity.kt`: both keys are derived from the candidate's name in `media/NoiseLab.kt`, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` — which is how it stands — none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
+Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Blue`, `Rain` and `WheelClatter` — derived from the candidate's name in `media/NoiseLab.kt` exactly as the shipping ones are, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` — which is how it stands — none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
 ### Theme
 

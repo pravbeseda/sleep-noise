@@ -3,7 +3,6 @@ package ru.pravbeseda.sleepnoise.media
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.CURRENT_THEME
@@ -14,25 +13,24 @@ import kotlin.random.Random
  * the only thing either of them knows, so a key collision or a shared source is a bug neither would notice.
  */
 class ShippingNoisesTest {
+    /**
+     * Every key the app stores under `APP_PREFS` belongs to one thing: the six shipping noises' volume and
+     * enabled pairs, the lab candidates' own, and the theme and language keys that share the store. One
+     * assertion over the lot rather than one per registry — disjointness is symmetric, so a check written
+     * from each side fails on exactly the same collision.
+     *
+     * The theme and language keys hold Strings, so colliding with one of those would not overwrite a volume
+     * but throw `ClassCastException` out of `getFloat`.
+     */
     @Test
-    fun everyNoiseCarriesItsOwnPairOfKeys() {
-        val keys = SHIPPING_NOISES.flatMap { listOf(it.volumeKey, it.enabledKey) }
+    fun everyKeyTheAppStoresBelongsToOneThing() {
+        val keys = SHIPPING_NOISES.flatMap { listOf(it.volumeKey, it.enabledKey) } +
+            NOISE_LAB_CANDIDATES.flatMap { listOf(it.preferenceKey, it.enabledPreferenceKey) } +
+            listOf(CURRENT_THEME, CURRENT_LANGUAGE)
 
-        assertEquals("two noises persist under one key, so one slider would move the other", keys.size, keys.toSet().size)
-    }
+        val shared = keys.groupBy { it }.filterValues { it.size > 1 }.keys
 
-    @Test
-    fun noNoiseReusesAKeyTheRestOfTheAppOwns() {
-        // The theme and language keys share the store and hold Strings, so colliding with one of those
-        // would not overwrite a volume but throw ClassCastException out of getFloat.
-        val taken = setOf(CURRENT_THEME, CURRENT_LANGUAGE) + NOISE_LAB_CANDIDATES.flatMap {
-            listOf(it.preferenceKey, it.enabledPreferenceKey)
-        }
-
-        SHIPPING_NOISES.forEach { noise ->
-            assertTrue("${noise.volumeKey} is already spoken for", noise.volumeKey !in taken)
-            assertTrue("${noise.enabledKey} is already spoken for", noise.enabledKey !in taken)
-        }
+        assertEquals("keys more than one thing stores under: $shared", emptySet<String>(), shared)
     }
 
     /**
