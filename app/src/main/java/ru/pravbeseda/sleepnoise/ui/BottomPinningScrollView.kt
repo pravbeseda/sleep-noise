@@ -29,7 +29,13 @@ constructor(context: Context, attrs: AttributeSet? = null) : ScrollView(context,
 
     /** Resolved on the first measure rather than at construction, which is before the column exists. */
     private val rows: View by lazy { findViewById(R.id.noiseScroll) }
-    private val oneRow: View by lazy { findViewById(R.id.whiteNoiseControl) }
+
+    /**
+     * Whichever row the registry put first, since the rows are built in code and carry no id of their
+     * own — one row is as good as another for "is there room to read one". Null only on a screen with no
+     * noises at all, where there is nothing for the rows region to be too small for.
+     */
+    private val oneRow: View? by lazy { findViewById<ViewGroup>(R.id.noiseContainer).getChildAt(0) }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         pinning = false
@@ -71,7 +77,7 @@ constructor(context: Context, attrs: AttributeSet? = null) : ScrollView(context,
     private fun thePinnedBlocksAndARowFit(heightMeasureSpec: Int): Boolean {
         val column = getChildAt(0) ?: return false
         val blocksUnderTheRows = column.measuredHeight - rows.measuredHeight
-        return viewport(heightMeasureSpec) - blocksUnderTheRows >= oneRow.measuredHeight
+        return viewport(heightMeasureSpec) - blocksUnderTheRows >= (oneRow?.measuredHeight ?: 0)
     }
 
     private fun viewport(heightMeasureSpec: Int): Int = MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom

@@ -14,14 +14,8 @@ import kotlin.random.Random
 class ShippingNoiseMixTest {
     @Test
     fun everyShippingNoiseAtFullVolumeBarelyReachesTheMixersClamp() {
-        val mixer = NoiseMixer(
-            listOf(
-                shippingWhiteNoise(Random(WHITE_SEED)),
-                shippingPinkNoise(Random(PINK_SEED)),
-                shippingBrownNoise(Random(BROWN_SEED)),
-            ),
-        )
-        val fullVolume = floatArrayOf(1.0f, 1.0f, 1.0f)
+        val mixer = NoiseMixer(SHIPPING_NOISES.mapIndexed { index, noise -> noise.createSource(Random(SEED + index)) })
+        val fullVolume = FloatArray(SHIPPING_NOISES.size) { 1.0f }
         val out = ShortArray(BUFFER_SIZE)
 
         var clipped = 0
@@ -46,7 +40,8 @@ class ShippingNoiseMixTest {
      */
     @Test
     fun theShippingBrownReachesTheAudibleBandWhereTheRandomWalkDoesNot() {
-        val brown = FloatArray(MEASURED_SAMPLES).also { shippingBrownNoise(Random(BROWN_SEED)).fill(it) }
+        val shippingBrown = BROWN_NOISE.createSource(Random(BROWN_SEED))
+        val brown = FloatArray(MEASURED_SAMPLES).also { shippingBrown.fill(it) }
         val walk = FloatArray(MEASURED_SAMPLES).also { BrownNoise(Random(BROWN_SEED)).fill(it) }
 
         val brownEnergy = highBandEnergyAtUnitPeak(brown)
@@ -61,8 +56,8 @@ class ShippingNoiseMixTest {
     }
 
     private companion object {
-        const val WHITE_SEED = 20260909
-        const val PINK_SEED = 20260906
+        /** One seed per source, spread by its place in the registry so no two sources are handed the same one. */
+        const val SEED = 20260909
         const val BROWN_SEED = 20260907
 
         /** Twelve seconds at the engine's rate: long enough that a source wandering over about a second is judged fairly. */
@@ -73,14 +68,16 @@ class ShippingNoiseMixTest {
         const val NEGATIVE_FULL_SCALE = (-Short.MAX_VALUE).toShort()
 
         /**
-         * Measured at 1.97 % for the three shipping noises on these seeds, against 0.4-0.6 % for the pair that
-         * shipped before white joined them and 8-13 % for the random walk brown once replaced. **The bound is
-         * loose on purpose and the figure is the thing to watch**: white took the mix four times closer to the
-         * clamp than the pair sat, and a fourth shipping source would spend what is left. What buys the headroom
-         * back is [NORMALISED_SOURCE_RMS], which every source shares — so the next source to ship is the one
-         * that has to move it, and this number is how that argument gets made.
+         * Measured at 0.57 % for the six shipping noises on these seeds, and 0.56-0.57 % across the seeds
+         * tried — the share the pair of pink and brown sat at before white joined them, and where six of them
+         * landed once [NORMALISED_SOURCE_RMS] came down to pay for the other three. No source here clips on
+         * its own at full volume, so every one of those samples is the sum and not one channel's own peak.
+         * **The bound is loose on purpose and the figure is the thing to watch**: at the quarter of full scale
+         * three sources shared, six clip 8.2 % of their samples, which is a
+         * crackle rather than a colouring. A seventh shipping source is the one that has to move that level
+         * again rather than spend what is left, and this number is how that argument gets made.
          */
-        const val MAX_CLIPPED_SHARE = 0.03
+        const val MAX_CLIPPED_SHARE = 0.02
 
         const val MEASURED_SAMPLES = 1 shl 16
 

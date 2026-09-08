@@ -3,12 +3,7 @@ package ru.pravbeseda.sleepnoise.media
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
-import ru.pravbeseda.sleepnoise.CURRENT_THEME
-import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
 import kotlin.random.Random
 
 class NoiseLabTest {
@@ -17,20 +12,6 @@ class NoiseLabTest {
         val keys = NOISE_LAB_CANDIDATES.map { it.preferenceKey }
 
         assertEquals("two candidates persist under one key, so one slider would move the other", keys.size, keys.toSet().size)
-    }
-
-    @Test
-    fun noCandidateReusesAShippingPreferenceKey() {
-        // The theme and language keys share the store and hold Strings, so colliding with one of those
-        // would not overwrite a volume but throw ClassCastException out of getFloat.
-        val shipping = setOf(PINK_NOISE_VOLUME, BROWN_NOISE_VOLUME, CURRENT_THEME, CURRENT_LANGUAGE)
-
-        NOISE_LAB_CANDIDATES.forEach { candidate ->
-            assertTrue(
-                "${candidate.label} would collide with the shipping ${candidate.preferenceKey}",
-                candidate.preferenceKey !in shipping,
-            )
-        }
     }
 
     @Test

@@ -5,9 +5,15 @@
     <string name="white_noise_volume">Білий шум: %1$d%%</string>
     <string name="pink_noise_volume">Рожевий шум: %1$d%%</string>
     <string name="brown_noise_volume">Коричневий шум: %1$d%%</string>
+    <string name="surf_noise_volume">Прибій: %1$d%%</string>
+    <string name="grey_noise_volume">Сірий шум: %1$d%%</string>
+    <string name="green_noise_volume">Зелений шум: %1$d%%</string>
     <string name="white_noise_name">Білий шум</string>
     <string name="pink_noise_name">Рожевий шум</string>
     <string name="brown_noise_name">Коричневий шум</string>
+    <string name="surf_noise_name">Прибій</string>
+    <string name="grey_noise_name">Сірий шум</string>
+    <string name="green_noise_name">Зелений шум</string>
     <string name="play_button">Відтворити</string>
     <string name="theme_switch">Змінити тему</string>
     <string name="language">Мова</string>

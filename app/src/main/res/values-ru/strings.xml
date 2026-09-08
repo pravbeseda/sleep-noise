@@ -5,9 +5,15 @@
     <string name="white_noise_volume">Белый шум: %1$d%%</string>
     <string name="pink_noise_volume">Розовый шум: %1$d%%</string>
     <string name="brown_noise_volume">Коричневый шум: %1$d%%</string>
+    <string name="surf_noise_volume">Прибой: %1$d%%</string>
+    <string name="grey_noise_volume">Серый шум: %1$d%%</string>
+    <string name="green_noise_volume">Зелёный шум: %1$d%%</string>
     <string name="white_noise_name">Белый шум</string>
     <string name="pink_noise_name">Розовый шум</string>
     <string name="brown_noise_name">Коричневый шум</string>
+    <string name="surf_noise_name">Прибой</string>
+    <string name="grey_noise_name">Серый шум</string>
+    <string name="green_noise_name">Зелёный шум</string>
     <string name="play_button">Играть</string>
     <string name="theme_switch">Сменить тему</string>
     <string name="language">Язык</string>

@@ -33,6 +33,8 @@ import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
+import ru.pravbeseda.sleepnoise.media.SHIPPING_NOISES
+import ru.pravbeseda.sleepnoise.media.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
@@ -42,19 +44,8 @@ import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import java.util.Locale
 
 const val APP_PREFS = "AppPreferences"
-const val WHITE_NOISE_VOLUME = "whiteNoiseVolume"
-const val PINK_NOISE_VOLUME = "pinkNoiseVolume"
-const val BROWN_NOISE_VOLUME = "brownNoiseVolume"
 const val CURRENT_THEME = "selectedTheme"
 const val CURRENT_LANGUAGE = "selectedLanguage"
-const val WHITE_NOISE_ENABLED = "whiteNoiseEnabled"
-const val PINK_NOISE_ENABLED = "pinkNoiseEnabled"
-const val BROWN_NOISE_ENABLED = "brownNoiseEnabled"
-
-/** White is the newest of the three and starts silent, so an existing install sounds exactly as it did. */
-const val DEFAULT_WHITE_NOISE_VOLUME = 0.0f
-const val DEFAULT_PINK_NOISE_VOLUME = 0.0f
-const val DEFAULT_BROWN_NOISE_VOLUME = 0.5f
 
 /** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
 const val DEFAULT_NOISE_ENABLED = true
@@ -65,6 +56,14 @@ class MainActivity : AppCompatActivity() {
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
     private var playbackBinder: PlaybackService.LocalBinder? = null
+    private val rowsByVolumeKey = LinkedHashMap<String, NoiseControlView>()
+
+    /**
+     * Every noise's row, by the key that noise stores its level under. The rows are built from the
+     * registries instead of being declared in the layout, so this is what a test reaches for when it wants
+     * the row belonging to one particular noise.
+     */
+    val noiseRows: Map<String, NoiseControlView> get() = rowsByVolumeKey
 
     // The answer is not read: the foreground service plays either way, a denial only costs the
     // user the ongoing notification and its Stop action.
@@ -126,33 +125,7 @@ class MainActivity : AppCompatActivity() {
 
         timerView = findViewById(R.id.timerView)
 
-        bindNoiseControl(
-            findViewById(R.id.whiteNoiseControl),
-            NoiseControl(
-                WHITE_NOISE_VOLUME,
-                WHITE_NOISE_ENABLED,
-                DEFAULT_WHITE_NOISE_VOLUME,
-                getString(R.string.white_noise_name),
-            ) { percent -> getString(R.string.white_noise_volume, percent) },
-        ) { volume -> playbackBinder?.setWhiteVolume(volume) }
-        bindNoiseControl(
-            findViewById(R.id.pinkNoiseControl),
-            NoiseControl(
-                PINK_NOISE_VOLUME,
-                PINK_NOISE_ENABLED,
-                DEFAULT_PINK_NOISE_VOLUME,
-                getString(R.string.pink_noise_name),
-            ) { percent -> getString(R.string.pink_noise_volume, percent) },
-        ) { volume -> playbackBinder?.setPinkVolume(volume) }
-        bindNoiseControl(
-            findViewById(R.id.brownNoiseControl),
-            NoiseControl(
-                BROWN_NOISE_VOLUME,
-                BROWN_NOISE_ENABLED,
-                DEFAULT_BROWN_NOISE_VOLUME,
-                getString(R.string.brown_noise_name),
-            ) { percent -> getString(R.string.brown_noise_volume, percent) },
-        ) { volume -> playbackBinder?.setBrownVolume(volume) }
+        addNoiseControls()
 
         playButton.setOnClickListener {
             if (isPlaying) {
@@ -161,8 +134,6 @@ class MainActivity : AppCompatActivity() {
                 startPlayback()
             }
         }
-
-        if (NOISE_LAB_ENABLED) addNoiseLabControls()
     }
 
     @SuppressLint("RestrictedApi")
@@ -296,25 +267,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * One candidate, one [NoiseControlView] — the same component the shipping noises use, so an
-     * experiment gets its checkbox for nothing.
+     * One [NoiseControlView] per noise, built from the two registries rather than declared in the layout:
+     * the shipping ones from [SHIPPING_NOISES], then the lab's candidates when it is switched on. A new
+     * noise is an entry in a registry and nothing else — a row wired up by hand here is the mistake the
+     * component replaced.
      *
-     * The registry is read straight from `media/NoiseLab` rather than through the service binder: this runs in
-     * onCreate and the binder does not arrive until after onStart, so a registry behind it would draw nothing.
+     * Both registries are read straight out of `media/` rather than through the service binder: this runs
+     * in onCreate and the binder does not arrive until after onStart, so a registry behind it would draw
+     * nothing.
      */
-    private fun addNoiseLabControls() {
-        val container: LinearLayout = findViewById(R.id.noiseLabContainer)
-        container.visibility = View.VISIBLE
-
-        NOISE_LAB_CANDIDATES.forEach { candidate ->
-            // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what a row wants.
-            val control = NoiseControlView(this)
-            container.addView(control)
-            bindNoiseControl(control, labNoiseControl(candidate)) { volume ->
-                playbackBinder?.setLabVolume(candidate.preferenceKey, volume)
-            }
-        }
+    private fun addNoiseControls() {
+        SHIPPING_NOISES.forEach { noise -> addNoiseControl(R.id.noiseContainer, shippingNoiseControl(noise)) }
+        if (!NOISE_LAB_ENABLED) return
+        findViewById<LinearLayout>(R.id.noiseLabContainer).visibility = View.VISIBLE
+        NOISE_LAB_CANDIDATES.forEach { candidate -> addNoiseControl(R.id.noiseLabContainer, labNoiseControl(candidate)) }
     }
+
+    /**
+     * The engine hears the level only while the noise is switched on; the component decides which it is.
+     * The row is kept under the noise's own key, which is how anything outside this method finds it again.
+     */
+    private fun addNoiseControl(containerId: Int, noise: NoiseControl) {
+        // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what a row wants.
+        val control = NoiseControlView(this)
+        findViewById<LinearLayout>(containerId).addView(control)
+        rowsByVolumeKey[noise.volumeKey] = control
+        control.bind(noise, preferences) { volume -> playbackBinder?.setVolume(noise.volumeKey, volume) }
+    }
+
+    private fun shippingNoiseControl(noise: ShippingNoise) = NoiseControl(
+        noise.volumeKey,
+        noise.enabledKey,
+        noise.defaultVolume,
+        getString(noise.nameRes),
+    ) { percent -> getString(noise.volumeLabelRes, percent) }
 
     /** The name is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
     private fun labNoiseControl(candidate: NoiseLabCandidate) = NoiseControl(
@@ -323,10 +309,6 @@ class MainActivity : AppCompatActivity() {
         DEFAULT_LAB_NOISE_VOLUME,
         candidate.label,
     ) { percent -> String.format(Locale.getDefault(), "%s: %d%%", candidate.label, percent) }
-
-    /** The engine hears the level only while the noise is switched on; the component decides which it is. */
-    private fun bindNoiseControl(view: NoiseControlView, noise: NoiseControl, setVolume: (Float) -> Unit) =
-        view.bind(noise, preferences, setVolume)
 
     private fun languageSelection() {
         val builder = AlertDialog.Builder(this)

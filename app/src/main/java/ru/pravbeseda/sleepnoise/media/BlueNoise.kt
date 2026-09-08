@@ -36,11 +36,16 @@ class BlueNoise(random: Random = Random.Default) : NoiseSource {
 
     private companion object {
         /**
-         * Measured RMS of the difference. Not derived like [VioletNoise]'s: successive samples of pink are
-         * heavily correlated, so the doubling that holds for independent draws says nothing here.
+         * Measured RMS of the difference, as a share of the level the pink it differences already sits at.
+         * Not derived like [VioletNoise]'s: successive samples of pink are heavily correlated, so the
+         * doubling that holds for independent draws says nothing here.
+         *
+         * A share and not a level, because the input is another normalised source: written as one it was
+         * measured at a [NORMALISED_SOURCE_RMS] of a quarter, and moving that level left blue 4 dB under
+         * everything else with nothing in this file to say why.
          */
-        const val DIFFERENCE_RMS = 0.149
+        const val DIFFERENCE_RMS_SHARE = 0.596
 
-        const val OUTPUT_GAIN = NORMALISED_SOURCE_RMS / DIFFERENCE_RMS
+        const val OUTPUT_GAIN = 1.0 / DIFFERENCE_RMS_SHARE
     }
 }

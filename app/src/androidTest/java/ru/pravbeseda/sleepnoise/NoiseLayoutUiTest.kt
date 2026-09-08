@@ -42,7 +42,7 @@ class NoiseLayoutUiTest {
                 }
                 assertTrue("the rows do not scroll", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
                 assertFalse("the screen scrolls as well as the rows", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
-                activity.assertReachableIn(activity.scroll(R.id.noiseScroll), ROWS)
+                assertReachableIn(activity.scroll(R.id.noiseScroll), activity.rows())
             }
         }
     }
@@ -55,7 +55,7 @@ class NoiseLayoutUiTest {
 
                 assertTrue("the screen does not scroll", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
                 assertFalse("the rows scroll as well as the screen", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
-                activity.assertReachableIn(activity.scroll(R.id.contentScroll), CONTROLS)
+                assertReachableIn(activity.scroll(R.id.contentScroll), activity.everyControl())
             }
         }
     }
@@ -72,13 +72,25 @@ class NoiseLayoutUiTest {
      * band clipToPadding cuts off. What a finger reaches is the padded content, which is everything.
      * ScrollView.scrollTo clamps for itself, so the last control needs no arithmetic of its own.
      */
-    private fun MainActivity.assertReachableIn(scroll: ScrollView, controls: List<Pair<Int, String>>) {
-        for ((id, name) in controls) {
-            val view: View = findViewById(id)
+    private fun assertReachableIn(scroll: ScrollView, controls: List<Pair<View, String>>) {
+        for ((view, name) in controls) {
             scroll.scrollTo(0, view.topIn(scroll) - scroll.paddingTop)
             assertEquals("$name cannot be brought into view", view.height, view.visibleHeight())
         }
     }
+
+    /**
+     * The noise rows, which are what scrolls while the blocks below them are pinned. They carry no ids —
+     * the screen builds them from the registries — so they are taken from the screen itself, which also
+     * means this walks however many noises the build ships rather than a list that goes stale beside them.
+     */
+    private fun MainActivity.rows(): List<Pair<View, String>> = noiseRows.map { (volumeKey, row) -> row to "the $volumeKey row" }
+
+    /** Every control a user has to be able to reach, named for the failure message. */
+    private fun MainActivity.everyControl(): List<Pair<View, String>> =
+        rows() + listOf(view(R.id.playButton) to "the play button", view(R.id.timerView) to "the timer")
+
+    private fun MainActivity.view(id: Int): View = findViewById(id)
 
     /** Where the view sits in the scroll's own coordinates, which is what scrollTo is given. */
     private fun View.topIn(scroll: ScrollView): Int {
@@ -130,22 +142,6 @@ class NoiseLayoutUiTest {
     }
 
     private companion object {
-        /** The noise rows, which are what scrolls while the blocks below them are pinned. */
-        val ROWS =
-            listOf(
-                R.id.whiteNoiseControl to "the white noise row",
-                R.id.pinkNoiseControl to "the pink noise row",
-                R.id.brownNoiseControl to "the brown noise row",
-            )
-
-        /** Every control a user has to be able to reach, named for the failure message. */
-        val CONTROLS =
-            ROWS +
-                listOf(
-                    R.id.playButton to "the play button",
-                    R.id.timerView to "the timer",
-                )
-
         /** What stays at the bottom of a window that has room for it, rows or no rows. */
         val PINNED_BLOCKS =
             listOf(

@@ -5,9 +5,15 @@
     <string name="white_noise_volume">Weißes Rauschen: %1$d%%</string>
     <string name="pink_noise_volume">Rosa Rauschen: %1$d%%</string>
     <string name="brown_noise_volume">Braunes Rauschen: %1$d%%</string>
+    <string name="surf_noise_volume">Brandung: %1$d%%</string>
+    <string name="grey_noise_volume">Graues Rauschen: %1$d%%</string>
+    <string name="green_noise_volume">Grünes Rauschen: %1$d%%</string>
     <string name="white_noise_name">Weißes Rauschen</string>
     <string name="pink_noise_name">Rosa Rauschen</string>
     <string name="brown_noise_name">Braunes Rauschen</string>
+    <string name="surf_noise_name">Brandung</string>
+    <string name="grey_noise_name">Graues Rauschen</string>
+    <string name="green_noise_name">Grünes Rauschen</string>
     <string name="play_button">Abspielen</string>
     <string name="theme_switch">Design wechseln</string>
     <string name="language">Sprache</string>
