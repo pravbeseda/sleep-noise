@@ -42,7 +42,7 @@ class NoiseLayoutUiTest {
                 }
                 assertTrue("the rows do not scroll", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
                 assertFalse("the screen scrolls as well as the rows", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
-                activity.assertEveryControlIsReachable()
+                activity.assertReachableIn(activity.scroll(R.id.noiseScroll), ROWS)
             }
         }
     }
@@ -55,18 +55,40 @@ class NoiseLayoutUiTest {
 
                 assertTrue("the screen does not scroll", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
                 assertFalse("the rows scroll as well as the screen", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
-                activity.assertEveryControlIsReachable()
+                activity.assertReachableIn(activity.scroll(R.id.contentScroll), CONTROLS)
             }
         }
     }
 
-    /** Scrolls each control into view in turn: what a user cannot reach this way is not on the screen. */
-    private fun MainActivity.assertEveryControlIsReachable() {
-        for ((id, name) in CONTROLS) {
+    /**
+     * Scrolls each control to the top of what the window shows and reads back how much of it is there:
+     * what a drag cannot bring into view is not on the screen.
+     *
+     * The drag is written out rather than asked for with requestRectangleOnScreen, which stops as soon
+     * as the target clears the fading edge and takes no account of the scroll's own padding. The
+     * screen is drawn edge to edge, so fitsSystemWindows does not add to this scroll's 32dp but
+     * replaces it with the system bars' insets — 48dp of navigation bar on a three-button device
+     * against a 24dp fading edge — and the framework leaves the last 24dp of the control inside the
+     * band clipToPadding cuts off. What a finger reaches is the padded content, which is everything.
+     * ScrollView.scrollTo clamps for itself, so the last control needs no arithmetic of its own.
+     */
+    private fun MainActivity.assertReachableIn(scroll: ScrollView, controls: List<Pair<Int, String>>) {
+        for ((id, name) in controls) {
             val view: View = findViewById(id)
-            view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true)
+            scroll.scrollTo(0, view.topIn(scroll) - scroll.paddingTop)
             assertEquals("$name cannot be brought into view", view.height, view.visibleHeight())
         }
+    }
+
+    /** Where the view sits in the scroll's own coordinates, which is what scrollTo is given. */
+    private fun View.topIn(scroll: ScrollView): Int {
+        var top = 0
+        var view: View = this
+        while (view !== scroll) {
+            top += view.top
+            view = view.parent as View
+        }
+        return top
     }
 
     private fun MainActivity.addARowTallerThanTheWindow() {
@@ -108,15 +130,21 @@ class NoiseLayoutUiTest {
     }
 
     private companion object {
-        /** Every control a user has to be able to reach, named for the failure message. */
-        val CONTROLS =
+        /** The noise rows, which are what scrolls while the blocks below them are pinned. */
+        val ROWS =
             listOf(
                 R.id.whiteNoiseControl to "the white noise row",
                 R.id.pinkNoiseControl to "the pink noise row",
                 R.id.brownNoiseControl to "the brown noise row",
-                R.id.playButton to "the play button",
-                R.id.timerView to "the timer",
             )
+
+        /** Every control a user has to be able to reach, named for the failure message. */
+        val CONTROLS =
+            ROWS +
+                listOf(
+                    R.id.playButton to "the play button",
+                    R.id.timerView to "the timer",
+                )
 
         /** What stays at the bottom of a window that has room for it, rows or no rows. */
         val PINNED_BLOCKS =
