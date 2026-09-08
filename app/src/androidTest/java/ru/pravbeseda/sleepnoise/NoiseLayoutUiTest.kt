@@ -51,7 +51,7 @@ class NoiseLayoutUiTest {
     fun theWholeScreenScrollsInAWindowTooShortToPinAnything() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                relayout(activity.window(), activity.windowHeight() / SHORT_WINDOW_DIVISOR)
+                relayout(activity.window(), activity.shortWindowHeight())
 
                 assertTrue("the screen does not scroll", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
                 assertFalse("the rows scroll as well as the screen", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
@@ -80,6 +80,13 @@ class NoiseLayoutUiTest {
     private fun MainActivity.window(): View = findViewById(android.R.id.content)
 
     private fun MainActivity.windowHeight(): Int = window().height
+
+    /**
+     * A share of the screen is not a window size: at 420dpi a third of a phone leaves less room than
+     * one noise row occupies, and a row that cannot fit is one no arrangement can bring into view.
+     * SHORT_WINDOW_HEIGHT_DP is a height instead, so every screen gets the same short window.
+     */
+    private fun MainActivity.shortWindowHeight(): Int = (SHORT_WINDOW_HEIGHT_DP * resources.displayMetrics.density).toInt()
 
     /**
      * Lays the window out again at the given height, on the spot: a requested layout arrives with the
@@ -126,7 +133,11 @@ class NoiseLayoutUiTest {
         /** Enough that the rows overflow on any screen the app runs on, however few of them it ships. */
         const val OVERFLOW_FACTOR = 2
 
-        /** Short enough that the blocks under the rows and a row to read cannot both fit, on any screen. */
-        const val SHORT_WINDOW_DIVISOR = 3
+        /**
+         * The smallest screen dimension Android hands out, and about what a phone in landscape comes
+         * to: short enough that the blocks under the rows and a row to read cannot both fit, and tall
+         * enough that a control still can.
+         */
+        const val SHORT_WINDOW_HEIGHT_DP = 320
     }
 }
