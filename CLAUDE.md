@@ -448,21 +448,37 @@ To add a language: create `values-XX/strings.xml` including the `lang` key, add 
 
 The build enables Compose (`buildFeatures.compose`, Compose BOM, material3, activity-compose), but **no Compose is used anywhere**. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar. Follow the existing View-based approach unless deliberately migrating; don't assume Compose because the dependencies are present.
 
-`activity_main.xml` is a `ConstraintLayout` stacked from the bottom up: the version line, the picture
-on it, then the play button with the timer, each keeping its own height. **The noise rows take the
-whole remainder above them and scroll only once there is more than that.** They are the only block
-here whose height depends on how many noises the app has, so they are the only one the remainder can
-go to — and nothing else can take it, which is what separates this from the two layouts below that
-also gave the remainder away: the picture is capped and the play block wraps its content.
+`activity_main.xml` is one column inside `ui/BottomPinningScrollView`: the noise rows in a `ScrollView`
+of their own, then the play button with the timer, the picture and the version line. **The rows take
+whatever those three leave and scroll inside it, so the three stay at the bottom of the window however
+many noises the app shows.** They are the only block here whose height depends on that number, so they
+are the only one the remainder can go to — and nothing else can take it: the picture is capped and the
+play block wraps its content.
 
-A `Guideline` at 0.45 held that share until the noise lab put a third row on the screen. Two rows fit
-in 45 % and a third did not, so the `ScrollView` cut it in half while the band under the line stood
-mostly empty — and a clipped row with no scrollbar reads as a rendering bug rather than as an
-invitation to scroll. `requiresFadingEdge` is the other half of that fix: a row that really is cut
-off now fades out instead of ending mid-glyph, which is what says there is more below.
+**What no layout file can answer is the window too short for those three blocks and a row to read at
+once, and that is the one a landscape phone hands out.** The screen shipped without an answer: the rows
+had the only height that could give way, so they gave way to nothing, the play button went up behind
+the action bar, and no part of the screen scrolled, because the one view that could scroll had been
+squeezed to zero first. `BottomPinningScrollView` decides at measure time — above that height it
+measures the column at exactly the window's, which is the arrangement above; below it, at the column's
+own, and the whole screen scrolls instead. The threshold is not a number written down anywhere: it is
+the blocks under the rows, as they measure, plus one whole `NoiseControlView`.
+
+**Only one of the two scrolls can ever move**, which is what keeps a drag from having two answers:
+pinned, the outer one is exactly as tall as its content; unpinned, the rows region is exactly as tall
+as its own, because a `0dp` height with a weight reads as `wrap_content` to a `LinearLayout` measured
+at anything other than an exact height. `requiresFadingEdge` sits on both: content that really is cut
+off fades out instead of ending mid-glyph.
+
+`NoiseLayoutUiTest` holds both arrangements. One test fills the rows past the window and asserts the
+four blocks below them stay fully visible while the rows scroll and the screen does not; the other lays
+the window out at a third of its height and asserts the reverse, the screen scrolling while the rows do
+not. Both then walk every control on the screen and scroll it fully into view, which is the promise the
+two arrangements share. Both cases are made rather than waited for: how many rows there are is the
+lab's to decide, and a window shorter than the emulator's is not something a rotation can be asked for.
 
 **No size on this screen comes from a resource a rotation would change: what is left is percentages,
-one aspect ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
+the picture's own ratio and one dp cap, all resolved at measure time.** `MainActivity` declares
 `configChanges="orientation|screenSize"` and is therefore never recreated on a rotation, so a `-land`
 or `-h500dp` value, or a `resources.getBoolean` read in `onCreate`, is the portrait one for the rest
 of the session — a layout that leans on either is correct only until the user turns the phone. This
@@ -471,21 +487,23 @@ is not a style preference; it is the bug two drafts of this screen hit before ei
 same number in both orientations, so the play button's size cannot go stale where a `-land` or `-h`
 one would.
 
-The picture's box is the drawing itself: 70 % of the width and a height from
-`layout_constraintDimensionRatio` carrying the vector's own 585.62 x 170.1, so no letterbox opens
-between it and the version line. `cats_max_height` (96dp) is what keeps that width-driven height
-honest on a wide window, where 70 % of the width would otherwise be most of the height — the picture
-is decoration and the first thing to give way.
+The picture is 70 % of the width, and that percentage is the only reason it sits in a
+`ConstraintLayout` of its own: a share of the parent's width is what a `LinearLayout` cannot express.
+Its height follows from the vector's own 585.62 x 170.1 through `adjustViewBounds`, so no letterbox
+opens between it and the version line, and `cats_max_height` (96dp) keeps that width-driven height
+honest on a wide window, where 70 % of the width would otherwise be most of the height.
 
-Four layouts got this screen wrong before the current one, each in its own way. The weighted
+Five layouts got this screen wrong before the current one, each in its own way. The weighted
 `LinearLayout` handed 4/5 of the free height to two noise rows and left a hole above the play button.
 A `ConstraintLayout` chain fixed the hole and let the picture take whatever height its width dictated
 — at 2400x1080 that was the whole screen, sliders gone and the play button a sliver under the action
-bar. Config-qualified shares then fixed *that* and survived only until a rotation. The 0.45 guideline
-that replaced them survived a rotation and not a third noise: a fixed share cannot answer a question
-whose answer is the number of rows. Giving the rows the remainder is the first of the four that can,
-and it is safe here only because the two blocks that once took the remainder for themselves are now
-both bounded.
+bar. Config-qualified shares then fixed *that* and survived only until a rotation. A `Guideline` at
+0.45 survived a rotation and not a third noise: a fixed share cannot answer a question whose answer is
+the number of rows. Giving the rows the whole remainder above the other blocks answered it, and then
+met the window that has no remainder to give — a landscape phone, where the blocks under the rows come
+to more than the screen holds. Each of the five arrangements had one block whose height was whatever
+the others left over, and each of them worked until a window came along with nothing left over to give.
+Measuring the window and dropping the pinning is the first answer here that does not need one.
 `androidx.constraintlayout` is a direct dependency for it rather than the transitive one material
 pulls in.
 

@@ -1,5 +1,6 @@
 package ru.pravbeseda.sleepnoise
 
+import android.graphics.Rect
 import android.view.View
 import android.view.View.MeasureSpec
 import android.widget.LinearLayout
@@ -8,65 +9,163 @@ import android.widget.Space
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The noise rows own the height left above the play button and no more: rows that outgrow that region
- * scroll inside it rather than pushing the play button off the bottom of the screen.
+ * The screen has two arrangements and one promise. While the window holds the blocks under the noise
+ * rows and a row to read, those blocks stay pinned to the bottom and the rows scroll inside what is
+ * left; below that height the whole screen scrolls instead. Either way every control can be brought
+ * fully into view, and only one of the two scrolls ever moves.
  *
- * The overflow is made here rather than waited for — the lab decides how many rows an install shows,
- * and a test that only passes while some flag adds enough of them asserts the flag, not the layout.
+ * Both cases are made here rather than waited for. How many rows there are is the noise lab's to
+ * decide, and a test that only passes while some flag adds enough of them asserts the flag rather
+ * than the layout; a window shorter than the emulator's is not something a rotation can be asked for
+ * at all. That second case is the one that shipped broken — in landscape the rows had the only height
+ * that could give way, so they gave way to nothing while the play button went up under the action bar
+ * and no part of the screen scrolled.
  */
 @RunWith(AndroidJUnit4::class)
 class NoiseLayoutUiTest {
     @Test
-    fun rowsThatOutgrowTheScreenScrollAndLeaveThePlayButtonWhereItIs() {
+    fun theBlocksUnderTheRowsStayPutWhenTheRowsOutgrowTheWindow() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val scroll: ScrollView = activity.findViewById(R.id.noiseScroll)
-                val playButton: View = activity.findViewById(R.id.playButton)
-                assertTrue(
-                    "the pink noise row is not inside the scrolling region",
-                    activity.findViewById<View>(R.id.pinkNoiseControl).ancestors().contains(scroll),
-                )
+                activity.addARowTallerThanTheWindow()
+                relayout(activity.window(), activity.windowHeight())
 
-                activity.fillPastTheViewport(scroll)
+                for ((id, name) in PINNED_BLOCKS) {
+                    val view: View = activity.findViewById(id)
+                    assertEquals("$name does not stay in the window", view.height, view.visibleHeight())
+                }
+                assertTrue("the rows do not scroll", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
+                assertFalse("the screen scrolls as well as the rows", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
+                activity.assertReachableIn(activity.scroll(R.id.noiseScroll), ROWS)
+            }
+        }
+    }
 
-                assertTrue("the rows fit after filling the region twice over", scroll.canScrollVertically(1))
-                assertEquals("the play button is off the screen", playButton.height, playButton.visibleHeight())
+    @Test
+    fun theWholeScreenScrollsInAWindowTooShortToPinAnything() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                relayout(activity.window(), activity.shortWindowHeight())
+
+                assertTrue("the screen does not scroll", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
+                assertFalse("the rows scroll as well as the screen", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
+                activity.assertReachableIn(activity.scroll(R.id.contentScroll), CONTROLS)
             }
         }
     }
 
     /**
-     * Adds a row taller than the region itself, then lays the window out again on the spot: a
-     * requested layout arrives with the next frame, which is one message later than this test reads.
+     * Scrolls each control to the top of what the window shows and reads back how much of it is there:
+     * what a drag cannot bring into view is not on the screen.
+     *
+     * The drag is written out rather than asked for with requestRectangleOnScreen, which stops as soon
+     * as the target clears the fading edge and takes no account of the scroll's own padding. The
+     * screen is drawn edge to edge, so fitsSystemWindows does not add to this scroll's 32dp but
+     * replaces it with the system bars' insets — 48dp of navigation bar on a three-button device
+     * against a 24dp fading edge — and the framework leaves the last 24dp of the control inside the
+     * band clipToPadding cuts off. What a finger reaches is the padded content, which is everything.
+     * ScrollView.scrollTo clamps for itself, so the last control needs no arithmetic of its own.
      */
-    private fun MainActivity.fillPastTheViewport(scroll: ScrollView) {
-        val container: LinearLayout = findViewById(R.id.noiseLabContainer)
-        container.visibility = View.VISIBLE
-        container.addView(Space(this).apply { minimumHeight = scroll.height * OVERFLOW_FACTOR })
-
-        val root: View = findViewById(android.R.id.content)
-        root.measure(
-            MeasureSpec.makeMeasureSpec(root.width, MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(root.height, MeasureSpec.EXACTLY),
-        )
-        root.layout(root.left, root.top, root.right, root.bottom)
+    private fun MainActivity.assertReachableIn(scroll: ScrollView, controls: List<Pair<Int, String>>) {
+        for ((id, name) in controls) {
+            val view: View = findViewById(id)
+            scroll.scrollTo(0, view.topIn(scroll) - scroll.paddingTop)
+            assertEquals("$name cannot be brought into view", view.height, view.visibleHeight())
+        }
     }
 
-    private fun View.ancestors(): Sequence<View> = generateSequence(parent as? View) { it.parent as? View }
+    /** Where the view sits in the scroll's own coordinates, which is what scrollTo is given. */
+    private fun View.topIn(scroll: ScrollView): Int {
+        var top = 0
+        var view: View = this
+        while (view !== scroll) {
+            top += view.top
+            view = view.parent as View
+        }
+        return top
+    }
 
-    /** How much of the view the window actually shows, which is 0 once it has been pushed past the bottom. */
+    private fun MainActivity.addARowTallerThanTheWindow() {
+        val container: LinearLayout = findViewById(R.id.noiseLabContainer)
+        container.visibility = View.VISIBLE
+        container.addView(Space(this).apply { minimumHeight = windowHeight() * OVERFLOW_FACTOR })
+    }
+
+    private fun MainActivity.scroll(id: Int): ScrollView = findViewById(id)
+
+    private fun MainActivity.window(): View = findViewById(android.R.id.content)
+
+    private fun MainActivity.windowHeight(): Int = window().height
+
+    /**
+     * A share of the screen is not a window size: at 420dpi a third of a phone leaves less room than
+     * one noise row occupies, and a row that cannot fit is one no arrangement can bring into view.
+     * SHORT_WINDOW_HEIGHT_DP is a height instead, so every screen gets the same short window.
+     */
+    private fun MainActivity.shortWindowHeight(): Int = (SHORT_WINDOW_HEIGHT_DP * resources.displayMetrics.density).toInt()
+
+    /**
+     * Lays the window out again at the given height, on the spot: a requested layout arrives with the
+     * next frame, which is one message later than this test reads, and a height the window never had
+     * is not something a rotation on an emulator can be asked for anyway.
+     */
+    private fun relayout(window: View, height: Int) {
+        window.measure(
+            MeasureSpec.makeMeasureSpec(window.width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
+        )
+        window.layout(window.left, window.top, window.right, window.top + height)
+    }
+
+    /** How much of the view the window actually shows, which is 0 once it has been pushed past an edge. */
     private fun View.visibleHeight(): Int {
-        val visible = android.graphics.Rect()
+        val visible = Rect()
         return if (getGlobalVisibleRect(visible)) visible.height() else 0
     }
 
     private companion object {
-        /** Enough that the region overflows on any screen the app runs on, however few rows it ships. */
+        /** The noise rows, which are what scrolls while the blocks below them are pinned. */
+        val ROWS =
+            listOf(
+                R.id.whiteNoiseControl to "the white noise row",
+                R.id.pinkNoiseControl to "the pink noise row",
+                R.id.brownNoiseControl to "the brown noise row",
+            )
+
+        /** Every control a user has to be able to reach, named for the failure message. */
+        val CONTROLS =
+            ROWS +
+                listOf(
+                    R.id.playButton to "the play button",
+                    R.id.timerView to "the timer",
+                )
+
+        /** What stays at the bottom of a window that has room for it, rows or no rows. */
+        val PINNED_BLOCKS =
+            listOf(
+                R.id.playButton to "the play button",
+                R.id.timerView to "the timer",
+                R.id.cats to "the picture",
+                R.id.version_text to "the version line",
+            )
+
+        /** canScrollVertically's direction, which is a sign rather than a constant of its own. */
+        const val DOWN = 1
+
+        /** Enough that the rows overflow on any screen the app runs on, however few of them it ships. */
         const val OVERFLOW_FACTOR = 2
+
+        /**
+         * The smallest screen dimension Android hands out, and about what a phone in landscape comes
+         * to: short enough that the blocks under the rows and a row to read cannot both fit, and tall
+         * enough that a control still can.
+         */
+        const val SHORT_WINDOW_HEIGHT_DP = 320
     }
 }
