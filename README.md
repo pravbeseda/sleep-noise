@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml/badge.svg)](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml)
 
-Android app that **synthesizes** white, pink and brown noise in real time to help you fall asleep,
-with a countdown timer that stops playback on its own.
+Android app that **synthesizes** six noises in real time — brown, white, pink, surf, grey and green —
+to help you fall asleep, with a countdown timer that stops playback on its own.
 
 Nothing is streamed and nothing is bundled: the samples are generated on the device, so the app
 has no audio assets, needs no network access, and never runs out of loop to repeat.
@@ -16,9 +16,9 @@ has no audio assets, needs no network access, and never runs out of loop to repe
 
 ## Features
 
-- **Three independent noise channels** — white, pink and brown, each with its own speaker toggle and
-  volume slider. Silence one to hear only the others; its level is kept for the next time you switch it
-  back on. Slider and toggle follow each other: moving the slider switches the noise on, dragging it to
+- **Six independent noise channels** — brown, white, pink, surf, grey and green, each with its own
+  speaker toggle and volume slider. Mix them as you like, or silence one to hear only the others; its
+  level is kept for the next time you switch it back on. Slider and toggle follow each other: moving the slider switches the noise on, dragging it to
   zero switches it off, and switching a silent noise on gives it the quietest audible level.
 - **Sleep timer** — up to several hours in 30-minute steps; playback stops when it runs out.
 - **Plays through the night** — the noise and the timer live in a foreground service, so leaving
@@ -89,7 +89,7 @@ spotless task fails instead of silently checking nothing.
 app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
-├── media/                   # NoiseEngine + NoiseMixer + Pink/Brown/White noise sources
+├── media/                   # NoiseEngine + NoiseMixer + the noise sources and the registry of them
 ├── playback/                # PlaybackService (foreground) + AudioFocus
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider

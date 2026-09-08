@@ -5,9 +5,15 @@
     <string name="white_noise_volume">الضوضاء البيضاء: %1$d%%</string>
     <string name="pink_noise_volume">الضوضاء الوردية: %1$d%%</string>
     <string name="brown_noise_volume">الضوضاء البنية: %1$d%%</string>
+    <string name="surf_noise_volume">أمواج البحر: %1$d%%</string>
+    <string name="grey_noise_volume">الضوضاء الرمادية: %1$d%%</string>
+    <string name="green_noise_volume">الضوضاء الخضراء: %1$d%%</string>
     <string name="white_noise_name">الضوضاء البيضاء</string>
     <string name="pink_noise_name">الضوضاء الوردية</string>
     <string name="brown_noise_name">الضوضاء البنية</string>
+    <string name="surf_noise_name">أمواج البحر</string>
+    <string name="grey_noise_name">الضوضاء الرمادية</string>
+    <string name="green_noise_name">الضوضاء الخضراء</string>
     <string name="play_button">تشغيل</string>
     <string name="theme_switch">تغيير السمة</string>
     <string name="language">اللغة</string>

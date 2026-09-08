@@ -53,22 +53,15 @@
                 android:orientation="vertical"
                 android:gravity="center">
 
-                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                    android:id="@+id/whiteNoiseControl"
+                <!-- Filled in code from SHIPPING_NOISES, so a new noise needs no edit here. -->
+                <LinearLayout
+                    android:id="@+id/noiseContainer"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"/>
 
-                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                    android:id="@+id/pinkNoiseControl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-
-                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                    android:id="@+id/brownNoiseControl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-
-                <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
+                <!-- And from NOISE_LAB_CANDIDATES, on the same terms, while the lab is switched on. -->
                 <LinearLayout
                     android:id="@+id/noiseLabContainer"
                     android:layout_width="match_parent"

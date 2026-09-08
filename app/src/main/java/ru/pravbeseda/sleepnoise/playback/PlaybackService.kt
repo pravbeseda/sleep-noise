@@ -22,27 +22,16 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import ru.pravbeseda.sleepnoise.APP_PREFS
-import ru.pravbeseda.sleepnoise.BROWN_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.BROWN_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.DEFAULT_BROWN_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.DEFAULT_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.DEFAULT_PINK_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.DEFAULT_WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.MainActivity
-import ru.pravbeseda.sleepnoise.PINK_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.PINK_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.WHITE_NOISE_ENABLED
-import ru.pravbeseda.sleepnoise.WHITE_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
 import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.media.shippingBrownNoise
-import ru.pravbeseda.sleepnoise.media.shippingPinkNoise
-import ru.pravbeseda.sleepnoise.media.shippingWhiteNoise
+import ru.pravbeseda.sleepnoise.media.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import kotlin.random.Random
 
@@ -65,18 +54,21 @@ private fun SharedPreferences.noiseVolume(volumeKey: String, enabledKey: String,
  * and stops, pauses or ducks when the system says something else needs the output.
  */
 class PlaybackService : Service() {
-    private val whiteChannel = NoiseChannel(shippingWhiteNoise())
-    private val pinkChannel = NoiseChannel(shippingPinkNoise())
-    private val brownChannel = NoiseChannel(shippingBrownNoise())
-
     /**
-     * Empty while the lab is switched off, and the engine then mixes exactly the three channels it ships with:
+     * Empty while the lab is switched off, and the engine then mixes exactly the noises the app ships with:
      * a lab volume left in the preferences must not go on playing once its slider is gone.
      */
     private val labCandidates: List<NoiseLabCandidate> = if (NOISE_LAB_ENABLED) NOISE_LAB_CANDIDATES else emptyList()
-    private val labChannels: Map<String, NoiseChannel> =
-        labCandidates.associate { it.preferenceKey to NoiseChannel(it.createSource(Random.Default)) }
-    private val noiseEngine = NoiseEngine(listOf(whiteChannel, pinkChannel, brownChannel) + labChannels.values)
+
+    /**
+     * One channel per noise on the screen, under the key that noise stores its level by — the same key the
+     * Activity's row carries, which is what lets a volume change name its channel instead of naming a setter.
+     */
+    private val channels: Map<String, NoiseChannel> = buildMap {
+        SHIPPING_NOISES.forEach { put(it.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
+        labCandidates.forEach { put(it.preferenceKey, NoiseChannel(it.createSource(Random.Default))) }
+    }
+    private val noiseEngine = NoiseEngine(channels.values.toList())
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
 
@@ -191,21 +183,9 @@ class PlaybackService : Service() {
                 this@PlaybackService.listener = value
             }
 
-        fun setWhiteVolume(volume: Float) {
-            whiteChannel.volume = volume
-        }
-
-        fun setPinkVolume(volume: Float) {
-            pinkChannel.volume = volume
-        }
-
-        fun setBrownVolume(volume: Float) {
-            brownChannel.volume = volume
-        }
-
         /** The key comes from the registry both sides read, so an unknown one is a wiring bug and says so. */
-        fun setLabVolume(preferenceKey: String, volume: Float) {
-            labChannels.getValue(preferenceKey).volume = volume
+        fun setVolume(volumeKey: String, volume: Float) {
+            channels.getValue(volumeKey).volume = volume
         }
     }
 
@@ -277,11 +257,12 @@ class PlaybackService : Service() {
             return
         }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        whiteChannel.volume = preferences.noiseVolume(WHITE_NOISE_VOLUME, WHITE_NOISE_ENABLED, DEFAULT_WHITE_NOISE_VOLUME)
-        pinkChannel.volume = preferences.noiseVolume(PINK_NOISE_VOLUME, PINK_NOISE_ENABLED, DEFAULT_PINK_NOISE_VOLUME)
-        brownChannel.volume = preferences.noiseVolume(BROWN_NOISE_VOLUME, BROWN_NOISE_ENABLED, DEFAULT_BROWN_NOISE_VOLUME)
+        SHIPPING_NOISES.forEach { noise ->
+            channels.getValue(noise.volumeKey).volume =
+                preferences.noiseVolume(noise.volumeKey, noise.enabledKey, noise.defaultVolume)
+        }
         labCandidates.forEach { candidate ->
-            labChannels.getValue(candidate.preferenceKey).volume =
+            channels.getValue(candidate.preferenceKey).volume =
                 preferences.noiseVolume(candidate.preferenceKey, candidate.enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
         }
         pausedByFocusLoss = false

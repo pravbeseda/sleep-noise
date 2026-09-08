@@ -43,7 +43,7 @@ class NoiseControl(
  * One noise's settings: a speaker that silences the noise without touching its level, and a slider
  * that sets that level, with the level itself read out above it.
  *
- * Every noise on the screen is one of these — the three the app ships with and each experiment of the
+ * Every noise on the screen is one of these — the six the app ships with and each experiment of the
  * noise lab alike — so a new noise gets its toggle, its spacing and its persistence by existing
  * rather than by being wired up a second time.
  */
@@ -100,7 +100,7 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
         // Both before their listeners, so restoring the stored state does not count as a change to save.
         slider.progress = (preferences.getFloat(noise.volumeKey, noise.defaultVolume) * PERCENT_SCALE).toInt()
         // A noise at zero is silent whatever its stored flag says, and the speaker says only what is
-        // true: an untouched install has pink, and every lab candidate, sitting at 0 %.
+        // true: on an untouched install every noise but brown sits at 0 %.
         noiseToggle.isChecked = preferences.getBoolean(noise.enabledKey, DEFAULT_NOISE_ENABLED) && slider.progress > 0
 
         val show = {
