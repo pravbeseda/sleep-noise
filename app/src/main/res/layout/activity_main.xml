@@ -1,159 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The blocks are placed from the bottom up: the version line, the picture on it, then the play
-  button with the timer, each keeping its own height. The noise rows take whatever is left above
-  them and scroll only once there is more than that — which is the one thing a fixed share of the
-  screen could not do. A guideline at 0.45 held that share until a third row arrived and was cut in
-  half by it, while the band below stood mostly empty: the rows are the only block here whose height
-  depends on how many noises the app has, so they are the only one that can be given the remainder.
+  The blocks are placed from the top down inside one column: the noise rows, the play button with the
+  timer, the picture, the version line. The rows take whatever the other three leave and scroll inside
+  it, so the three stay at the bottom of the window however many noises the app shows — they are the
+  only block here whose height depends on that number, so they are the only one the remainder can go
+  to, and nothing else can take it: the picture is capped and the play block wraps its content.
 
-  Nothing else takes the remainder, which is what separates this from the weighted layout and the
-  chain that came before it: the picture is capped and the play block wraps its content, so neither
-  can grow into the space the rows are asking for.
-
-  Every size here is resolved at measure time: two percentages, one aspect ratio, one dp cap. None of
-  it is read out of a resource a rotation would change, because MainActivity declares configChanges
-  for orientation|screenSize and is never recreated — a -land or -h value, or anything read once in
-  onCreate, stays the portrait one for the rest of the session.
+  What no layout file can say is what to do when the window is too short for those three blocks and a
+  row to read at once, which is what a landscape phone hands out. BottomPinningScrollView answers it
+  at measure time: above that height the column is measured at exactly the window's, which is the
+  arrangement described above, and below it the column is measured at its own and the whole screen
+  scrolls instead. Only one of the two scrolls here can move at a time, and which one it is follows
+  from the window rather than from a resource a rotation would change — MainActivity declares
+  configChanges for orientation|screenSize and is never recreated, so a -land or -h value, or anything
+  read once in onCreate, stays the portrait one for the rest of the session.
 -->
-<androidx.constraintlayout.widget.ConstraintLayout
+<ru.pravbeseda.sleepnoise.ui.BottomPinningScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/contentScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
+    android:requiresFadingEdge="vertical"
+    android:fadingEdgeLength="@dimen/scroll_fade_length"
     android:padding="32dp">
 
-    <ScrollView
-        android:id="@+id/noiseScroll"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginBottom="@dimen/screen_block_spacing"
-        android:fillViewport="true"
-        android:requiresFadingEdge="vertical"
-        android:fadingEdgeLength="@dimen/scroll_fade_length"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/playTimerContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <!-- fillViewport makes this at least as tall as the region, so few rows centre in it instead of stacking at the top. -->
-        <LinearLayout
+        <!--
+          0dp with a weight is both arrangements at once: measured at the window's height the weight
+          hands this region everything the blocks below leave, and measured at its own a LinearLayout
+          reads the pair as wrap_content, which is the region as tall as the rows inside it.
+        -->
+        <ScrollView
+            android:id="@+id/noiseScroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="@dimen/screen_block_spacing"
+            android:fillViewport="true"
+            android:requiresFadingEdge="vertical"
+            android:fadingEdgeLength="@dimen/scroll_fade_length">
 
-            <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                android:id="@+id/whiteNoiseControl"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-            <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                android:id="@+id/pinkNoiseControl"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-            <ru.pravbeseda.sleepnoise.ui.NoiseControlView
-                android:id="@+id/brownNoiseControl"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-            <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
+            <!-- fillViewport makes this at least as tall as the region, so few rows centre in it instead of stacking at the top. -->
             <LinearLayout
-                android:id="@+id/noiseLabContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:visibility="gone"/>
-        </LinearLayout>
-    </ScrollView>
+                android:gravity="center">
 
-    <LinearLayout
-        android:id="@+id/playTimerContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/screen_block_spacing"
-        android:baselineAligned="false"
-        android:orientation="horizontal"
-        android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@id/cats"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+                    android:id="@+id/whiteNoiseControl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+                    android:id="@+id/pinkNoiseControl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <ru.pravbeseda.sleepnoise.ui.NoiseControlView
+                    android:id="@+id/brownNoiseControl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <!-- Filled in code from NOISE_LAB_CANDIDATES, so a new experiment needs no edit here. -->
+                <LinearLayout
+                    android:id="@+id/noiseLabContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </ScrollView>
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/playTimerContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:layout_marginBottom="@dimen/screen_block_spacing"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:gravity="center">
 
-            <!--
-              An ImageButton rather than a Button with a compound drawable: a compound drawable is
-              drawn at the icon's own 48dp and would be clipped by the smaller circle a narrow screen
-              gets, while fitCenter scales it with whatever size the dimen names.
-            -->
-            <ImageButton
-                android:id="@+id/playButton"
-                android:layout_width="@dimen/play_button_size"
-                android:layout_height="@dimen/play_button_size"
-                android:background="@drawable/play_button_background"
-                android:contentDescription="@string/play_button"
-                android:padding="@dimen/play_button_padding"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <!--
+                  An ImageButton rather than a Button with a compound drawable: a compound drawable is
+                  drawn at the icon's own 48dp and would be clipped by the smaller circle a narrow screen
+                  gets, while fitCenter scales it with whatever size the dimen names.
+                -->
+                <ImageButton
+                    android:id="@+id/playButton"
+                    android:layout_width="@dimen/play_button_size"
+                    android:layout_height="@dimen/play_button_size"
+                    android:background="@drawable/play_button_background"
+                    android:contentDescription="@string/play_button"
+                    android:padding="@dimen/play_button_padding"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_play"
+                    android:layout_gravity="center"/>
+            </LinearLayout>
+
+            <!-- The end inset the noise rows carry themselves, so the timer slider ends where they do. -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="0dp"
+                android:paddingEnd="@dimen/content_horizontal_inset">
+
+                <ru.pravbeseda.sleepnoise.timer.TimerView
+                    android:id="@+id/timerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!--
+          The picture is 70 % of the width, and that share is the only reason it sits in a
+          ConstraintLayout of its own: a percentage of the parent is what a LinearLayout cannot express.
+          Its height follows from the vector's own 585.62 x 170.1 through adjustViewBounds, so no
+          letterbox opens between it and the version line, and cats_max_height caps that width-driven
+          height on a wide window, where 70 % of the width would otherwise come to most of the height.
+        -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/cats"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintWidth_default="percent"
+                app:layout_constraintWidth_percent="0.7"
+                android:adjustViewBounds="true"
+                android:maxHeight="@dimen/cats_max_height"
                 android:scaleType="fitCenter"
-                android:src="@drawable/ic_play"
-                android:layout_gravity="center"/>
-        </LinearLayout>
+                android:src="@drawable/cats"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- The end inset the noise rows carry themselves, so the timer slider ends where they do. -->
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/version_text"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingStart="0dp"
-            android:paddingEnd="@dimen/content_horizontal_inset">
-
-            <ru.pravbeseda.sleepnoise.timer.TimerView
-                android:id="@+id/timerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-        </LinearLayout>
+            android:layout_gravity="center_horizontal"
+            android:text="@string/version"
+            android:textColor="?attr/colorVersionText"
+            android:textSize="11sp"
+            android:paddingTop="8dp"/>
     </LinearLayout>
-
-    <!--
-      The box is the drawing: 70 % of the width, and a height that follows from the vector's own
-      585.62 x 170.1, so there is no letterbox between the picture and the version line under it.
-      cats_max_height caps that width-driven height on a wide window, where 70 % of the width would
-      otherwise come to most of the height — the picture is decoration and the first thing to give
-      way, and a picture that would not give way is what broke the short screen before.
-    -->
-    <ImageView
-        android:id="@+id/cats"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintWidth_default="percent"
-        app:layout_constraintWidth_percent="0.7"
-        app:layout_constraintDimensionRatio="H,585.62:170.1"
-        app:layout_constraintHeight_max="@dimen/cats_max_height"
-        android:scaleType="fitCenter"
-        android:src="@drawable/cats"
-        app:layout_constraintBottom_toTopOf="@id/version_text"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <TextView
-        android:id="@+id/version_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/version"
-        android:textColor="?attr/colorVersionText"
-        android:textSize="11sp"
-        android:paddingTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</ru.pravbeseda.sleepnoise.ui.BottomPinningScrollView>
