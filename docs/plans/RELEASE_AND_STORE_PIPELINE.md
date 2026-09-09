@@ -247,9 +247,10 @@ otherwise:
 - The App Bundle attached to the GitHub Release is renamed `SleepNoise-<name>-<code>-release.aab`,
   matching what the `applicationVariants` block already does to the APK. AGP names it
   `app-release.aab`, which says nothing about which release it is once downloaded.
-- `resolve_release_tag.sh` gets its own test and promote/rollout run it before resolving, on the same
-  rule this repository already applies to `decide-work` and `no-deleted-tests`: a CI script that
-  answers wrongly is the failure that reports green.
+- `resolve_release_tag.sh` gets its own test and all three workflows run it before trusting the
+  script, on the same rule this repository already applies to `decide-work` and `no-deleted-tests`: a
+  CI script that answers wrongly is the failure that reports green. (`release.yml` joined the other
+  two in the pull request review; the entry below records why.)
 - Two `::error::` lines in `release.yml` run to 166 and 156 characters. The 140 limit is detekt's and
   applies to Kotlin; a workflow annotation cannot be wrapped without breaking it, and `ci.yml`
   already carries lines of that length.
@@ -265,10 +266,13 @@ otherwise:
 - *Fixed.* `CLAUDE.md` still described guard 3 as reading only a skipped context off the merged pull
   request's head, which is what it did before the decision above changed it to read all seven. One
   decision, three places, one of them already disagreeing.
-- *Fixed.* `release.yml` carried its own copy of the tag-ordering pipeline that
-  `resolve_release_tag.sh` owns and tests, while `CLAUDE.md` called the script "the one copy". It now
-  calls the script; with no argument that script has exactly one failure, so `|| true` maps it to the
-  empty value the guards read as "first release".
+- *Fixed, then fixed again.* `release.yml` carried its own copy of the tag-ordering pipeline that
+  `resolve_release_tag.sh` owns and tests, while `CLAUDE.md` called the script "the one copy". It
+  calls the script now — but the first form used `|| true` to map "no tag yet" to the empty value the
+  guards read as "first release", and the pull request review pointed out that this maps *every*
+  failure of the script the same way, switching guards 2 and 4 off silently rather than refusing a
+  release. It now asks whether any `v*+*` tag exists before calling, and the call runs under `set -e`.
+  `release.yml` also runs the script's test first, as the other two callers do.
 - *Fixed.* `track.set("internal")` restated the plugin's own default and `release.yml` passes
   `--track` on every upload. Six lines gone.
 - *Fixed twice.* The workflow-level and job-level concurrency groups in `promote.yml` and

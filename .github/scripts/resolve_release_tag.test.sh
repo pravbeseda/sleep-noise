@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Tests for resolve_release_tag.sh, run by promote.yml and rollout.yml before
-# either resolves anything. A wrong answer here promotes or halts the wrong
-# release and reports green while doing it.
+# Tests for resolve_release_tag.sh, run by all three release workflows before
+# any of them trusts the script. A wrong answer here promotes or halts the wrong
+# release, or hands release.yml the wrong previous tag, and reports green while
+# doing it.
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)

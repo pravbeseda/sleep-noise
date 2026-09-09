@@ -103,7 +103,7 @@ jobs:
         id: tag
         env:
           TAG: ${{ inputs.tag }}
-        # Shared with rollout.yml: the two must never disagree about which
+        # Shared with rollout.yml and release.yml: the three must never disagree about which
         # release they are touching, and the script says why an empty input
         # means the newest tag.
         run: |
