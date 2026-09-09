@@ -1,5 +1,5 @@
 Drei neue Rauschsorten — Brandung, Grau und Grün — bringen die Mischung auf sechs, und jede hat jetzt ihren eigenen Schalter neben ihrem Regler.
 
-Die App heißt ab jetzt Sleepy Cocktail.
+Ein neues Design für die App.
 
-Wiedergabe und Timer laufen weiter, wenn du die App verlässt, und der Bildschirm passt endlich auch auf ein quer gehaltenes Telefon.
+Fehler behoben und die Stabilität der App verbessert.

@@ -98,13 +98,13 @@ describe a build the world cannot download yet.
   method.
 - **What version is the first release through this pipeline?** → **2.0.0**, up from the 1.0.4 that is
   on Play. A major bump because the app is renamed, its store page is rewritten and it gained three of
-  its six noises since 1.0.4. It is written into `app/version.properties` in **stage 4**, not here:
+  its six noises since 1.0.4. It is written into `app/version.properties` in **stage 5**, not here:
   `CLAUDE.md` reserves that file, `versionCode` and the versioning block for the release pull request,
-  and stage 4 is that pull request.
+  and stage 5 is that pull request.
 - **What guards the very first release?** → Nothing, on two of the four counts, and the run says so
   in a `::warning::`. No `v*+*` tag exists, so the version code has nothing to exceed and the notes
   have nothing to be stale against — including the `versionName`, which still reads 1.0.4, the
-  version already on Play. Stage 4 is where it is bumped and the notes are written, which is the same
+  version already on Play. Stage 5 is where it is bumped and the notes are settled, which is the same
   human step a seed tag would have been protecting; a seed tag would also have to be pushed onto a
   guessed commit, since the history records only `Release 1.0.3 (5)`. Every release after the first
   is compared against the tag the first one creates.
@@ -145,6 +145,8 @@ Done when: `./gradlew testDebugUnitTest` is green with `PlayMetadataTest` failin
 deliberately over-long title, and the app installs showing the new label.
 
 ### Stage 2 — Release, promote and rollout
+
+- [x] Merged — PR #61.
 
 - Add Gradle Play Publisher to `gradle/libs.versions.toml` and apply it to `:app` behind a
   `-PplayPublish` property, so an ordinary build never needs the credentials.
@@ -194,6 +196,8 @@ strings on it.
 
 ### Stage 4 — Publishing the store page
 
+- [x] Merged — PR #63.
+
 - `.github/workflows/publish-listing.yml`, `workflow_dispatch` with a `dry_run` default of true:
   `publishReleaseListing`, with `--commit` only on a run that asked for it, sending texts and
   graphics together. No push and no merge reaches it.
@@ -216,8 +220,10 @@ Its own pull request, and dispatched rather than merged into: this is the releas
 when a release is actually going out.
 
 - Bump `versionName` to **2.0.0** in `app/version.properties`.
-- Write the release notes for it in all six locales — the first release has no previous tag, so
-  guard 4 has nothing to compare them against and this is the human step it stands in for.
+- Settle the release notes in all six locales. Stage 1 wrote a first draft of them with the rest of
+  the store tree; this stage is where they are read against the release actually going out and
+  rewritten where they do not fit it. The first release has no previous tag, so guard 4 has nothing
+  to compare them against, and this is the human step it stands in for.
 - Check `NOISE_LAB_ENABLED` is `false`, as the noise lab section of `CLAUDE.md` requires of every
   release pull request.
 - Then the dispatches, in order: `release.yml` from `main` → `promote.yml` to production at a
