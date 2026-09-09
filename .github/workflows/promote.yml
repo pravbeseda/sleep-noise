@@ -51,11 +51,10 @@ permissions:
 # promotion; a shared name that is sometimes too broad beats three names that are
 # each too narrow.
 #
-# No cancel-in-progress: cancelling a run midway through publishing is exactly
-# the partial state — an artifact on Play with no tag and no GitHub Release —
-# that the recovery notes in CLAUDE.md exist for. A second dispatch queues
-# instead, and by the time a second release reaches `guards` the tag exists, so
-# guard 1 turns a double click into a twenty-second refusal.
+# No cancel-in-progress: a cancelled run leaves an uncommitted Play edit, which
+# Google expires on its own — but the run that made it reports nothing, so the
+# operator is left guessing which half of a promotion happened. Queueing behind
+# the previous dispatch is the cheaper answer.
 concurrency:
   group: play-edit
 

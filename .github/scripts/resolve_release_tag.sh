@@ -9,24 +9,29 @@
 # instead of the operator copying a tag across. A tag that does not exist is
 # refused here, by name, rather than further down as a checkout error.
 #
-# Shared by promote.yml and rollout.yml because the two must never disagree
-# about which release they are touching. release.yml keeps its own copy of the
-# ordering line: there it looks for the *previous* tag to compare against, and
-# an empty answer is a first release rather than a refusal.
+# Shared by all three workflows because they must never disagree about which
+# release they are touching. release.yml asks a different question of it — the
+# *previous* tag, to compare this release against — and answers the empty case
+# itself: it checks whether any `v*+*` tag exists before calling, so that a
+# script failing for any other reason cannot be read as a first release.
 #
 # Tested by resolve_release_tag.test.sh beside it.
 set -euo pipefail
 
 TAG="${1:-}"
 
+# Ordered by version code, which is monotonic, so this is the correct order — and
+# it avoids --sort=version:refname, which has no defined behaviour for '+'. The
+# 'v*+*' glob is what fences the scheme off from any other tag the repository may
+# carry: this one has no tag at all until release.yml creates the first, but a
+# hand-made `v1.0.4` would otherwise be read as a release with no code.
+#
+# Resolved once, and read twice below: it is both the answer to an empty argument
+# and the yardstick a named tag is warned against.
+NEWEST=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
+
 if [ -z "$TAG" ]; then
-    # Ordered by version code, which is monotonic, so this is the correct order
-    # — and it avoids --sort=version:refname, which has no defined behaviour
-    # for '+'. The 'v*+*' glob is what fences the scheme off from any other tag
-    # the repository may carry: this one has no tag at all until release.yml
-    # creates the first, but a hand-made `v1.0.4` would otherwise be read as a
-    # release with no code.
-    TAG=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
+    TAG=$NEWEST
     if [ -z "$TAG" ]; then
         echo "::error::no v*+* tag exists — nothing has been released through release.yml yet." >&2
         exit 1
@@ -47,7 +52,6 @@ fi
 # rewrites every release on that track with the code it is given. So an older
 # tag is warned about, loudly and at the moment it is resolved, rather than
 # guarded against with a Play API call this script has no credentials for.
-NEWEST=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
 if [ -n "$NEWEST" ] && [ "$TAG" != "$NEWEST" ]; then
     echo "::warning::$TAG is not the newest release — $NEWEST is. Acting on an older tag rewrites" \
          "whatever is on the track with the older version code, so do this only to halt or finish a" \

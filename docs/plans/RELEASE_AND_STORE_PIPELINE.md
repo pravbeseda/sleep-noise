@@ -271,11 +271,14 @@ otherwise:
   empty value the guards read as "first release".
 - *Fixed.* `track.set("internal")` restated the plugin's own default and `release.yml` passes
   `--track` on every upload. Six lines gone.
-- *Fixed, not raised as a finding.* The workflow-level and job-level concurrency groups in
-  `promote.yml` and `rollout.yml` were the same string whenever the tag was typed out rather than
-  left empty, so the job would have waited on the group its own run holds. SpendControl never meets
-  this because its job key carries a flavor suffix; there are no flavors here. The two are now
-  different namespaces, `-dispatch-` and `-release-`.
+- *Fixed twice.* The workflow-level and job-level concurrency groups in `promote.yml` and
+  `rollout.yml` were the same string whenever the tag was typed out rather than left empty, so the
+  job would have waited on the group its own run holds. Separating the namespaces fixed that and left
+  a larger hole open, which the pull request review then found: the groups were per workflow, while
+  the resource they protect is one Play edit per service account — *creating a new edit for an
+  application invalidates any active edits for that application created by the same user*. A release
+  overlapping a rollout voided the other run's edit. All five keys are now one static `play-edit`
+  shared by the three workflows, and both job-level groups are gone with them.
 - *Fixed, beyond the step's files.* The "the stub is only for forks" rule was a comment in
   `.github/actions/google-services/action.yml` that every caller had to remember, plus a copied
   14-line assertion in `ci.yml` and a second one this step added to `release.yml`. It is now a

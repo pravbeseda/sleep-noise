@@ -45,11 +45,10 @@ permissions:
 # promotion; a shared name that is sometimes too broad beats three names that are
 # each too narrow.
 #
-# No cancel-in-progress: cancelling a run midway through publishing is exactly
-# the partial state — an artifact on Play with no tag and no GitHub Release —
-# that the recovery notes in CLAUDE.md exist for. A second dispatch queues
-# instead, and by the time a second release reaches `guards` the tag exists, so
-# guard 1 turns a double click into a twenty-second refusal.
+# No cancel-in-progress: a cancelled run leaves an uncommitted Play edit, which
+# Google expires on its own — but the run that made it reports nothing, so the
+# operator is left guessing which half of a promotion happened. Queueing behind
+# the previous dispatch is the cheaper answer.
 concurrency:
   group: play-edit
 
@@ -202,14 +201,6 @@ jobs:
     # "what everyone has", and `complete` is the moment the second becomes true.
     # Its own job rather than a step of `rollout` so that the write token below
     # never sits in the job that runs Gradle and the plugin's dependency graph.
-    #
-    # The job-level group above does not cover this job, and that is an
-    # accepted limit rather than an oversight: a `halt` dispatched with the tag
-    # typed out while a `complete` with the tag omitted is still running lands
-    # in a different workflow-level group, and could leave `Latest` on a
-    # stopped rollout. The badge is wrong only until the next release replaces
-    # it, which is a cheaper price than a signed Play API call to ask for the
-    # true state.
     if: inputs.action == 'complete'
     permissions:
       contents: write

@@ -679,15 +679,25 @@ locale by text against every note the previous tag holds for that locale, and th
 ones that lagged. It has a test beside it, `check_release_readiness.test.py`, and `release.yml` runs
 that before the check — the rule every CI script here follows, because a wrong answer is the failure
 that reports green. `resolve_release_tag.sh` has `resolve_release_tag.test.sh` on the same terms,
-run by both workflows before either resolves a tag.
+run by all three workflows before any of them resolves a tag.
 
 **No `environment:` on any job.** SpendControl has six because it has two apps and its deployments
 page answers "where is each version"; one app with three tracks has nothing to answer there that the
 Releases feed does not, and three environments to create in the repository settings would be a
-blocking prerequisite bought for no gain. `release.yml` carries `concurrency: group: release` with
-**no** `cancel-in-progress`: cancelling a run midway through publishing is the partial state — a
-bundle on Play with no tag and no GitHub Release — and a second dispatch queues instead, where guard 1
-turns a double click into a refusal. Recovery from that state is by hand: the bundle is a run
+blocking prerequisite bought for no gain. **All three workflows carry the same `concurrency: group: play-edit`, and a fourth Play-touching
+workflow joins it rather than getting one of its own.** The reason is Play's, not GitHub's: every one
+of them opens an edit for this app as the same service account, and *creating a new edit for an
+application invalidates any active edits for that application created by the same user*
+([Google](https://developers.google.com/android-publisher/concurrency-considerations)). So a release
+overlapping a rollout does not queue behind it — it voids the other run's edit mid-operation. One
+shared name is the only lock there is, and it costs a dry run waiting behind a promotion, which is
+the right way round. A group per workflow reads sensible and brings the race straight back.
+
+There is **no** `cancel-in-progress` on it: cancelling a run midway through publishing is the partial
+state — a bundle on Play with no tag and no GitHub Release — and a second dispatch queues instead,
+where guard 1 turns a double click into a refusal. GitHub keeps one pending run per group, so with
+three dispatches waiting the oldest pending one is dropped; that is a limit of the mechanism rather
+than a choice. Recovery from that state is by hand: the bundle is a run
 artifact named `release-bundle`, and `gh release create <tag> --target <sha> --prerelease` with it
 attached is the whole of `finalize`.
 
