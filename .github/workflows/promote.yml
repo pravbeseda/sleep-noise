@@ -147,8 +147,9 @@ jobs:
       - name: Provide google-services.json
         # Nothing is compiled here, but the Firebase plugins are applied
         # unconditionally and every Gradle task needs the file in place. The
-        # stub would do as well as the real one — no artifact leaves this job —
-        # so unlike release.yml there is no assertion in front of the action.
+        # stub would do as well as the real one — no artifact leaves this job,
+        # only an API call moving one Play already holds — so no require-real
+        # here, which release.yml and the alpha job in ci.yml both pass.
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
