@@ -34,9 +34,13 @@ describe a build the world cannot download yet.
 - **Title fits in 30 characters.** `Sleepy Cocktail: White Noise` is 28.
 - **Short description fits in 80.** `Mix six live-generated noises into your perfect sleep cocktail`
   is 61.
-- **Screenshots and texts are one upload.** Gradle Play Publisher sends the whole listing in one
-  edit, so a publisher that has the texts and not the graphics overwrites the graphics. Whatever the
-  screenshot stage produces has to be reachable by the publish stage.
+- **A publish with no local graphics leaves the published images alone.** Checked against Gradle
+  Play Publisher 4.0.0 rather than assumed: `PublishListings` builds its media list from the graphics
+  files it actually finds and calls the uploader only for those, so an absent directory issues no
+  image operation at all. This plan's first draft had it the other way round — that a text-only
+  publish would wipe the screenshots — and it is worth recording as wrong, because that false premise
+  would have made the screenshot stage a prerequisite of the publish stage rather than an
+  independent piece of work.
 
 ## Open questions
 
@@ -132,8 +136,9 @@ Done when: `release.yml` dispatched with `dry_run: true` passes every guard and 
   under a locale the run supplies.
 - `.github/workflows/screenshots.yml`, `workflow_dispatch`, an emulator over the six locales,
   writing `app/src/main/play/listings/<locale>/graphics/phone-screenshots/`.
-- The run either commits the images to a branch or publishes them as an artifact — Phase 0 decides
-  which, and the publish stage depends on the answer.
+- The run commits the images, per the decision above. It does not gate stage 4: with no local
+  graphics the publish leaves whatever Play already holds, so the store texts can go out before a
+  single screenshot has been taken.
 
 Files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/store/ScreenshotTest.kt`,
 `.github/workflows/screenshots.yml`, `app/build.gradle.kts`, `CLAUDE.md`.

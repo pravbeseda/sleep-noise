@@ -605,9 +605,13 @@ the developer name. And the description says playback needs no connection, never
 nothing: Crashlytics and Analytics ship with it, and a privacy claim the binary contradicts is a
 policy violation rather than a wording problem.
 
-`src/main/play` is declared an input of the unit test task in `app/build.gradle.kts`, and that line
-is load-bearing rather than tidy: without it Gradle cannot see that a test reads the tree off disk,
-so `testDebugUnitTest` answers UP-TO-DATE when the only thing that changed is what it guards. It was
-measured, not feared — a German title of 32 characters, two over Play's limit, left the whole
-Definition of done line green. `src/main/res` needs no such line: `processDebugResources` already
-declares it, so a `strings.xml` edit reaches the tests through the compile chain.
+`src/main/play` **and** `src/main/res` are declared inputs of the unit test task in
+`app/build.gradle.kts`, and those two lines are load-bearing rather than tidy: without them Gradle
+cannot see that a test reads either tree off disk, so `testDebugUnitTest` answers UP-TO-DATE when the
+only thing that changed is what it guards. Both were measured, not feared — a German title of 32
+characters, two over Play's limit, left the whole Definition of done line green, and so did a new
+`values-fr/strings.xml`, which is exactly the step the Localization section tells a translator to
+take. The compile chain is the half that looks as though it should already cover `res` and does not:
+a bucket carrying only a string that already exists adds no `R` field, so `processDebugResources`
+re-runs while the `R` jar on the test classpath stays byte-identical and the test task is left up to
+date.
