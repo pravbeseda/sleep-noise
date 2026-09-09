@@ -559,25 +559,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Require the real google-services.json
-        # The shared action below falls back to a stub when the secret is
-        # missing, which is right for a fork pull request and wrong here: a stub
-        # ships an app whose Crashlytics and Analytics report to nobody. Asserted
-        # before the action rather than inside it, so the fallback rule stays in
-        # one place.
-        env:
-          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
-        run: |
-          set -euo pipefail
-          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
-            echo "::error::GOOGLE_SERVICES_JSON_B64 is unset. An alpha build must carry the real Firebase config, never the stub."
-            exit 1
-          fi
-
       - name: Provide google-services.json
+        # require-real because this job delivers to testers: the action's stub is
+        # for a fork pull request, and an alpha whose Crashlytics reports to
+        # nobody is not what a delivery is for.
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          require-real: 'true'
 
       - name: Decode the upload keystore
         env:

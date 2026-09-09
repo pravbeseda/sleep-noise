@@ -11,6 +11,14 @@ inputs:
       and selects the stub.
     required: false
     default: ''
+  require-real:
+    description: >
+      Set to 'true' by a job that ships the build somewhere — an alpha, a release. The stub then
+      refuses instead of standing in, because an app whose Crashlytics reports to nobody is worse
+      than a job that stops. Lives here rather than as a step in each caller so that the rule and
+      the fallback it governs cannot drift apart.
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -19,6 +27,7 @@ runs:
       shell: bash
       env:
         GOOGLE_SERVICES_JSON_B64: ${{ inputs.secret-b64 }}
+        REQUIRE_REAL: ${{ inputs.require-real }}
       run: |
         # The google-services and Crashlytics plugins are applied unconditionally, so every Gradle
         # task needs this file to exist — including unit tests, which never reach Firebase at
@@ -28,9 +37,15 @@ runs:
         # the same way. Those runs fall back to a checked-in stub, so a contribution can still go
         # green against the required checks. Only the package name has to be real.
         #
-        # Jobs that publish an artifact (D3, D4) must NOT use the fallback: a stub would ship an app
-        # whose Crashlytics and Analytics go nowhere. Those jobs must assert the secret is present
-        # before calling this action, or not call it at all.
+        # Jobs that ship the build somewhere must NOT use the fallback: a stub would ship an app
+        # whose Crashlytics and Analytics go nowhere. They pass require-real, and the refusal is
+        # here rather than in each of them, so that one rule governs one fallback.
+        if [ "$REQUIRE_REAL" = true ] && [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
+          echo "::error::GOOGLE_SERVICES_JSON_B64 is empty and this job ships the build. The stub is" \
+               "for fork and Dependabot pull requests, and an app whose Crashlytics reports to nobody" \
+               "is not what a delivery is for."
+          exit 1
+        fi
         if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
           printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
         else

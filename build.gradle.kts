@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
+    // Gradle Play Publisher. On the classpath for every build, applied by none:
+    // app/build.gradle.kts applies it only under -PplayPublish, so an ordinary
+    // build, a debug build and every CI job that publishes nothing need no Play
+    // credentials and never configure the plugin.
+    alias(libs.plugins.play.publisher) apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
     id("com.google.firebase.crashlytics") version "3.0.2" apply false
 }

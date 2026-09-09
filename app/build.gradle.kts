@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import com.github.triplet.gradle.play.PlayPublisherExtension
 import java.util.Properties
 
 plugins {
@@ -272,6 +273,41 @@ android {
                 output.outputFileName = newApkName
             }
         }
+    }
+}
+
+// --- Google Play Publisher --------------------------------------------------
+// Applied only when asked for: `./gradlew -PplayPublish publishReleaseBundle`.
+// Without the property the plugin sits on the classpath (root build script) and
+// configures nothing, so it can neither slow an ordinary build nor break one
+// when a new AGP lands before a GPP that knows it. Publishing is deliberate — a
+// Gradle run someone asks for, never a side effect of assemble.
+//
+// GPP reads src/main/play, the tree the store texts already live in. The three
+// workflows under .github/workflows use two of its tasks, publishReleaseBundle
+// and promoteReleaseArtifact, and both carry the artifact and release-notes/
+// only; the listing is published by nothing here yet (stage 4 of
+// docs/plans/RELEASE_AND_STORE_PIPELINE.md).
+if (project.hasProperty("playPublish")) {
+    apply(plugin = "com.github.triplet.play")
+
+    configure<PlayPublisherExtension> {
+        // Same shape as the signing credentials above: the JSON key lives
+        // outside the repository and its path arrives as an SN_* property —
+        // ORG_GRADLE_PROJECT_SN_PLAY_JSON on CI, ~/.gradle/gradle.properties
+        // by hand. Unset, the plugin falls back to Application Default
+        // Credentials and fails at the task, not at configuration.
+        project.findProperty("SN_PLAY_JSON")?.let { serviceAccountCredentials.set(file(it)) }
+        // A bundle, never an APK: the listing postdates August 2021, so Play
+        // accepts nothing else from it (D4 of docs/plans/REFACTORING_PLAN.md).
+        // Play App Signing re-signs what it distributes; Drevo.Keystore is the
+        // upload key.
+        defaultToAppBundles.set(true)
+        // Dry by default: a publish task opens an edit in Play and abandons it
+        // unless the run passes --commit. Forgetting the flag publishes
+        // nothing; the opposite default would let a forgotten --no-commit
+        // publish everything.
+        commit.set(false)
     }
 }
 

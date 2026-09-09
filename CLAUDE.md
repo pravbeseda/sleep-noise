@@ -163,7 +163,7 @@ Five of the six — unit tests, instrumented tests, lint, detekt and format — 
 
 It enforces three rules this file states in prose. Two of them read what a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/` — removing one passes, since that direction is a test coming back. The third catches what a diff does not show at all: deleting a test method, or the whole file, adds no line for either of the others to match. `.github/scripts/no-deleted-tests.sh` counts `@Test` annotations across both test source sets at the merge base and at the branch head, and fails when the total drops. **The merge base, not `base.sha`** — which costs nothing on CI and is what makes the script usable off it. The job checks out with no `ref:`, so on a `pull_request` event `HEAD` is `refs/pull/N/merge` and its first parent is `base.sha`, which makes the merge base `base.sha` itself. Run by hand on the branch with `BASE_SHA=origin/main` the two part company: `main` has moved on, and every test it gained since would otherwise read as one the branch deleted. It counts the whole tree rather than each file, so a rename, a move between files or source sets and a split class all remove and add the same annotations and pass. Comments are cut out before anything is counted, in both the forms an editor writes them — `//` per line and a `/* */` block, whose lines carry no leading star when the IDE produces it. Switching a test off that way adds no `@Ignore` for the step above to see, and would be invisible here too if the count took the line at its word. A block comment counts as opening only where one starts a line, which is where an editor puts it: anywhere else a `/*` is far likelier to sit inside a string, and `val marker = "/*"` once opened a comment that never closed, so every annotation after it went uncounted on both sides at once and a real deletion read as no change. What the scanner still cannot see is a `@Test` inside a string literal, and chasing that means lexing Kotlin — raw strings and escapes included — which is not what a floor is for: it is against the ways a test is actually switched off, not a proof against a forgery. The price of that is stated rather than hidden: a pull request that deletes one test and adds another passes, because the net is what is measured, and that much stays a matter for review. There is no escape hatch, on the same terms as the baselines — a deletion that is genuinely right is a conversation, not a flag (issue #14). It costs nothing so far: run against all 38 merged pull requests in this repository, the rule blocks none. Three commits do drop a test, `ExampleUnitTest` among them, and each sits in a pull request that added more elsewhere — so the `@Test` count the quality plan feared would have failed that removal does not, at the granularity the check actually runs. `.github/scripts/no-deleted-tests.test.sh` holds the cases, and the job runs it before the check for the reason the `decide-work` action runs its own: a wrong count is the failure that reports green.
 
-The context names in the branch protection (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`, `Instrumented tests (API 26)`, `Instrumented tests (API 36)`) are the job names, hardcoded on both sides — the last two with the matrix value the job's `name:` interpolates. Renaming a job, or changing an API level in the matrix, without renaming the context turns the check into a missing one and blocks every merge — change them together.
+The context names (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`, `Instrumented tests (API 26)`, `Instrumented tests (API 36)`) are the job names, and they are written out in **three** places, not two: the job's own `name:` in `ci.yml`, the branch protection rule, and guard 3 of `.github/workflows/release.yml`, which insists on all seven before it publishes. The last two contexts carry the matrix value the job's `name:` interpolates. Renaming a job, or changing an API level in the matrix, without renaming the context turns the check into a missing one — it blocks every merge at the first two places and refuses every release at the third. Change all three together.
 
 The five Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules.
 
@@ -181,7 +181,7 @@ The decision needs the merge base, so **every calling job checks out with `fetch
 
 The `alpha` job builds a signed release APK on every push to `main` and uploads it to the `qa` tester group. It is **not** a required check — it runs after the merge, so there is nothing left for it to block — and it is gated `needs: [unit-tests]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`. It carries no concurrency group of its own, and one would do nothing if it had: the workflow-level key already serialises runs on `main`, so two alpha jobs never overlap. That key cancels superseded runs on pull requests only — on `main` it would drop a build the merge is entitled to, and `workflow_dispatch` shares the group while doing full work. Two merges a minute apart therefore deliver twice, in order.
 
-It checks out with `fetch-depth: 0` because `versionCode` is the commit count and `verifyReleaseVersioning` rejects a shallow clone outright. It asserts `GOOGLE_SERVICES_JSON_B64` is present **before** calling the shared action: that action's stub fallback is right for a fork pull request and wrong here, since a stub ships an app whose Crashlytics reports to nobody.
+It checks out with `fetch-depth: 0` because `versionCode` is the commit count and `verifyReleaseVersioning` rejects a shallow clone outright. It passes **`require-real: 'true'`** to the shared google-services action: that action's stub fallback is right for a fork pull request and wrong here, since a stub ships an app whose Crashlytics reports to nobody, and the input makes it refuse rather than stand in. `release.yml` passes the same, and the rule lives in the action so that a caller cannot forget it — it used to be a comment there and a copied assertion in each caller, which is two places for one decision.
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
@@ -576,6 +576,137 @@ A missing or keyless `version.properties` is rejected on the same terms: the `ve
 The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` and `packageReleaseBundle` — the two tasks that turn a version into a publishable artifact. So `./gradlew build` and `./gradlew bundle` are covered even though neither names a release, while `lintRelease`, `testReleaseUnitTest` and any debug build still work on a shallow clone, falling back to the floor. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
 
 Release commits follow the message form `Release 1.0.3 (5)`.
+
+### The release path: three verbs, one tag
+
+**A release is a tag, and the tag is `v<versionName>+<versionCode>`** — `v1.1.0+58`, say. Both numbers
+already exist, `app/version.properties` and `git rev-list --count HEAD`; the tag only records them,
+which is why nothing ever writes a version *into* a tag. The `+` is what every script keys on: the
+`v*+*` glob is how a release is told from any other tag the repository may one day carry, and the
+newest release is the one with the highest code after the `+`, sorted numerically — never
+`--sort=version:refname`, which has no defined behaviour for `+`, and never lexically, where `+99`
+sorts after `+286`. `.github/scripts/resolve_release_tag.sh` is the one copy of that ordering the
+promote and rollout workflows share, so the two cannot disagree about which release they are touching.
+There is no tag of this scheme yet: 1.0.4 on Play was uploaded by hand from a commit nobody tagged,
+and the first run of `release.yml` creates the first one.
+
+Three `workflow_dispatch` workflows, one per decision, modelled on SpendControl's and stripped of its
+flavors:
+
+- **`release.yml`** — "this commit is version X". Dispatched from the branch being released; the
+  "Use workflow from" dropdown GitHub always renders *is* that choice, so there is no branch input.
+  It refuses before it builds. Four guards, in order: the tag must not exist; the version code must
+  exceed the newest tag's; the seven contexts `main` requires must be green on this commit; and the
+  release notes must not repeat the previous tag's, with `versionName` moved. Then it builds the
+  signed **App Bundle** — not an APK; the listing postdates August 2021 and Play accepts nothing
+  else — uploads it with `:app:publishReleaseBundle --track <track> --commit --rerun`, tags the
+  commit and creates a GitHub Release with `--prerelease` and the bundle attached, notes from
+  `release-notes/en-US/default.txt`. `dry_run` runs the guards and stops, which is the cheap way to
+  ask whether a release is ready. **The track defaults to `beta`** — open testing — and `internal`
+  is on the dropdown for a build that has to be looked at before it is public.
+- **`promote.yml`** — "version X moves to track Y". Takes the tag (empty means the newest), checks
+  *it* out so the notes come from the released commit, and runs `:app:promoteReleaseArtifact
+  --from-track <from> --promote-track <to> --version-code <the code in the tag> --commit --rerun`,
+  adding `--release-status inProgress --user-fraction <f>` for a staged production rollout. **Only
+  the destination is asked for; the source is derived** — `production` from `beta`, `beta` from
+  `internal`. Two dropdowns offered four combinations of which two were mis-clicks.
+- **`rollout.yml`** — the production percentage and stopping it: `set-fraction`, `complete`,
+  `halt`, all `promoteReleaseArtifact --update production --version-code <code>`. `complete` also
+  clears `prerelease` and marks the release `Latest`.
+
+So the whole path is: bump `versionName` and write the notes on `main` → `release.yml` from `main`,
+which uploads to `beta`, tags and creates the prerelease → `promote.yml` to `production` at a
+fraction → `rollout.yml` to raise it and `complete`. Play holds one binary throughout: promotion
+rather than a second build, so production gets the bundle testers had — and Play rejects a re-upload
+of a version code it holds, which makes promotion the only mechanism anyway. **The listing is
+untouched by all three.** `publishReleaseBundle` and `promoteReleaseArtifact` carry the artifact and
+`release-notes/` only; the store page is stage 4 of `docs/plans/RELEASE_AND_STORE_PIPELINE.md`.
+
+Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
+debug build and every CI job that publishes nothing need no Play credentials and never configure the
+plugin. It is 3.13.0 and not 4.x on purpose: 4.0.0 is built against AGP 9, and this project is on
+8.12.2 — the version moves with the AGP major, and `gradle/libs.versions.toml` says so beside the
+number. The service account JSON arrives as `SN_PLAY_JSON`, the same `SN_*` shape as the keystore
+properties; CI decodes `PLAY_SERVICE_ACCOUNT_JSON` into `$RUNNER_TEMP` and hands the path over as
+`ORG_GRADLE_PROJECT_SN_PLAY_JSON`.
+
+Four flags are not optional, and each has a failure behind it that SpendControl paid for:
+
+- **`--commit`**: the build script sets `commit = false`, so a run without it builds a Play edit,
+  has Play validate it and abandons it. That is the dry run, and the right default — the opposite
+  one would let a forgotten `--no-commit` publish everything.
+- **`--rerun`**: Gradle's per-task flag, not `--rerun-tasks`. Without it a publish whose inputs
+  have not changed is up to date, uploads nothing, and reports success.
+- **`--track`** on every upload: it decides the destination on its own, so the `play {}` block sets
+  no track at all. The plugin's own default is `internal`, which is where a hand-run publish that
+  forgot the flag lands — the right place for a run that did not say where it was going, and one
+  fewer value to keep in step with the workflow.
+- **`--version-code`** on every promotion: without it the task acts on whatever sits on the source
+  track *now*, so completing an older tag after a newer release reached production would finish the
+  newer one's rollout. **It is not a guard, though it reads like one.** Gradle Play Publisher 3.13.0
+  does not check that the code is on the track: `DefaultTrackManager.promote` rewrites every release
+  on the source track with the code it is given. Dispatching an older tag after a newer one reached
+  production therefore rewrites the newer release backwards instead of failing. What protects
+  against that is the empty-tag default, which resolves to the newest release — so type a tag out
+  only when you mean an older one.
+
+**The edit cache** is the trap a local dry run leaves behind: the plugin writes the id of an
+uncommitted edit to `app/build/gpp/<applicationId>.txt` and reuses it next time, so the run after a
+dry run fails with `This edit has expired`. A runner starts clean; a developer machine runs
+`rm -rf app/build/gpp` first.
+
+Two guards deserve their reasons written down. **Guard 3 cannot read `Guardrails` off a commit of
+`main`**: that job compares a pull request against its base and carries a job-level `if:`, so on the
+merge commit it reports `completed/skipped` — measured, not assumed. Where it did run is the pull
+request's head, which is the merge commit's second parent, and branch protection is strict, so the
+two carry the same tree. **All seven contexts are read off that parent, not just the skipped one** —
+because the release commit's own greens are vacuous: a push to `main` answers `decide-work` with
+false, so every Gradle job succeeds in seconds having executed nothing. Measured on c4e9072:
+`Instrumented tests (API 36)` succeeded in nine seconds without booting an emulator. A squash merge
+has no second parent and would be refused on `Guardrails`: this repository merges with merge
+commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
+It had a released commit to seed a tag on; here a guessed tag would guard nothing, and the first
+release would otherwise be blocked until somebody guessed. The moment `finalize` creates the first
+tag, both guards compare against it, and a code that does not exceed it is refused. The price is
+stated: the first release is not checked for a bumped `versionName` or new notes, and the release
+PR that precedes it does that by hand.
+
+`.github/scripts/check_release_readiness.py` is guard 4, and its docstring records the two weaker
+forms that were tried against real revisions and passed the release they were meant to stop:
+comparing paths reads a rename as a change, and asking for any text absent from the base passes when
+a release adds locales, since a fresh translation of the *old* text is a new string. It checks every
+locale by text against every note the previous tag holds for that locale, and the error names the
+ones that lagged. It has a test beside it, `check_release_readiness.test.py`, and `release.yml` runs
+that before the check — the rule every CI script here follows, because a wrong answer is the failure
+that reports green. `resolve_release_tag.sh` has `resolve_release_tag.test.sh` on the same terms,
+run by all three workflows before any of them resolves a tag.
+
+**No `environment:` on any job.** SpendControl has six because it has two apps and its deployments
+page answers "where is each version"; one app with three tracks has nothing to answer there that the
+Releases feed does not, and three environments to create in the repository settings would be a
+blocking prerequisite bought for no gain. **All three workflows carry the same `concurrency: group: play-edit`, and a fourth Play-touching
+workflow joins it rather than getting one of its own.** The reason is Play's, not GitHub's: every one
+of them opens an edit for this app as the same service account, and *creating a new edit for an
+application invalidates any active edits for that application created by the same user*
+([Google](https://developers.google.com/android-publisher/concurrency-considerations)). So a release
+overlapping a rollout does not queue behind it — it voids the other run's edit mid-operation. One
+shared name is the only lock there is, and it costs a dry run waiting behind a promotion, which is
+the right way round. A group per workflow reads sensible and brings the race straight back.
+
+There is **no** `cancel-in-progress` on it: cancelling a run midway through publishing is the partial
+state — a bundle on Play with no tag and no GitHub Release — and a second dispatch queues instead,
+where guard 1 turns a double click into a refusal. GitHub keeps one pending run per group, so with
+three dispatches waiting the oldest pending one is dropped; that is a limit of the mechanism rather
+than a choice. Recovery from that state is by hand: the bundle is a run
+artifact named `release-bundle`, and `gh release create <tag> --target <sha> --prerelease` with it
+attached is the whole of `finalize`.
+
+Two Play Console steps stand between this and the first release, and neither is in the repository:
+the service account behind `PLAY_SERVICE_ACCOUNT_JSON` needs **release manager** for the tracks and
+**manage store presence** for the listing — two different permissions, and the second fails as a
+`403` on `edits:validate` rather than as anything that names a permission — and the open-testing
+track has to exist, since `release.yml` publishes there by default. A release PR also checks
+`NOISE_LAB_ENABLED` is `false`, as the noise lab section says.
 
 ## The store listing
 

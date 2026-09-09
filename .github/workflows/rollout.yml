@@ -1,0 +1,213 @@
+name: Rollout
+
+# Verb 3 of three: the production percentage, and stopping it. Nothing is built
+# and nothing moves between tracks here — the release is already on production
+# and this workflow only changes how much of it the world sees.
+#
+# `--update X` is implemented in the plugin as `fromTrack = X; promoteTrack = X`
+# and nothing else, so it composes with --release-status and --user-fraction
+# freely; those sit on the shared TrackExtensionOptions that promoteArtifact
+# implements too.
+#
+# No `environment:` here either — see the note at the top of release.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag being rolled out — leave empty for the newest release
+        type: string
+        required: false
+      action:
+        description: What to do with the production rollout
+        type: choice
+        options:
+          - set-fraction
+          - complete
+          - halt
+        default: set-fraction
+        required: true
+      user_fraction:
+        description: Rollout fraction for set-fraction — a number strictly between 0 and 1
+        type: string
+        default: '0.2'
+
+permissions:
+  contents: read
+
+# One concurrency group for all three workflows, and the reason is Play's rather
+# than GitHub's: every one of them opens an edit for this app as the same service
+# account, and "creating a new edit for an application invalidates any active
+# edits for that application created by the same user"
+# (developers.google.com/android-publisher/concurrency-considerations). So a
+# release overlapping a rollout does not queue behind it — it silently voids the
+# other run's edit mid-operation. Serialising the three is the only lock there
+# is. The price is that a dry run, which touches Play not at all, waits behind a
+# promotion; a shared name that is sometimes too broad beats three names that are
+# each too narrow.
+#
+# No cancel-in-progress: a cancelled run leaves an uncommitted Play edit, which
+# Google expires on its own — but the run that made it reports nothing, so the
+# operator is left guessing which half of a promotion happened. Queueing behind
+# the previous dispatch is the cheaper answer.
+concurrency:
+  group: play-edit
+
+jobs:
+  # The tag is resolved once for the whole dispatch, as in promote.yml and for
+  # the same reason: a tag landing between two resolutions could split one run
+  # across two releases.
+  resolve:
+    name: Resolve the release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Validate the rollout fraction
+        # Only where the fraction is actually sent. `halt` and `complete` never
+        # pass one to Play, and refusing an emergency stop over a field it does
+        # not use is a false blockage on the path that can least afford one.
+        if: inputs.action == 'set-fraction'
+        env:
+          FRACTION: ${{ inputs.user_fraction }}
+        # Play rejects `1.0` outright, and `20` — the natural typo for 20% —
+        # would otherwise reach it as 2000%. Unlike promote.yml this refuses `1`
+        # as well: a full rollout is `action=complete`, never a percentage.
+        run: |
+          set -euo pipefail
+          if ! awk -v f="$FRACTION" 'BEGIN { exit !(f ~ /^0?\.[0-9]+$/ && f+0 > 0 && f+0 < 1) }'; then
+            echo "::error::user_fraction '$FRACTION' is not a number strictly between 0 and 1." \
+                 "A full rollout is action=complete."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The dispatch ref, only for its tags.
+          fetch-depth: 0
+
+      # Before the resolution, not beside it: a wrong answer here completes or
+      # halts the wrong release and reports green while doing it.
+      - name: Test the tag resolution
+        run: .github/scripts/resolve_release_tag.test.sh
+
+      - name: Resolve the release tag
+        id: tag
+        env:
+          TAG: ${{ inputs.tag }}
+        # Shared with promote.yml and release.yml: the three must never disagree about which
+        # release they are touching, and the script says why an empty input
+        # means the newest tag.
+        run: |
+          set -euo pipefail
+          # Assigned first, then written: under `set -e` the exit status of a
+          # command substitution used as an argument is discarded — the step
+          # would take `echo`'s status, go green on a refusal and write an empty
+          # tag. An assignment carries the substitution's status, so the script
+          # failing fails the step.
+          RESOLVED=$(.github/scripts/resolve_release_tag.sh "$TAG")
+          echo "tag=$RESOLVED" >> "$GITHUB_OUTPUT"
+
+  rollout:
+    name: ${{ inputs.action }} on production
+    runs-on: ubuntu-latest
+    needs: resolve
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v4
+        with:
+          # The same Gradle task runs from this checkout, and by the time an old
+          # release is completed or halted the dispatch default — `main` — may
+          # already carry the next one.
+          ref: ${{ needs.resolve.outputs.tag }}
+          # Nothing is packaged here, so verifyReleaseVersioning never runs; the
+          # depth is the rule every checkout in the release path follows, so
+          # that it has no exception to remember.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        # Nothing is compiled here, but the Firebase plugins are applied
+        # unconditionally and every Gradle task needs the file in place. The
+        # stub would do as well as the real one — no artifact leaves this job,
+        # only an API call moving one Play already holds — so no require-real
+        # here, which release.yml and the alpha job in ci.yml both pass.
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Decode the Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is unset."
+            exit 1
+          fi
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+
+      - name: Update the production rollout
+        env:
+          ORG_GRADLE_PROJECT_SN_PLAY_JSON: ${{ runner.temp }}/play.json
+          TAG: ${{ needs.resolve.outputs.tag }}
+          ACTION: ${{ inputs.action }}
+          FRACTION: ${{ inputs.user_fraction }}
+        # --version-code names the release the tag names, as promote.yml does.
+        # Without it the task is handed a null version code and acts on whatever
+        # sits on the track now — so completing an older tag after a newer one
+        # reached production would finish the newer release's rollout while
+        # mark-latest cleared the older one's prerelease.
+        #
+        # What it does NOT do is refuse a code the track does not carry. Read in
+        # DefaultTrackManager.promote at tag 3.13.0: the plugin fetches the
+        # source track and calls mergeChanges(listOf(versionCode), base) on
+        # *every* release on it, which sets that release's versionCodes to the
+        # given code unconditionally, and Play accepts any bundle it already
+        # holds. So dispatching an older tag after a newer one reached
+        # production rewrites the newer release to the older code rather than
+        # failing — the rollback this flag looks like it prevents. The defence
+        # is the empty-tag default, which resolves to the newest release; there
+        # is no guard here because building one means asking Play what is on the
+        # track, and a flag that lies in a comment is the actual defect.
+        run: |
+          set -euo pipefail
+          CODE="${TAG##*+}"
+          ARGS="--update production --version-code $CODE"
+          case "$ACTION" in
+            set-fraction) ARGS="$ARGS --user-fraction $FRACTION" ;;
+            complete) ARGS="$ARGS --release-status completed" ;;
+            halt) ARGS="$ARGS --release-status halted" ;;
+          esac
+          # $ARGS is deliberately unquoted: it is a list of flags, not one word.
+          ./gradlew -PplayPublish :app:promoteReleaseArtifact $ARGS --commit --rerun --stacktrace
+
+  mark-latest:
+    name: Clear the prerelease flag
+    runs-on: ubuntu-latest
+    needs: [resolve, rollout]
+    # The Releases feed reads `prerelease` as "still travelling" and `Latest` as
+    # "what everyone has", and `complete` is the moment the second becomes true.
+    # Its own job rather than a step of `rollout` so that the write token below
+    # never sits in the job that runs Gradle and the plugin's dependency graph.
+    if: inputs.action == 'complete'
+    permissions:
+      contents: write
+    steps:
+      - name: Mark the release as latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: gh release edit "$TAG" --prerelease=false --latest
