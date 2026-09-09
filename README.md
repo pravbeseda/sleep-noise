@@ -200,6 +200,12 @@ them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`
 build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
 notes are in [`CLAUDE.md`](CLAUDE.md), under "The release path".
 
+The store page itself is published by a fourth workflow, `publish-listing.yml`, dispatched by hand
+and never by a release: it sends the titles, descriptions, contact details and screenshots from
+`app/src/main/play/listings`, and its `dry_run` input defaults to true, so a run that says nothing
+else has Play validate the texts and change nothing. The page goes out once the rollout has reached
+production, so that it never describes a build nobody can install yet.
+
 ## Credits
 
 - Development — Alexander Ivanov
