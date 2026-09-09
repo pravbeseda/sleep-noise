@@ -104,8 +104,8 @@ describe a build the world cannot download yet.
 - **What guards the very first release?** → Nothing, on two of the four counts, and the run says so
   in a `::warning::`. No `v*+*` tag exists, so the version code has nothing to exceed and the notes
   have nothing to be stale against — including the `versionName`, which still reads 1.0.4, the
-  version already on Play. Stage 5 is where it is bumped and the notes are written, which is the same
-  human step a seed tag would have been protecting; a seed tag would also have to be pushed onto a
+  version already on Play. Stage 5 is where it is bumped and the notes are read against the release
+  going out, which is the same human step a seed tag would have been protecting; a seed tag would also have to be pushed onto a
   guessed commit, since the history records only `Release 1.0.3 (5)`. Every release after the first
   is compared against the tag the first one creates.
 
@@ -228,7 +228,8 @@ when a release is actually going out.
 - Then the dispatches, in order: `release.yml` from `main` → `promote.yml` to production at a
   fraction → `rollout.yml` to raise it and complete → `publish-listing.yml` for the page.
 
-Files: `app/version.properties`, `app/src/main/play/release-notes/**`.
+Files: `app/version.properties`. The release notes were written in stage 1 and this stage only reads
+them.
 
 Lenses: compatibility (the version Play holds and the version the repository claims).
 
