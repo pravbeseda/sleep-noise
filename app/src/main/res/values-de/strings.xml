@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lang">de</string>
-    <string name="app_name">Einschlafrauschen</string>
     <string name="white_noise_volume">Weißes Rauschen: %1$d%%</string>
     <string name="pink_noise_volume">Rosa Rauschen: %1$d%%</string>
     <string name="brown_noise_volume">Braunes Rauschen: %1$d%%</string>

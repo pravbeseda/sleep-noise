@@ -1,0 +1,30 @@
+Sechs Rauschsorten, live auf dem Telefon erzeugt und gemischt, wie du sie magst.
+
+Sleepy Cocktail spielt keine Aufnahmen ab. Jeder Klang wird Sample für Sample erzeugt, während du zuhörst, also wiederholt sich nichts und nichts läuft im Loop — und die App bleibt wenige Megabyte groß statt einiger hundert.
+
+<b>Die sechs Rauschsorten</b>
+
+- <b>Weiß</b> — das ganze Band, auf jeder Frequenz gleich stark. Der klassische Maskierer.
+- <b>Rosa</b> — weicher und tiefer, für die meisten die ruhigste Mischung.
+- <b>Braun</b> — ein tiefes Grollen, das dunkelste der drei.
+- <b>Brandung</b> — Wellen, die in ihrem eigenen Takt brechen, nie in festem Rhythmus.
+- <b>Grau</b> — an die Empfindlichkeit des Ohrs angepasst, sodass das ganze Band gleich laut klingt.
+- <b>Grün</b> — die Mitte des Bandes, in der das Rauschen im Freien sein Gewicht hat.
+
+<b>Misch sie</b>
+
+Jede Rauschsorte hat ihren eigenen Schalter und ihren eigenen Regler. Brandung über Braun, Rosa allein, alle sechs zusammen — die Mischung gehört dir, und die App merkt sie sich.
+
+<b>Einschlaf-Timer</b>
+
+In Halbstundenschritten einstellbar, und die Wiedergabe endet von selbst. Sie läuft weiter, wenn du die App verlässt oder den Bildschirm sperrst, denn der Klang lebt in einem Hintergrunddienst und nicht auf dem Bildschirm.
+
+<b>Was diese App nicht tut</b>
+
+- Keine Werbung. Nicht auf dem Bildschirm, nicht zwischen den Klängen, nie.
+- Kein Konto und keine Anmeldung.
+- Keine Audiodateien zum Herunterladen — alles entsteht auf dem Gerät, die Wiedergabe braucht also keine Verbindung.
+
+Sechs Sprachen: Englisch, Arabisch, Deutsch, Spanisch, Russisch und Ukrainisch. Zwei dunkle Designs, denn ein Bildschirm am Bett sollte keine Lampe sein.
+
+Du erreichst den Entwickler unter kalugaman@gmail.com. Ich beantworte gern deine Fragen und denke über deine Vorschläge nach.

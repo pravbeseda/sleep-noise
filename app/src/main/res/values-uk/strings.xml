@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lang">uk</string>
-    <string name="app_name">Шум для сну</string>
     <string name="white_noise_volume">Білий шум: %1$d%%</string>
     <string name="pink_noise_volume">Рожевий шум: %1$d%%</string>
     <string name="brown_noise_volume">Коричневий шум: %1$d%%</string>

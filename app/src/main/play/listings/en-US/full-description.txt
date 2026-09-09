@@ -1,0 +1,30 @@
+Six noises, generated live on your phone, mixed the way you like them.
+
+Sleepy Cocktail plays no recordings. Every sound is synthesized sample by sample while you listen, so nothing loops and nothing repeats — and the app stays a few megabytes instead of a few hundred.
+
+<b>The six noises</b>
+
+- <b>White</b> — the full band, even across every frequency. The classic masker.
+- <b>Pink</b> — softer and deeper, the balance most people find restful.
+- <b>Brown</b> — a low rumble, the darkest of the three.
+- <b>Surf</b> — waves that break at their own pace, never on a fixed period.
+- <b>Grey</b> — shaped to the ear's own sensitivity, so the whole band is heard as level.
+- <b>Green</b> — the middle of the band, where an outdoor ambience carries its weight.
+
+<b>Mix them</b>
+
+Every noise has its own switch and its own slider. Surf over brown, pink on its own, all six at once — the mix is yours, and the app remembers it.
+
+<b>Sleep timer</b>
+
+Set it in half-hour steps and playback stops on its own. It keeps running when you leave the app or lock the screen, because the sound lives in a background service rather than on the screen.
+
+<b>What this app does not do</b>
+
+- No ads. Not on the screen, not between sounds, not ever.
+- No account and no sign-up.
+- No sound files to download — everything is generated on the device, so playback needs no connection.
+
+Six languages: English, Arabic, German, Spanish, Russian and Ukrainian. Two dark themes, because a bedside screen should not be a lamp.
+
+You can write to the developer at kalugaman@gmail.com. I will be glad to answer your questions and to consider your suggestions.

@@ -1,9 +1,11 @@
-# Sleep Noise
+# Sleepy Cocktail
 
 [![CI](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml/badge.svg)](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml)
 
 Android app that **synthesizes** six noises in real time — brown, white, pink, surf, grey and green —
-to help you fall asleep, with a countdown timer that stops playback on its own.
+to help you fall asleep, with a countdown timer that stops playback on its own. It is published on
+Google Play as *Sleepy Cocktail: White Noise*; the Gradle project and the package name are still the
+older `SleepNoise` / `ru.pravbeseda.sleepnoise`, which are the build's identity rather than the app's.
 
 Nothing is streamed and nothing is bundled: the samples are generated on the device, so the app
 has no audio assets, needs no network access, and never runs out of loop to repeat.
@@ -154,6 +156,8 @@ Translations are the most welcome contribution — the app even asks users for t
    `<string name="lang">XX</string>` (the code reads this back to detect the active locale).
 2. Add a flag drawable.
 3. Add a `Language(...)` entry to the array in `MainActivity.languageSelection()`.
+4. Add a listing and a release note under `app/src/main/play/` — the store texts are version
+   controlled per locale, and `PlayMetadataTest` fails until the new locale has both.
 
 ## Versioning and releasing
 
