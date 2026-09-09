@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Android app (`ru.pravbeseda.sleepnoise`) that synthesizes six noises in real time for sleep — brown, white, pink, surf, grey and green — with a countdown timer. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
+Android app **Sleepy Cocktail** (`ru.pravbeseda.sleepnoise`) that synthesizes six noises in real time for sleep — brown, white, pink, surf, grey and green — with a countdown timer. The user-facing name is the launcher label and the Play title; the `applicationId`, the Gradle `rootProject.name` (`Sleep Noise`) and the repository are the build's own identity and keep the older name deliberately — a rename there would be a new app on Play. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / target+compile SDK 36, JVM target 11.
 
 An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
 
@@ -459,7 +459,10 @@ Supported: en (default), ar, de, es, ru, uk. The mechanism is non-obvious:
 - Each `values-XX/strings.xml` defines `<string name="lang">XX</string>`. `getString(R.string.lang)` is how the code asks "which locale is actually active" — used to preselect the language dialog and to decide whether to append "(Language)" to the menu title.
 - The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`.
 
-To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, and add a `Language(...)` entry to the array in `MainActivity.languageSelection()`. The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is handled via `BidiFormatter` and `android:supportsRtl`/`layoutDirection="locale"` in the manifest.
+To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, add a `Language(...)` entry to the array in `MainActivity.languageSelection()`, and add a listing and a release note under `app/src/main/play/` — `PlayMetadataTest` derives the store's locales from these `values*` directories, so it fails until the store texts exist too.
+The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is handled via `BidiFormatter` and `android:supportsRtl`/`layoutDirection="locale"` in the manifest.
+
+`app_name` is **not** translated: `Sleepy Cocktail` is one string in the default bucket and no `values-XX` carries a copy. A brand spelled differently in six locales is six names to search for; the descriptive half of the Play title is what gets translated instead.
 
 ## UI is Views, not Compose
 
@@ -573,3 +576,42 @@ A missing or keyless `version.properties` is rejected on the same terms: the `ve
 The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` and `packageReleaseBundle` — the two tasks that turn a version into a publishable artifact. So `./gradlew build` and `./gradlew bundle` are covered even though neither names a release, while `lintRelease`, `testReleaseUnitTest` and any debug build still work on a shallow clone, falling back to the floor. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
 
 Release commits follow the message form `Release 1.0.3 (5)`.
+
+## The store listing
+
+`app/src/main/play/` is the one place the Google Play texts are written — title, short and full
+description and release notes, per locale, plus `contact-email.txt` and `default-language.txt`. It is
+Gradle Play Publisher's own layout, so a later stage can upload it with no plugin applied here yet:
+today the tree is data, edited in the repository rather than in the Play Console, and a page rebuilt
+from a checkout is the point of it. The plan for the rest is `docs/plans/RELEASE_AND_STORE_PIPELINE.md`.
+
+**The app's locales and Play's are not spelled the same,** which is the whole reason a mapping exists:
+`values` (the default bucket) is `en-US`, and `ar`, `de`, `es`, `ru`, `uk` are `ar`, `de-DE`, `es-ES`,
+`ru-RU`, `uk`. The table lives once, in `PlayMetadataTest`.
+
+`PlayMetadataTest` enforces what a Play rejection would otherwise teach, and each failure names the
+file: every locale the app ships has a listing and a release note, no listing exists for a locale it
+does not ship, the three listing texts are present and non-empty, and title ≤ 30, short description
+≤ 80, full description ≤ 4000 and release note ≤ 500 **characters** — not bytes, which is why Arabic
+fits at all. The app's locales are derived from the `lang` string in each `res/values*/strings.xml`
+rather than listed a second time, so a language added to the app fails here until its store texts land.
+
+The German title is short on purpose: `Sleepy Cocktail: Weißes Rauschen` is 32 characters and Play
+allows 30, so it ships as `Sleepy Cocktail: Rauschen`. Do not "fix" it back.
+
+Two claims in the full description are load-bearing. **The no-ads sentence belongs there and nowhere
+near the title** — Google's metadata policy bans promotional text such as "No Ads" from the title and
+the developer name. And the description says playback needs no connection, never that the app sends
+nothing: Crashlytics and Analytics ship with it, and a privacy claim the binary contradicts is a
+policy violation rather than a wording problem.
+
+`src/main/play` **and** `src/main/res` are declared inputs of the unit test task in
+`app/build.gradle.kts`, and those two lines are load-bearing rather than tidy: without them Gradle
+cannot see that a test reads either tree off disk, so `testDebugUnitTest` answers UP-TO-DATE when the
+only thing that changed is what it guards. Both were measured, not feared — a German title of 32
+characters, two over Play's limit, left the whole Definition of done line green, and so did a new
+`values-fr/strings.xml`, which is exactly the step the Localization section tells a translator to
+take. The compile chain is the half that looks as though it should already cover `res` and does not:
+a bucket carrying only a string that already exists adds no `R` field, so `processDebugResources`
+re-runs while the `R` jar on the test classpath stays byte-identical and the test task is left up to
+date.

@@ -1,0 +1,30 @@
+Seis ruidos, generados en vivo en tu teléfono, mezclados como más te gusten.
+
+Sleepy Cocktail no reproduce grabaciones. Cada sonido se sintetiza muestra a muestra mientras escuchas, así que nada se repite ni entra en bucle, y la aplicación ocupa unos pocos megabytes en lugar de unos cientos.
+
+<b>Los seis ruidos</b>
+
+- <b>Blanco</b> — toda la banda, igual en cada frecuencia. El enmascarador clásico.
+- <b>Rosa</b> — más suave y más grave, el equilibrio que a casi todo el mundo le resulta descansado.
+- <b>Marrón</b> — un retumbo grave, el más oscuro de los tres.
+- <b>Oleaje</b> — olas que rompen a su propio ritmo, nunca con un periodo fijo.
+- <b>Gris</b> — ajustado a la sensibilidad del oído, para que toda la banda se oiga pareja.
+- <b>Verde</b> — el centro de la banda, donde el ambiente al aire libre concentra su peso.
+
+<b>Mézclalos</b>
+
+Cada ruido tiene su propio interruptor y su propio control de volumen. Oleaje sobre marrón, rosa a solas, los seis a la vez: la mezcla es tuya y la aplicación la recuerda.
+
+<b>Temporizador de sueño</b>
+
+Ajústalo en pasos de media hora y la reproducción se detiene sola. Sigue sonando cuando sales de la aplicación o bloqueas la pantalla, porque el sonido vive en un servicio en segundo plano y no en la pantalla.
+
+<b>Lo que esta aplicación no hace</b>
+
+- Sin anuncios. Ni en la pantalla, ni entre los sonidos, nunca.
+- Sin cuenta y sin registro.
+- Sin archivos de sonido que descargar: todo se genera en el dispositivo, así que la reproducción no necesita conexión.
+
+Seis idiomas: inglés, árabe, alemán, español, ruso y ucraniano. Dos temas oscuros, porque una pantalla en la mesilla de noche no debería ser una lámpara.
+
+Puedes escribir al desarrollador a kalugaman@gmail.com. Estaré encantado de responder a tus preguntas y de considerar tus sugerencias.

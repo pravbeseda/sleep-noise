@@ -345,3 +345,24 @@ kover {
         }
     }
 }
+
+// PlayMetadataTest reads the store texts and the app's own locale buckets
+// straight off disk, and Gradle can see neither on its own: without these lines
+// the unit tests report UP-TO-DATE when the only thing that changed is the very
+// thing they guard. Both were measured on this project, not feared. A
+// 32-character German title, two over Play's limit, left testDebugUnitTest
+// green; so did a new values-fr/strings.xml declaring a locale with no listing,
+// which is the very step the README tells a translator to take.
+//
+// The compile chain does not cover res, which is the half that looks as though
+// it should: a bucket carrying only a string that already exists adds no R
+// field, so processDebugResources re-runs while the R jar on the test classpath
+// stays byte-identical and the test task is left up to date.
+tasks.withType<Test>().configureEach {
+    inputs.dir(layout.projectDirectory.dir("src/main/play"))
+        .withPropertyName("playMetadata")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(layout.projectDirectory.dir("src/main/res"))
+        .withPropertyName("appResources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
