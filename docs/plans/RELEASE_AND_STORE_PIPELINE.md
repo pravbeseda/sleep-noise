@@ -118,7 +118,7 @@ describe a build the world cannot download yet.
 ## Stages
 
 Five pull requests. Each is independently mergeable and leaves the repository in a working state.
-Stage 4 was split in two once stage 3 had landed: see the decision below.
+Stage 4 was split in two once stage 3 had landed: the decision is the last one above.
 
 ### Stage 1 — The name and the store texts, under version control
 
