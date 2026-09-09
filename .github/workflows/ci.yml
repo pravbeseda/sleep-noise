@@ -173,33 +173,13 @@ jobs:
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
-      - name: Free disk space for the emulator
+      # Both halves of it — the disk the emulator insists on and the KVM device —
+      # live in the action because the screenshots workflow boots an emulator
+      # too, and two copies of one runner rule drift into two different rules.
+      # That is the reason google-services.json has an action of its own.
+      - name: Prepare the runner for an emulator
         if: steps.decide.outputs.run == 'true'
-        # The emulator refuses to start unless 120% of its userdata partition is
-        # free, and it counts more strictly than df does: on SpendControl, the
-        # pipeline this job is modelled on, it refused while df on the same
-        # runner reported gigabytes to spare. So the margin to widen is the
-        # emulator's and the only way to widen it is to delete something. The
-        # NDK is several gigabytes and nothing here compiles native code; dotnet
-        # and ghc are the other two large toolchains the runner image ships and
-        # this project uses neither. The df lines around the removal are what
-        # makes a future refusal readable at all.
-        run: |
-          df -h /
-          sudo rm -rf "$ANDROID_HOME/ndk" /usr/share/dotnet /opt/ghc
-          df -h /
-
-      - name: Enable KVM
-        if: steps.decide.outputs.run == 'true'
-        # The runner image ships KVM but leaves the device owned by root, and
-        # without access to it the emulator falls back to software rendering —
-        # tens of minutes instead of a few, against the 45-minute cap above.
-        # This hands the device to everyone on the runner.
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
-            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+        uses: ./.github/actions/emulator-host
 
       - name: Run instrumented tests
         if: steps.decide.outputs.run == 'true'

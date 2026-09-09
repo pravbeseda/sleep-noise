@@ -159,6 +159,13 @@ android {
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The store screenshots are an errand, not a test: they drive every locale through three states
+        // with a foreground service playing real audio, and no pull request is any the wiser for it. So
+        // connectedAndroidTest leaves them out and -PstoreScreenshots runs them and nothing else — one
+        // property, both filters, rather than a flag each caller has to remember. See StoreScreenshot.
+        val screenshotFilter = if (project.hasProperty("storeScreenshots")) "annotation" else "notAnnotation"
+        testInstrumentationRunnerArguments[screenshotFilter] = "ru.pravbeseda.sleepnoise.store.StoreScreenshot"
     }
 
     // Credentials come from -PSN_* project properties; CI passes them as

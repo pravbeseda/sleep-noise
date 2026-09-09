@@ -161,6 +161,19 @@ Translations are the most welcome contribution — the app even asks users for t
 3. Add a `Language(...)` entry to the array in `MainActivity.languageSelection()`.
 4. Add a listing and a release note under `app/src/main/play/` — the store texts are version
    controlled per locale, and `PlayMetadataTest` fails until the new locale has both.
+5. Add the locale to `PLAY_LOCALES` in `StoreScreenshotTest` and ask a maintainer to dispatch the
+   `Screenshots` workflow, which photographs the app in every locale it names.
+
+### The store screenshots
+
+The three phone screenshots each listing shows are photographs of the running app, taken by an
+instrumented test and committed to the repository, so the store page can be rebuilt from a checkout.
+The `Screenshots` workflow is dispatched by hand, boots an emulator, walks every locale through the
+three states and pushes what it took as a branch to open a pull request from. Locally the same run is
+`./gradlew connectedAndroidTest -PstoreScreenshots
+-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`; without the first property an
+ordinary instrumented run leaves the errand out, and without the second the pictures go with the app
+when it is uninstalled. `CLAUDE.md` has the rest, under "The screenshots".
 
 ## Versioning and releasing
 
