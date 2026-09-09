@@ -3,12 +3,15 @@
 [![CI](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml/badge.svg)](https://github.com/pravbeseda/sleep-noise/actions/workflows/ci.yml)
 
 Android app that **synthesizes** six noises in real time — brown, white, pink, surf, grey and green —
-to help you fall asleep, with a countdown timer that stops playback on its own. It is published on
-Google Play as *Sleepy Cocktail: White Noise*; the Gradle project and the package name are still the
-older `SleepNoise` / `ru.pravbeseda.sleepnoise`, which are the build's identity rather than the app's.
+to help you fall asleep, with a countdown timer that stops playback on its own. Its next release is
+listed on Google Play as *Sleepy Cocktail: White Noise*; the Gradle project (`Sleep Noise`) and the
+package name (`ru.pravbeseda.sleepnoise`) keep the older name deliberately, being the build's identity
+rather than the app's.
 
 Nothing is streamed and nothing is bundled: the samples are generated on the device, so the app
-has no audio assets, needs no network access, and never runs out of loop to repeat.
+has no audio assets, plays with no connection at all, and never runs out of loop to repeat. It is
+not offline-only, though — Crashlytics and Analytics put `INTERNET` in the merged manifest, so the
+store texts say playback needs no connection and never that the app sends nothing.
 
 <a href="https://play.google.com/store/apps/details?id=ru.pravbeseda.sleepnoise">Get it on Google Play</a>
 

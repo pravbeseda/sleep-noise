@@ -605,6 +605,9 @@ the developer name. And the description says playback needs no connection, never
 nothing: Crashlytics and Analytics ship with it, and a privacy claim the binary contradicts is a
 policy violation rather than a wording problem.
 
-The tree is not a Gradle input of `testDebugUnitTest`, so editing a text and re-running the tests
-locally can report a stale green — `--rerun-tasks` settles it, and CI checks out fresh so it never
-sees the stale one.
+`src/main/play` is declared an input of the unit test task in `app/build.gradle.kts`, and that line
+is load-bearing rather than tidy: without it Gradle cannot see that a test reads the tree off disk,
+so `testDebugUnitTest` answers UP-TO-DATE when the only thing that changed is what it guards. It was
+measured, not feared — a German title of 32 characters, two over Play's limit, left the whole
+Definition of done line green. `src/main/res` needs no such line: `processDebugResources` already
+declares it, so a `strings.xml` edit reaches the tests through the compile chain.

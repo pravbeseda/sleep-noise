@@ -30,7 +30,7 @@ class PlayMetadataTest {
     @Test
     fun everyListingHasItsThreeTextsAndAReleaseNote() {
         val failures = shippedPlayLocales().flatMap { locale ->
-            (LISTING_FILES.map { File(listingDir(locale), it) } + releaseNote(locale))
+            (LISTING_LIMITS.keys.map { File(listingDir(locale), it) } + releaseNote(locale))
                 .filterNot { it.isFile && it.readText().isNotBlank() }
                 .map { "${it.path} is missing or empty" }
         }
@@ -52,12 +52,9 @@ class PlayMetadataTest {
     fun noTextExceedsPlaysLimit() {
         val failures = shippedPlayLocales().flatMap { locale ->
             val listing = listingDir(locale)
-            listOf(
-                File(listing, TITLE) to TITLE_LIMIT,
-                File(listing, SHORT_DESCRIPTION) to SHORT_DESCRIPTION_LIMIT,
-                File(listing, FULL_DESCRIPTION) to FULL_DESCRIPTION_LIMIT,
-                releaseNote(locale) to RELEASE_NOTE_LIMIT,
-            ).mapNotNull { (file, limit) -> overLimit(file, limit) }
+            val texts = LISTING_LIMITS.map { (name, limit) -> File(listing, name) to limit } +
+                (releaseNote(locale) to RELEASE_NOTE_LIMIT)
+            texts.mapNotNull { (file, limit) -> overLimit(file, limit) }
         }
         if (failures.isNotEmpty()) {
             fail(failures.joinToString("\n"))
@@ -123,15 +120,14 @@ class PlayMetadataTest {
     private companion object {
         const val PLAY_PATH = "src/main/play"
 
-        const val TITLE = "title.txt"
-        const val SHORT_DESCRIPTION = "short-description.txt"
-        const val FULL_DESCRIPTION = "full-description.txt"
-        val LISTING_FILES = listOf(TITLE, SHORT_DESCRIPTION, FULL_DESCRIPTION)
-
-        // Play's own limits, in characters.
-        const val TITLE_LIMIT = 30
-        const val SHORT_DESCRIPTION_LIMIT = 80
-        const val FULL_DESCRIPTION_LIMIT = 4000
+        // The three files a listing is made of, each with Play's own limit in characters.
+        // One map rather than a list beside four constants: the completeness test reads the
+        // names and the limit test reads the pairs, so a file added here is checked by both.
+        val LISTING_LIMITS = mapOf(
+            "title.txt" to 30,
+            "short-description.txt" to 80,
+            "full-description.txt" to 4000,
+        )
         const val RELEASE_NOTE_LIMIT = 500
 
         // The app names a locale by its `lang` string; Play names the same locale by these codes.

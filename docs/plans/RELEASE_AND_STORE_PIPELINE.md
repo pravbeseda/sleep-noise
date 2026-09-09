@@ -63,6 +63,12 @@ describe a build the world cannot download yet.
 - **Where do the screenshots live?** → Committed to the repository, under each locale's listing.
   Because a store page rebuilt from a checkout is the point of the work, and CI cannot publish a page
   whose graphics live on somebody's desktop.
+- **`app_name` is read in four places, not one** — the launcher label, the action-bar title, the
+  subject of the email to the developer and the title of the ongoing playback notification. → One
+  brand in all four. Because the name a person searches for in the store and sees on the icon should
+  be the name they see in the notification shade, and a second translated title would give one app
+  two names in reviews. The strings around it stay translated, so the notification reads
+  `Sleepy Cocktail` over `Воспроизведение`.
 - **What already exists in the Play Console?** → To be confirmed, but **open testing will exist**
   either way. So the track model is SpendControl's: `release.yml` publishes to `beta` by default with
   `internal` on the dropdown, `promote.yml` derives `beta → production` and `internal → beta`, and
@@ -159,9 +165,46 @@ Outside the repository, and blocking stage 2:
 | What | Where | Note |
 |---|---|---|
 | Play service account with API access | Play Console → Setup → API access | Needs **release manager** for the tracks and **store presence** for the listing — two different permissions, and the second fails as a 403 on `edits:validate` rather than as a permission error |
-| `PLAY_SERVICE_ACCOUNT_JSON` secret | GitHub repo secrets | The JSON key of that account |
+| ~~`PLAY_SERVICE_ACCOUNT_JSON` secret~~ | GitHub repo secrets | **Done, 2026-09-09.** The JSON key of that account |
 | An open-testing track | Play Console | `release.yml` publishes there by default |
 
 ## Rulings
 
+**Stage 1.** Three reviewers — spec, quality, compatibility.
+
+- *Fixed.* `src/main/play` was not a Gradle input of `testDebugUnitTest`, so the Definition of done
+  line reported green while the check that guards the store texts was skipped. Reproduced before
+  fixing: a 32-character German title, two over Play's limit, gave `BUILD SUCCESSFUL`. The tree is
+  now declared an input in `app/build.gradle.kts`; the same title now fails without `--rerun-tasks`,
+  and the configuration cache still stores an entry. The reformat hazard `CLAUDE.md` warns about did
+  not fire — the edit came out as 13 added lines and nothing else.
+- *Fixed.* `README.md` said the app "is published on Google Play as Sleepy Cocktail: White Noise".
+  It is not: this stage writes the tree and uploads nothing. Now "its next release is listed as".
+- *Fixed.* `README.md` named the Gradle project `SleepNoise`; it is `Sleep Noise`, which `CLAUDE.md`
+  had right in the same commit — the drift the two files are meant not to have.
+- *Fixed, beyond the step's letter.* `README.md` claimed the app "needs no network access". The
+  merged manifest carries `INTERNET` and `ACCESS_NETWORK_STATE` from Firebase, verified in
+  `app/build`. Left alone it would have contradicted the store copy written in the same commit,
+  where the claim is deliberately "playback needs no connection" and never "sends nothing".
+- *Fixed.* The three listing file names were spelled twice in `PlayMetadataTest`, once for the
+  completeness test and once for the limit test. One map now serves both.
+- *Dropped.* Two reviewers called `everyShippedLocaleHasAListing` redundant with the completeness
+  test, which does fail for a missing directory. Kept anyway: it answers a different question — a
+  language added to the app with no store texts at all — and says so in one line instead of three
+  "missing or empty" paths. That is the exact mistake the Localization section now points at, and six
+  lines is a fair price for naming it.
+- *Dropped.* The developer's address appears in six full descriptions besides `contact-email.txt`,
+  with no test holding them equal. It is marketing copy, not a constant: removing it removes what a
+  reader sees, and Play renders the contact block somewhere else on the page.
+- *Dropped.* The locale scan fails any `values*` bucket whose `strings.xml` declares no `lang`, and
+  `values-sw320dp` is the bucket a string override would land in. It has no `strings.xml` today, so
+  there is no input on which the code goes wrong; the failure it would one day give names the file
+  and says what to add.
+- *Moot.* A reviewer noted the documented stale-green paragraph gave the wrong reason for CI being
+  safe — a fresh checkout rather than build caching being off. The paragraph is gone with the fix.
+
 ## Parked
+
+- **`.kotlin/` is not in `.gitignore`,** so a Kotlin daemon session file can ride into a commit made
+  while a build is running. It happened in this run: `.kotlin/sessions/kotlin-compiler-*.salive` was
+  committed and the commit had to be rebuilt. One line in `.gitignore`, outside every stage's scope.
