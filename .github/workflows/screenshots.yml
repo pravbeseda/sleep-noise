@@ -1,0 +1,169 @@
+name: Screenshots
+
+# By hand and never on its own. The pictures change when the screen does, which is a judgement nobody
+# should have to make on every merge, and the run costs an emulator boot and eighteen photographs.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  # The run commits what it took. main is protected, so it pushes a branch and prints the link that
+  # opens the pull request — a pull request opened here by GITHUB_TOKEN would trigger no workflow at
+  # all, leaving all seven required checks unreported and the merge button blocked for good.
+  contents: write
+
+concurrency:
+  # Two runs would fight over nothing but the branch names, and there is still no reason to have two.
+  group: store-screenshots
+
+jobs:
+  screenshots:
+    name: Capture the store screenshots
+    runs-on: ubuntu-latest
+    # An emulator that never boots has to fail rather than sit here until the six-hour default gives up.
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Not optional: versionCode is the commit count and the app prints it at the bottom of the
+          # very screen being photographed. A shallow clone falls back to the floor, and 1.0.4 (5)
+          # would go out on the store page.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        # No require-real here, unlike the alpha and release jobs: this build is installed on an
+        # emulator and photographed, never delivered, and a stub changes nothing in the picture.
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Free disk space for the emulator
+        # The same margin the instrumented tests need, and for the same reason: the emulator counts
+        # free space more strictly than df does and refuses to start rather than explain itself.
+        run: |
+          df -h /
+          sudo rm -rf "$ANDROID_HOME/ndk" /usr/share/dotnet /opt/ghc
+          df -h /
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Take the screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          # google_apis where the CI matrix takes aosp_atd. That image is stripped for speed, which is
+          # the right trade for a test that asserts and the wrong one for a run that photographs: what
+          # ships to the store should come off a system image nobody has taken anything out of.
+          target: google_apis
+          arch: x86_64
+          # 1080x1920, and the profile is load-bearing. Play refuses a screenshot past a ratio of 2:1,
+          # which the 20:9 phones every modern profile defaults to are — StoreScreenshotTest measures
+          # what it captured and fails naming the size rather than letting the upload find out.
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -camera-back none
+          disable-animations: true
+          # -PstoreScreenshots swaps the runner's notAnnotation filter for annotation, so this runs the
+          # store errand and nothing else; see app/build.gradle.kts.
+          #
+          # leaveApksInstalledAfterRun is what makes the pull possible at all: the pictures are written
+          # to the app's own external files directory, and uninstalling the app takes that directory
+          # with it. Without the flag the run passes and pulls nothing.
+          script: |
+            ./gradlew connectedDebugAndroidTest \
+              -PstoreScreenshots \
+              -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true \
+              --stacktrace
+            adb pull /sdcard/Android/data/ru.pravbeseda.sleepnoise/files/play-screenshots "$RUNNER_TEMP"
+
+      - name: File them under their listings
+        run: |
+          set -euo pipefail
+
+          pulled="$RUNNER_TEMP/play-screenshots"
+          listings=app/src/main/play/listings
+
+          if [ ! -d "$pulled" ]; then
+            echo "::error::nothing was pulled off the device. The test writes to the app's external files directory, which an uninstall removes — check that the Gradle run kept the APKs installed."
+            exit 1
+          fi
+
+          # Both directions of the same drift. The test names the Play locales itself, in a table it
+          # keeps beside the one in PlayMetadataTest, and a language added to one and not the other is
+          # either a directory nothing on the store page reads or a listing that silently keeps last
+          # year's pictures. Neither is visible in a diff of images.
+          for dir in "$pulled"/*/; do
+            locale=$(basename "$dir")
+            if [ ! -d "$listings/$locale" ]; then
+              echo "::error::the run photographed $locale, which has no listing under $listings. PLAY_LOCALES in StoreScreenshotTest names a locale the store texts do not."
+              exit 1
+            fi
+          done
+
+          for listing in "$listings"/*/; do
+            locale=$(basename "$listing")
+            if [ ! -d "$pulled/$locale" ]; then
+              echo "::error::$locale has a listing and no screenshots. PLAY_LOCALES in StoreScreenshotTest is missing the locale PlayMetadataTest already knows about."
+              exit 1
+            fi
+          done
+
+          for dir in "$pulled"/*/; do
+            locale=$(basename "$dir")
+            into="$listings/$locale/graphics/phone-screenshots"
+            # Replaced rather than merged: a fourth screenshot dropped from the set would otherwise
+            # stay in the tree, and Play would keep publishing it.
+            rm -rf "$into"
+            mkdir -p "$into"
+            cp "$dir"*.jpg "$into/"
+          done
+
+          find "$listings" -path '*/phone-screenshots/*' -type f | sort
+
+      - name: Keep a copy whatever happens next
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-screenshots
+          path: ${{ runner.temp }}/play-screenshots
+          if-no-files-found: ignore
+
+      - name: Push them as a branch
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add app/src/main/play/listings
+          if git diff --cached --quiet; then
+            echo "The screenshots are identical to the ones already committed; nothing to push." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          branch="chore/store-screenshots-${{ github.run_id }}"
+          git switch -c "$branch"
+          git commit -m "chore: refresh the Play listing screenshots"
+          git push origin "$branch"
+
+          {
+            echo "Screenshots pushed to \`$branch\`."
+            echo ""
+            echo "[Open the pull request](${{ github.server_url }}/${{ github.repository }}/compare/$branch?expand=1)"
+          } >> "$GITHUB_STEP_SUMMARY"

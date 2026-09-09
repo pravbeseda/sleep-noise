@@ -164,16 +164,19 @@ Done when: `release.yml` dispatched with `dry_run: true` passes every guard and 
 
 ### Stage 3 — Per-locale screenshots
 
-- An instrumented test that drives the app through the screens worth showing and captures each one,
-  under a locale the run supplies.
-- `.github/workflows/screenshots.yml`, `workflow_dispatch`, an emulator over the six locales,
-  writing `app/src/main/play/listings/<locale>/graphics/phone-screenshots/`.
-- The run commits the images, per the decision above. It does not gate stage 4: with no local
-  graphics the publish leaves whatever Play already holds, so the store texts can go out before a
-  single screenshot has been taken.
+- An instrumented test that drives the app through the three states worth showing — the mixer at
+  rest, a session playing with the countdown, the mixer in the dark theme — in every locale the app
+  ships, and copies the app's own window for each.
+- `.github/workflows/screenshots.yml`, `workflow_dispatch`, one emulator covering all six locales in
+  a single run, writing `app/src/main/play/listings/<locale>/graphics/phone-screenshots/`.
+- The run commits the images, per the decision above, and pushes them as a branch: `main` is
+  protected, and a pull request opened by `GITHUB_TOKEN` would report none of the seven required
+  checks. It does not gate stage 4: with no local graphics the publish leaves whatever Play already
+  holds, so the store texts can go out before a single screenshot has been taken.
 
-Files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/store/ScreenshotTest.kt`,
-`.github/workflows/screenshots.yml`, `app/build.gradle.kts`, `CLAUDE.md`.
+Files: `app/src/androidTest/java/ru/pravbeseda/sleepnoise/store/StoreScreenshotTest.kt` and
+`StoreScreenshot.kt`, `.github/workflows/screenshots.yml`, `app/build.gradle.kts`, `CLAUDE.md`,
+`README.md`.
 
 Lenses: none.
 
@@ -291,6 +294,36 @@ otherwise:
 - *Dropped.* The spec reviewer noted that `rollout.yml`'s `mark-latest` job is not named by the
   step's text. It is the other half of the `--prerelease` that `release.yml` sets: without it the
   flag is set by automation and cleared by hand, and nothing else would ever clear it.
+
+**Stage 3.** Decided without the user, each recorded because a reasonable person might have chosen
+otherwise:
+
+- **Three states rather than two or four**, and one instrumentation run rather than six. The user
+  chose the three; the run is one because the app's locale is a preference the test writes, so six
+  emulator boots would buy nothing.
+- **The window is copied with `PixelCopy`,** not photographed with `UiAutomation.takeScreenshot`. The
+  app draws edge to edge, so its own window is the whole display: the picture comes out without the
+  emulator's status and navigation bars, and the demo-mode dance that cleans a system bar up is not
+  needed at all.
+- **JPEG at quality 92.** Measured on this screen: 1.5 MB per picture losslessly against 130 KB,
+  indistinguishable side by side, 19 MB against 2 MB for a whole refresh — and every refresh stays in
+  the repository's history for good. Gradle Play Publisher uploads a listing's graphics under
+  `image/*`, checked in `DefaultPlayPublisher` at 3.13.0, so the extension is ours.
+- **The errand is filtered by annotation, from the build script.** `-PstoreScreenshots` swaps the
+  runner's `notAnnotation` for `annotation`, so one property decides both directions and
+  `connectedAndroidTest` keeps meaning what it meant. An `@Ignore` would have been the other way to
+  keep it out of CI, and it is the one this project forbids outright.
+- **`-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`** is what makes the pull work:
+  the test writes into the app's external files directory and Gradle uninstalls the app when the run
+  ends, taking the directory with it. The first run passed and left nothing behind.
+- **The locale is set through `LocaleManager` from API 33 up.** `AppCompatDelegate.setApplicationLocales`
+  reaches the framework through a context it takes from a running Activity, and before the first
+  launch it stores nothing: measured on an API 36 emulator, `getApplicationLocales()` came back empty
+  and all six locales were photographed in English while the run reported green. Below 33 AppCompat
+  owns the locale and its call is the only way in.
+- **The emulator is `pixel_2` and the test measures what it captured.** Play refuses a screenshot past
+  a ratio of 2:1 and every modern phone profile is 20:9; the guard was watched failing on a 1080x2400
+  display before the run was believed on a 1080x1920 one.
 
 ## Parked
 

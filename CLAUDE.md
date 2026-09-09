@@ -746,3 +746,57 @@ take. The compile chain is the half that looks as though it should already cover
 a bucket carrying only a string that already exists adds no `R` field, so `processDebugResources`
 re-runs while the `R` jar on the test classpath stays byte-identical and the test task is left up to
 date.
+
+### The screenshots
+
+`graphics/phone-screenshots/` under each listing holds three JPEGs, and they are photographs of the
+running app rather than files anyone draws: `StoreScreenshotTest` drives the screen and
+`.github/workflows/screenshots.yml` pushes what it took. The three are the mixer at rest, a session
+playing with the countdown where the seekbar was, and the mixer again in the dark theme; Play orders
+a listing's images by file name, so the order they appear in is written into `1-`, `2-`, `3-`.
+
+**It is a store errand and not a test**, which is what `StoreScreenshot` — the annotation, in the same
+package — exists to say. `app/build.gradle.kts` hands the runner `notAnnotation` on an ordinary run
+and `annotation` on a `-PstoreScreenshots` one, so `connectedAndroidTest` means the same thing here
+as it did before the errand existed, and eighteen photographs are asked for by name. The run also
+needs **`-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`**, and that flag is not
+optional: the pictures are written to the app's own external files directory, which uninstalling the
+app removes, so without it the run passes and pulls nothing.
+
+Four things it does assert, because each is a way the run produces images that look fine and are
+useless. That the screen really is in the locale being photographed — the first draft filed six
+English screens under six locales and reported green. That Play would take the geometry: it refuses a
+ratio past 2:1, which is what every modern phone profile is, so the emulator is given `pixel_2` and
+the test measures what it captured. That the noise lab is off, its rows being labelled in English
+only. And that eighteen files exist at the end, since a locale silently skipped is a listing that
+keeps last year's pictures.
+
+**The locale is set through `LocaleManager` from API 33 and through `AppCompatDelegate` below it.**
+Not a style choice: AppCompat's own call reaches the framework through a context it picks up from a
+running Activity, and asked before the first launch it stores nothing at all — measured on an API 36
+emulator, where `getApplicationLocales()` came back empty and every screen came up in English.
+
+**The window is copied with `PixelCopy`, not photographed with `UiAutomation.takeScreenshot`.** The
+app draws edge to edge, so its own window already covers the display: copying it gives the same
+picture without the emulator's clock, battery and navigation buttons, and nothing has to be cleaned
+up afterwards. The scrollbar the framework flashes on layout is switched off for the same reason, and
+it needs an `invalidate()` behind it — the flag decides what the next draw paints, and nothing else
+asks for one.
+
+**JPEG at 92, not PNG.** This screen is a dithered gradient behind flat text, which is what PNG stores
+worst: the same picture measured 1.5 MB losslessly against 130 KB here, indistinguishable side by
+side, and a refresh of the whole set is 2 MB against 19 MB — carried in the repository's history for
+good either way. Gradle Play Publisher uploads whatever the directory holds under `image/*`, so the
+extension is ours to choose.
+
+The mix in the picture is staged, and has to be: an untouched install has one noise at 30 % and five
+at zero, which photographs as a screen nobody is using. The levels are in the test, and the toggles
+show both states on purpose.
+
+**The workflow pushes a branch and prints the link that opens the pull request.** It does not open one
+itself — a pull request created with `GITHUB_TOKEN` triggers no workflow, so all seven required checks
+would go unreported and the merge button would stay blocked. `main` is protected, so a push straight
+to it is not on the table either. The locale table in `StoreScreenshotTest` is a second copy of
+`PlayMetadataTest`'s, and the workflow refuses in both directions: a photographed locale with no
+listing, and a listing with no photographs. That is the only guard against two tables drifting apart,
+since neither direction shows up in a diff of images.
