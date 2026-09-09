@@ -40,25 +40,31 @@ on:
 permissions:
   contents: read
 
-# Serialises whole runs dispatched with the same input; the job-level group
-# below is keyed by the resolved tag, so it catches what this one cannot see —
-# an omitted tag and the same tag typed out are different inputs here.
-# No cancel-in-progress: a cancelled promotion leaves an uncommitted Play edit.
+# One concurrency group for all three workflows, and the reason is Play's rather
+# than GitHub's: every one of them opens an edit for this app as the same service
+# account, and "creating a new edit for an application invalidates any active
+# edits for that application created by the same user"
+# (developers.google.com/android-publisher/concurrency-considerations). So a
+# release overlapping a rollout does not queue behind it — it silently voids the
+# other run's edit mid-operation. Serialising the three is the only lock there
+# is. The price is that a dry run, which touches Play not at all, waits behind a
+# promotion; a shared name that is sometimes too broad beats three names that are
+# each too narrow.
+#
+# No cancel-in-progress: cancelling a run midway through publishing is exactly
+# the partial state — an artifact on Play with no tag and no GitHub Release —
+# that the recovery notes in CLAUDE.md exist for. A second dispatch queues
+# instead, and by the time a second release reaches `guards` the tag exists, so
+# guard 1 turns a double click into a twenty-second refusal.
 concurrency:
-  # `-dispatch-` and the job's `-release-` are different namespaces on
-  # purpose. This key is the raw input and the job's is the resolved tag, so
-  # with the tag typed out rather than left empty the two would otherwise be
-  # the same string — and the job would be waiting on the group its own run
-  # already holds. SpendControl never meets this because its job key carries a
-  # flavor suffix; there are no flavors here, so the suffix has to be the
-  # namespace instead.
-  group: promote-dispatch-${{ inputs.tag }}
+  group: play-edit
 
 jobs:
-  # The tag is resolved once for the whole dispatch, so the concurrency group
-  # below and the promotion act on one resolved value: keyed by the raw input,
-  # the group would put an omitted tag and the same tag typed out into
-  # different groups and let them race for one Play edit.
+  # The tag is resolved once for the whole dispatch rather than in the job that
+  # acts on it, so that a tag landing between the two could not split a run
+  # across two releases. It used to serve the concurrency group as well; that
+  # group is now a static name shared with release and rollout, for the reason
+  # given above.
   resolve:
     name: Resolve the release tag
     runs-on: ubuntu-latest
@@ -115,11 +121,6 @@ jobs:
     name: Promote to ${{ inputs.to }}
     runs-on: ubuntu-latest
     needs: resolve
-    # Keyed by the resolved release, so a second dispatch of the same one queues
-    # behind the first. No cancel-in-progress: a cancelled promotion leaves an
-    # uncommitted Play edit, which Google expires.
-    concurrency:
-      group: promote-release-${{ needs.resolve.outputs.tag }}
     steps:
       - name: Checkout the tag
         uses: actions/checkout@v4

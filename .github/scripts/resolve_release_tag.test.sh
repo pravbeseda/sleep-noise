@@ -46,6 +46,29 @@ check "no release tag at all is refused"             FAIL       ""          v1.0
 check "a named tag that exists is returned as given" v1.0.4+99  v1.0.4+99   v1.0.4+99 v1.1.0+286
 check "a named tag that does not exist is refused"   FAIL       v9.9.9+999  v1.0.4+99
 
+# The warning is on stderr, which `check` throws away, so it needs its own shape.
+# It is what stands in for the guard the script cannot make: Play alone knows
+# which version code is on a track, and this script has no credentials for it.
+# warns <name> <yes|no> <argument> <tags…>
+warns() {
+  local name=$1 expected=$2 arg=$3; shift 3
+  local dir; dir=$(fixture "$@")
+  local err; err=$(cd "$dir" && bash "$resolve" "$arg" 2>&1 >/dev/null) || true
+  local got=no
+  case "$err" in *"is not the newest release"*) got=yes ;; esac
+  if [ "$got" = "$expected" ]; then
+    echo "ok   — $name"
+  else
+    echo "FAIL — $name: expected warning=$expected, got warning=$got"
+    failures=$((failures + 1))
+  fi
+  rm -rf "$dir"
+}
+
+warns "naming an older tag is warned about"          yes        v1.0.4+99   v1.0.4+99 v1.1.0+286
+warns "naming the newest tag is not"                 no         v1.1.0+286  v1.0.4+99 v1.1.0+286
+warns "the resolved newest tag is not"               no         ""          v1.0.4+99 v1.1.0+286
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures test(s) failed"
   exit 1

@@ -39,4 +39,19 @@ if ! git rev-parse -q --verify "refs/tags/$TAG^{commit}" >/dev/null; then
     exit 1
 fi
 
+# A named tag older than the newest is legitimate and is not refused: halting a
+# production rollout while a newer release sits on beta is exactly the emergency
+# this pipeline must not block, and it can only be named by its own tag. But it
+# is also the one dispatch that can do damage, because Gradle Play Publisher
+# does not verify that a version code is on the track it is promoting from — it
+# rewrites every release on that track with the code it is given. So an older
+# tag is warned about, loudly and at the moment it is resolved, rather than
+# guarded against with a Play API call this script has no credentials for.
+NEWEST=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
+if [ -n "$NEWEST" ] && [ "$TAG" != "$NEWEST" ]; then
+    echo "::warning::$TAG is not the newest release — $NEWEST is. Acting on an older tag rewrites" \
+         "whatever is on the track with the older version code, so do this only to halt or finish a" \
+         "rollout that is genuinely still on $TAG." >&2
+fi
+
 echo "$TAG"

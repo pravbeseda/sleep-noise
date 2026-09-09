@@ -43,13 +43,24 @@ permissions:
   # Guard 3 reads the check-runs of the commit being released.
   checks: read
 
+# One concurrency group for all three workflows, and the reason is Play's rather
+# than GitHub's: every one of them opens an edit for this app as the same service
+# account, and "creating a new edit for an application invalidates any active
+# edits for that application created by the same user"
+# (developers.google.com/android-publisher/concurrency-considerations). So a
+# release overlapping a rollout does not queue behind it — it silently voids the
+# other run's edit mid-operation. Serialising the three is the only lock there
+# is. The price is that a dry run, which touches Play not at all, waits behind a
+# promotion; a shared name that is sometimes too broad beats three names that are
+# each too narrow.
+#
 # No cancel-in-progress: cancelling a run midway through publishing is exactly
 # the partial state — an artifact on Play with no tag and no GitHub Release —
 # that the recovery notes in CLAUDE.md exist for. A second dispatch queues
-# instead, and by the time it reaches `guards` the tag exists, so guard 1 turns
-# a double click into a twenty-second refusal.
+# instead, and by the time a second release reaches `guards` the tag exists, so
+# guard 1 turns a double click into a twenty-second refusal.
 concurrency:
-  group: release
+  group: play-edit
 
 jobs:
   guards:
@@ -67,6 +78,14 @@ jobs:
           # guards 1 and 2 compare against — both need the whole history.
           fetch-depth: 0
 
+      # Before the script is trusted, as promote and rollout do and for the
+      # reason the decide-work action and no-deleted-tests both run their own:
+      # nothing else on CI exercises these tests, and a resolver that answers
+      # wrongly here does not fail the release — it hands guards 2 and 4 the
+      # wrong previous release and they pass.
+      - name: Test the tag resolver
+        run: .github/scripts/resolve_release_tag.test.sh
+
       - name: Resolve the version and the previous tag
         id: version
         run: |
@@ -80,10 +99,19 @@ jobs:
           # already share and which has its own tests — a second copy of that
           # awk pipeline here is a second thing to keep right.
           #
-          # With no argument the script has exactly one failure, "no v*+* tag
-          # exists", so `|| true` maps that one case to an empty PREV. Guards 2
-          # and 4 read empty as "nothing to compare against" and say so.
-          PREV=$(.github/scripts/resolve_release_tag.sh 2>/dev/null || true)
+          # The existence check is separate, and deliberately so. `|| true`
+          # would map *every* failure of the script to an empty PREV, and empty
+          # is what guards 2 and 4 read as "first release, nothing to compare
+          # against" — so a script that broke for any other reason would switch
+          # both guards off silently on every release rather than refuse one.
+          # Asking first whether any tag of the scheme exists keeps the only
+          # legitimate empty separate from every failure, and leaves the call
+          # itself under `set -e`, where a broken script fails the guard.
+          if [ -z "$(git tag --list 'v*+*')" ]; then
+            PREV=
+          else
+            PREV=$(.github/scripts/resolve_release_tag.sh)
+          fi
           echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE tag=$TAG previous=${PREV:-none}"
           {
             echo "tag=$TAG"
