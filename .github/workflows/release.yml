@@ -1,0 +1,387 @@
+name: Release
+
+# Verb 1 of three: "this commit is version X". Builds the signed App Bundle,
+# uploads it to Play, then tags the commit and creates the GitHub Release.
+# `promote.yml` moves that artifact on to production afterwards, and
+# `rollout.yml` drives the production percentage; nothing there ever rebuilds.
+#
+# The default destination is `beta` — open testing — because that is where an
+# ordinary release goes, and a run that had to be promoted there first was a
+# second dispatch buying nothing. `internal` stays on the dropdown for a build
+# that has to be looked at before it is public; `promote.yml` then moves it on
+# to `beta`.
+#
+# The ref *is* the choice. GitHub always renders "Use workflow from" for a
+# workflow_dispatch and always defaults it to the default branch, so instead of
+# fighting that default this workflow makes it correct: `main` for an ordinary
+# release. There is no branch input and no guard against the dropdown — guard 3
+# below is what refuses a commit CI has not passed, whatever branch it sits on.
+#
+# No `environment:` on any job, unlike SpendControl, which carries six. It has
+# two apps, and the deployments page is how it answers "where is each version";
+# one app with three tracks has nothing to answer there that the Releases feed
+# does not, and three environments to create in the repository settings would
+# be a blocking prerequisite bought for no gain. Do not add them back by habit.
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Track to publish to — internal only when a build has to be looked at before it is public
+        type: choice
+        options:
+          - beta
+          - internal
+        default: beta
+        required: true
+      dry_run:
+        description: Run the guards and publish nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  # Guard 3 reads the check-runs of the commit being released.
+  checks: read
+
+# No cancel-in-progress: cancelling a run midway through publishing is exactly
+# the partial state — an artifact on Play with no tag and no GitHub Release —
+# that the recovery notes in CLAUDE.md exist for. A second dispatch queues
+# instead, and by the time it reaches `guards` the tag exists, so guard 1 turns
+# a double click into a twenty-second refusal.
+concurrency:
+  group: release
+
+jobs:
+  guards:
+    name: Guards
+    runs-on: ubuntu-latest
+    outputs:
+      # Only what a later job consumes: the version code and the previous tag
+      # are read by the guard steps below, from the step output directly.
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The commit count is the version code, and the tag list is what
+          # guards 1 and 2 compare against — both need the whole history.
+          fetch-depth: 0
+
+      - name: Resolve the version and the previous tag
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(sed -n 's/^versionName=//p' app/version.properties)
+          VERSION_CODE=$(git rev-list --count HEAD)
+          TAG="v${VERSION_NAME}+${VERSION_CODE}"
+          # Newest tag of this scheme, ordered by version code. The code is
+          # monotonic, so that is the correct order — and it avoids
+          # --sort=version:refname, which has no defined behaviour for '+'.
+          # Empty until the first release through this workflow has run:
+          # guards 2 and 4 read that as "nothing to compare against" and say so.
+          PREV=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
+          echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE tag=$TAG previous=${PREV:-none}"
+          {
+            echo "tag=$TAG"
+            echo "version_code=$VERSION_CODE"
+            echo "prev_tag=$PREV"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Guard 1 — the tag must not already exist
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::$TAG already exists. A release is created once and never re-run into;" \
+                 "bump versionName, or attach the missing artifact to the existing release by hand."
+            exit 1
+          fi
+
+      - name: Guard 2 — the version code must exceed the previous release's
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          PREV: ${{ steps.version.outputs.prev_tag }}
+        # No previous tag passes, where SpendControl refuses. It had a release to
+        # seed a tag on; this repository has no tag of any scheme, and the 1.0.4
+        # on Play was uploaded by hand from a commit nobody tagged. Refusing
+        # here would block the first release until someone guessed which commit
+        # that was, and a guessed tag guards nothing. So the first run through
+        # this workflow has no code to be below — and creates, in `finalize`,
+        # the tag every later run is measured against. From then on a code that
+        # does not exceed the newest tag's is refused, which is the property
+        # that matters: a branch cut before the newest release counts lower by
+        # construction, so only the newest released version can be hotfixed.
+        run: |
+          set -euo pipefail
+          if [ -z "$PREV" ]; then
+            echo "::warning::First release through this workflow: no v*+* tag exists, so version" \
+                 "code $VERSION_CODE has nothing to exceed and guard 4 has no notes and no" \
+                 "versionName to compare against. This one run is unguarded on both counts —" \
+                 "check that app/version.properties has been bumped past what Play already holds" \
+                 "and that the release notes describe this release. finalize creates the first tag,"\
+                 "and every release after it is compared against it."
+            exit 0
+          fi
+          PREV_CODE="${PREV##*+}"
+          if [ "$VERSION_CODE" -le "$PREV_CODE" ]; then
+            echo "::error::version code $VERSION_CODE does not exceed $PREV_CODE from $PREV." \
+                 "A branch cut from a tag older than the newest release has a lower commit count" \
+                 "by construction, and only the newest released version can be hotfixed."
+            exit 1
+          fi
+          echo "version code $VERSION_CODE > $PREV_CODE ($PREV)"
+
+      - name: Guard 3 — the commit's required checks must be green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # The seven contexts branch protection requires on main, by name. They
+        # are hardcoded on both sides — here and in the protection rule — so
+        # renaming a CI job means changing this list too, or a release goes out
+        # past a gate main insists on.
+        #
+        # WHERE those checks are read from is the whole of this step, and it is
+        # not the release commit. A push to main answers decide-work with false
+        # — the pull request already ran against this very tree, since branch
+        # protection is strict — so every Gradle job reports success in seconds
+        # having executed nothing, and Guardrails, which runs on pull requests
+        # only, reports completed/skipped. Measured on c4e9072, the merge that
+        # landed #58: "Instrumented tests (API 36)" succeeded in nine seconds
+        # without booting an emulator. Reading those runs would gate a release
+        # on six vacuous greens and one skip.
+        #
+        # The runs that mean something are on the merged pull request's head,
+        # which is the merge commit's second parent, and strict protection is
+        # what makes it answer for this commit: the two carry the same tree, so
+        # a check that passed there passed on what is being released. So when
+        # the release commit is a merge whose tree equals its second parent's,
+        # all seven are read off that parent — one rule, pointing at the runs
+        # that did the work — and otherwise off the commit itself.
+        #
+        # The contract that creates: a release from main travels on a merge
+        # commit. A squash or a rebase merge has no second parent, so its
+        # checks are read from the commit itself and Guardrails refuses it.
+        # This repository merges with merge commits and GitHub preselects that
+        # method; the day that changes, the pull request head is the
+        # `commits/<sha>/pulls` endpoint away.
+        #
+        # --paginate because the default page holds 30 check-runs and a commit
+        # accumulates more: every dry run and re-run of this workflow adds its
+        # own jobs, and a truncated listing would judge a check by a stale run.
+        run: |
+          set -euo pipefail
+          SUBJECT=$GITHUB_SHA
+          WHY="the release commit"
+          PARENT=$(git rev-parse -q --verify "$GITHUB_SHA^2" 2>/dev/null || true)
+          if [ -n "$PARENT" ] && [ "$(git rev-parse "$GITHUB_SHA^{tree}")" = "$(git rev-parse "$PARENT^{tree}")" ]; then
+            SUBJECT=$PARENT
+            WHY="the merged pull request's head, which carries the same tree"
+          fi
+          echo "reading the required checks off $SUBJECT — $WHY"
+
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SUBJECT/check-runs" \
+            --jq '.check_runs[] | [.name, .started_at, .status, .conclusion] | @tsv' > check-runs.tsv
+
+          failed=0
+          while IFS= read -r name; do
+            # Newest attempt wins: a re-run must not be judged by its first one.
+            # started_at is an ISO timestamp, so awk compares it as a string and
+            # the order is the chronological one.
+            verdict=$(awk -F'\t' -v n="$name" \
+              '$1 == n && $2 >= t { t = $2; line = $3"/"$4 } END { print line }' check-runs.tsv)
+            if [ -z "$verdict" ]; then
+              echo "::error::no check-run named '$name' on $SUBJECT."
+              failed=1
+            elif [ "${verdict#*/}" != success ]; then
+              echo "::error::'$name' is $verdict (status/conclusion) on $SUBJECT, not completed/success."
+              failed=1
+            else
+              echo "'$name': success"
+            fi
+          done <<'CHECKS'
+          Unit tests
+          Lint
+          Format
+          Detekt
+          Guardrails
+          Instrumented tests (API 26)
+          Instrumented tests (API 36)
+          CHECKS
+
+          exit "$failed"
+
+      # Before the check, not beside it. Nothing else on CI exercises these
+      # tests, and this check fails silently when it is wrong: a note it should
+      # have called stale goes to testers under a green run. The same reasoning,
+      # and the same shape, as the tests the decide-work action and the
+      # Guardrails job run before their own checks.
+      - name: Test the release-notes check
+        run: python3 .github/scripts/check_release_readiness.test.py
+
+      - name: Guard 4 — the release notes must describe this release
+        env:
+          PREV: ${{ steps.version.outputs.prev_tag }}
+        # Every locale, by text, against the previous tag's notes for the same
+        # locale, plus a versionName that has moved. An empty PREV — no release
+        # through this workflow yet — passes inside the script with a notice:
+        # there is nothing for the notes to repeat and no previous name to
+        # differ from. The script's docstring records the two weaker forms of
+        # this check that were tried and failed.
+        run: python3 .github/scripts/check_release_readiness.py "$PREV"
+
+      - name: Dry run stops here
+        if: inputs.dry_run
+        run: echo "dry_run — the guards passed and nothing was published."
+
+  publish:
+    name: Publish to ${{ inputs.track }}
+    runs-on: ubuntu-latest
+    needs: guards
+    # A comparison rather than `!inputs.dry_run`: a bare `!` opens a YAML tag,
+    # so that form does not parse and the workflow fails to load.
+    if: inputs.dry_run != true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Not optional here: versionCode is the commit count, and
+          # verifyReleaseVersioning rejects a shallow clone outright rather than
+          # letting a stale code reach a published artifact.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Require the real google-services.json
+        # The shared action below falls back to a stub when the secret is
+        # missing, which is right for a fork pull request and wrong here: a stub
+        # ships an app whose Crashlytics and Analytics report to nobody. Asserted
+        # before the action rather than inside it, so the fallback rule stays in
+        # one place — the same step the alpha job in ci.yml carries.
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON_B64 is unset. A release must carry the real Firebase config, never the stub."
+            exit 1
+          fi
+
+      - name: Provide google-services.json
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Decode the upload keystore
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ANDROID_KEYSTORE_B64" ]; then
+            echo "::error::ANDROID_KEYSTORE_B64 is unset. Without it the build would look for the keystore path a developer machine uses and fail deep inside Gradle."
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+
+      - name: Decode the Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is unset. The plugin would fall back to Application Default Credentials, which a runner does not have."
+            exit 1
+          fi
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+
+      - name: Build the signed App Bundle and upload it to Play
+        # All the credentials on this step and not on the job: the signingConfig
+        # in app/build.gradle.kts reads them as SN_* project properties — the
+        # ORG_GRADLE_PROJECT_ prefix is how Gradle maps an environment variable
+        # onto one — and this is the only step that signs or publishes anything.
+        # At job level the upload key's passwords would sit in the environment
+        # of every third-party action this job runs.
+        env:
+          ORG_GRADLE_PROJECT_SN_KEY_ALIAS: ${{ secrets.SN_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_SN_KEY_PASSWORD: ${{ secrets.SN_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_SN_STORE_PASSWORD: ${{ secrets.SN_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_SN_STORE_FILE: ${{ runner.temp }}/release.keystore
+          ORG_GRADLE_PROJECT_SN_PLAY_JSON: ${{ runner.temp }}/play.json
+        # -PplayPublish applies the plugin at all (app/build.gradle.kts).
+        # publishReleaseBundle builds the bundle itself, through
+        # packageReleaseBundle and therefore through verifyReleaseVersioning.
+        # --commit because the build script defaults to false, so a run without
+        # it builds an edit and abandons it; --rerun (Gradle's per-task one, not
+        # --rerun-tasks) because a publish that Gradle finds up to date uploads
+        # nothing while reporting success. --track overrides the play {} block,
+        # so the dispatch input alone decides the destination.
+        run: >
+          ./gradlew -PplayPublish
+          :app:publishReleaseBundle
+          --track ${{ inputs.track }}
+          --commit --rerun --stacktrace
+
+      - name: Upload the bundle as a run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # What `finalize` attaches to the GitHub Release, and what a by-hand
+          # recovery downloads when the run died between the upload and the tag.
+          name: release-bundle
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+  finalize:
+    name: Tag and release
+    runs-on: ubuntu-latest
+    needs: [guards, publish]
+    # No condition of its own — a skipped `needs:` skips this job, so a dry run
+    # stops after the guards.
+    permissions:
+      # Raised here alone: `publish` builds a signed bundle and runs Gradle Play
+      # Publisher with its whole dependency graph, which makes it the last job
+      # that should hold a token allowed to write to the repository.
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Only the release notes are read here, but every checkout in the
+          # release path is full: the rule has no exception to remember.
+          fetch-depth: 0
+
+      - name: Download the bundle this run built
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: bundle
+
+      - name: Create the tag and the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.guards.outputs.tag }}
+        # `gh release create` creates the tag at --target as well, so the tag
+        # and the release are one step and cannot disagree. prerelease means
+        # "still travelling"; rollout.yml clears it when production reaches
+        # everyone. The bundle is renamed on the way: AGP names every bundle
+        # app-release.aab, and the applicationVariants block that names the APKs
+        # SleepNoise-<versionName>-<versionCode>-release.apk never sees a
+        # bundle, so the same shape is given to the asset here.
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          mv bundle/*.aab "bundle/SleepNoise-${VERSION/+/-}-release.aab"
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file app/src/main/play/release-notes/en-US/default.txt \
+            --prerelease \
+            bundle/*.aab

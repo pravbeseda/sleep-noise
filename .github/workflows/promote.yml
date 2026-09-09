@@ -1,0 +1,181 @@
+name: Promote
+
+# Verb 2 of three: "version X moves to track Y". The bundle is never rebuilt —
+# Play holds the artifact `release.yml` uploaded, and this workflow moves that
+# exact version code from one track to another.
+#
+# The ref this is dispatched from is irrelevant; the real choice is the `tag`
+# input, which the job checks out. Running from the dropdown's default is
+# therefore right. Checking the tag out is also what keeps the release notes
+# honest: they come from the same commit as the binary.
+#
+# There is one input for the tracks, not two: a release reaches `beta` from
+# `internal` and `production` from `beta`, and no other pair is a step anyone
+# takes — `release.yml` publishes straight to `beta` unless the run needed the
+# internal track first. Deriving the source removes the two combinations that
+# were only ever a mis-click, at the cost of a promotion that skips a track,
+# which would now be a run of this workflow per step.
+#
+# No `environment:` here either — see the note at the top of release.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to promote — leave empty for the newest release
+        type: string
+        required: false
+      to:
+        description: Destination track — the source is implied
+        type: choice
+        options:
+          - production
+          - beta
+        default: production
+        required: true
+      production_user_fraction:
+        description: Production only — ignored when promoting to beta. 1 for everyone, or a number between 0 and 1
+        type: string
+        default: '0.2'
+
+permissions:
+  contents: read
+
+# Serialises whole runs dispatched with the same input; the job-level group
+# below is keyed by the resolved tag, so it catches what this one cannot see —
+# an omitted tag and the same tag typed out are different inputs here.
+# No cancel-in-progress: a cancelled promotion leaves an uncommitted Play edit.
+concurrency:
+  group: promote-${{ inputs.tag }}
+
+jobs:
+  # The tag is resolved once for the whole dispatch, so the concurrency group
+  # below and the promotion act on one resolved value: keyed by the raw input,
+  # the group would put an omitted tag and the same tag typed out into
+  # different groups and let them race for one Play edit.
+  resolve:
+    name: Resolve the release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Validate the rollout fraction
+        # Only where the fraction is actually sent: a promotion to `beta` never
+        # passes one to Play, so refusing it there would block on an unused
+        # input. Before the promotion job, so a bad number costs no Play edit.
+        # Same rule as rollout.yml, which guards on its own action.
+        if: inputs.to == 'production'
+        env:
+          FRACTION: ${{ inputs.production_user_fraction }}
+        # Play rejects `1.0` outright, and `20` — the natural typo for 20% —
+        # would otherwise reach Play as 2000%. The refusal costs seconds and
+        # names the rule. A full rollout is `1`, which sends no fraction at all.
+        run: |
+          set -euo pipefail
+          if ! awk -v f="$FRACTION" 'BEGIN { exit !(f == "1" || (f ~ /^0?\.[0-9]+$/ && f+0 > 0 && f+0 < 1)) }'; then
+            echo "::error::production_user_fraction '$FRACTION' is neither 1 nor a number strictly between 0 and 1."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The dispatch ref, only for its tags.
+          fetch-depth: 0
+
+      # Before the resolution, not beside it: a wrong answer here promotes the
+      # wrong release and reports green while doing it.
+      - name: Test the tag resolution
+        run: .github/scripts/resolve_release_tag.test.sh
+
+      - name: Resolve the release tag
+        id: tag
+        env:
+          TAG: ${{ inputs.tag }}
+        # Shared with rollout.yml: the two must never disagree about which
+        # release they are touching, and the script says why an empty input
+        # means the newest tag.
+        run: |
+          set -euo pipefail
+          # Assigned first, then written: under `set -e` the exit status of a
+          # command substitution used as an argument is discarded — the step
+          # would take `echo`'s status, go green on a refusal and write an empty
+          # tag. An assignment carries the substitution's status, so the script
+          # failing fails the step.
+          RESOLVED=$(.github/scripts/resolve_release_tag.sh "$TAG")
+          echo "tag=$RESOLVED" >> "$GITHUB_OUTPUT"
+
+  promote:
+    name: Promote to ${{ inputs.to }}
+    runs-on: ubuntu-latest
+    needs: resolve
+    # Keyed by the resolved release, so a second dispatch of the same one queues
+    # behind the first. No cancel-in-progress: a cancelled promotion leaves an
+    # uncommitted Play edit, which Google expires.
+    concurrency:
+      group: promote-${{ needs.resolve.outputs.tag }}
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v4
+        with:
+          # The binary comes from Play, the release notes from this checkout —
+          # so it is the released commit that is checked out, not a branch tip.
+          ref: ${{ needs.resolve.outputs.tag }}
+          # Nothing is packaged here, so verifyReleaseVersioning never runs; the
+          # depth is the rule every checkout in the release path follows, so
+          # that it has no exception to remember.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        # Nothing is compiled here, but the Firebase plugins are applied
+        # unconditionally and every Gradle task needs the file in place. The
+        # stub would do as well as the real one — no artifact leaves this job —
+        # so unlike release.yml there is no assertion in front of the action.
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Decode the Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is unset."
+            exit 1
+          fi
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+
+      - name: Promote the release
+        env:
+          ORG_GRADLE_PROJECT_SN_PLAY_JSON: ${{ runner.temp }}/play.json
+          TAG: ${{ needs.resolve.outputs.tag }}
+          # The implied source, see the note at the top of the file.
+          FROM: ${{ inputs.to == 'production' && 'beta' || 'internal' }}
+          TO: ${{ inputs.to }}
+          FRACTION: ${{ inputs.production_user_fraction }}
+        # --version-code is what makes this exact rather than approximate: the
+        # tag carries the number, so whatever else has landed on the source
+        # track meanwhile is irrelevant. --commit because the build script
+        # leaves it off by default, --rerun (Gradle's per-task one) because a
+        # task Gradle finds up to date would report success having sent nothing.
+        run: |
+          set -euo pipefail
+          CODE="${TAG##*+}"
+          ARGS="--from-track $FROM --promote-track $TO --version-code $CODE --commit --rerun"
+          if [ "$TO" = production ] && [ "$FRACTION" != "1" ]; then
+            ARGS="$ARGS --release-status inProgress --user-fraction $FRACTION"
+          fi
+          # $ARGS is deliberately unquoted: it is a list of flags, not one word.
+          ./gradlew -PplayPublish :app:promoteReleaseArtifact $ARGS --stacktrace

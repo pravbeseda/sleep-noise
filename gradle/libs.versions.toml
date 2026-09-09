@@ -17,6 +17,10 @@ detekt = "1.23.8"
 spotless = "8.9.0"
 ktlint = "1.8.0"
 kover = "0.9.9"
+# 3.13.0, not 4.x: Gradle Play Publisher 4.0.0 is built against Android Gradle
+# Plugin 9, and this project is on AGP 8.12.2 with Gradle 8.13. Move it with the
+# AGP major, not before.
+playPublisher = "3.13.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,4 +52,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
 

@@ -176,6 +176,17 @@ Every merge into `main` also builds a signed release APK and sends it to the alp
 Firebase App Distribution. That build needs the maintainer's upload keystore, which is not in the
 repository, so it runs on CI only — a contribution never has to sign anything.
 
+A Play release is a tag, `v<versionName>+<versionCode>`, created by three manual workflows under
+`.github/workflows/`: `release.yml` checks the commit — the tag must be new, the version code higher
+than the last release's, CI green, the release notes changed — then builds a signed App Bundle,
+uploads it to Play's open-testing track and creates a GitHub prerelease with the bundle attached;
+`promote.yml` moves that exact build to production at a rollout fraction; `rollout.yml` raises the
+fraction, completes it — which also marks the GitHub Release as latest — or halts it. Nothing is
+ever rebuilt after `release.yml`, and none of the three touches the store listing. The plugin behind
+them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`, so an ordinary
+build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
+notes are in [`CLAUDE.md`](CLAUDE.md), under "The release path".
+
 ## Credits
 
 - Development — Alexander Ivanov

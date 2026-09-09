@@ -577,6 +577,118 @@ The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` 
 
 Release commits follow the message form `Release 1.0.3 (5)`.
 
+### The release path: three verbs, one tag
+
+**A release is a tag, and the tag is `v<versionName>+<versionCode>`** — `v1.1.0+58`, say. Both numbers
+already exist, `app/version.properties` and `git rev-list --count HEAD`; the tag only records them,
+which is why nothing ever writes a version *into* a tag. The `+` is what every script keys on: the
+`v*+*` glob is how a release is told from any other tag the repository may one day carry, and the
+newest release is the one with the highest code after the `+`, sorted numerically — never
+`--sort=version:refname`, which has no defined behaviour for `+`, and never lexically, where `+99`
+sorts after `+286`. `.github/scripts/resolve_release_tag.sh` is the one copy of that ordering the
+promote and rollout workflows share, so the two cannot disagree about which release they are touching.
+There is no tag of this scheme yet: 1.0.4 on Play was uploaded by hand from a commit nobody tagged,
+and the first run of `release.yml` creates the first one.
+
+Three `workflow_dispatch` workflows, one per decision, modelled on SpendControl's and stripped of its
+flavors:
+
+- **`release.yml`** — "this commit is version X". Dispatched from the branch being released; the
+  "Use workflow from" dropdown GitHub always renders *is* that choice, so there is no branch input.
+  It refuses before it builds. Four guards, in order: the tag must not exist; the version code must
+  exceed the newest tag's; the seven contexts `main` requires must be green on this commit; and the
+  release notes must not repeat the previous tag's, with `versionName` moved. Then it builds the
+  signed **App Bundle** — not an APK; the listing postdates August 2021 and Play accepts nothing
+  else — uploads it with `:app:publishReleaseBundle --track <track> --commit --rerun`, tags the
+  commit and creates a GitHub Release with `--prerelease` and the bundle attached, notes from
+  `release-notes/en-US/default.txt`. `dry_run` runs the guards and stops, which is the cheap way to
+  ask whether a release is ready. **The track defaults to `beta`** — open testing — and `internal`
+  is on the dropdown for a build that has to be looked at before it is public.
+- **`promote.yml`** — "version X moves to track Y". Takes the tag (empty means the newest), checks
+  *it* out so the notes come from the released commit, and runs `:app:promoteReleaseArtifact
+  --from-track <from> --promote-track <to> --version-code <the code in the tag> --commit --rerun`,
+  adding `--release-status inProgress --user-fraction <f>` for a staged production rollout. **Only
+  the destination is asked for; the source is derived** — `production` from `beta`, `beta` from
+  `internal`. Two dropdowns offered four combinations of which two were mis-clicks.
+- **`rollout.yml`** — the production percentage and stopping it: `set-fraction`, `complete`,
+  `halt`, all `promoteReleaseArtifact --update production --version-code <code>`. `complete` also
+  clears `prerelease` and marks the release `Latest`.
+
+So the whole path is: bump `versionName` and write the notes on `main` → `release.yml` from `main`,
+which uploads to `beta`, tags and creates the prerelease → `promote.yml` to `production` at a
+fraction → `rollout.yml` to raise it and `complete`. Play holds one binary throughout: promotion
+rather than a second build, so production gets the bundle testers had — and Play rejects a re-upload
+of a version code it holds, which makes promotion the only mechanism anyway. **The listing is
+untouched by all three.** `publishReleaseBundle` and `promoteReleaseArtifact` carry the artifact and
+`release-notes/` only; the store page is stage 4 of `docs/plans/RELEASE_AND_STORE_PIPELINE.md`.
+
+Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
+debug build and every CI job that publishes nothing need no Play credentials and never configure the
+plugin. It is 3.13.0 and not 4.x on purpose: 4.0.0 is built against AGP 9, and this project is on
+8.12.2 — the version moves with the AGP major, and `gradle/libs.versions.toml` says so beside the
+number. The service account JSON arrives as `SN_PLAY_JSON`, the same `SN_*` shape as the keystore
+properties; CI decodes `PLAY_SERVICE_ACCOUNT_JSON` into `$RUNNER_TEMP` and hands the path over as
+`ORG_GRADLE_PROJECT_SN_PLAY_JSON`.
+
+Four flags are not optional, and each has a failure behind it that SpendControl paid for:
+
+- **`--commit`**: the build script sets `commit = false`, so a run without it builds a Play edit,
+  has Play validate it and abandons it. That is the dry run, and the right default — the opposite
+  one would let a forgotten `--no-commit` publish everything.
+- **`--rerun`**: Gradle's per-task flag, not `--rerun-tasks`. Without it a publish whose inputs
+  have not changed is up to date, uploads nothing, and reports success.
+- **`--track`** on every upload: it overrides the `play {}` block, so the dispatch input alone
+  decides the destination. The block's own `internal` is only where a hand-run publish that forgot
+  the flag would land, and open testing is not where such a run should end up.
+- **`--version-code`** on every promotion: without it the task acts on whatever sits on the source
+  track *now*, so completing an older tag after a newer release reached production would finish the
+  newer one's rollout. A code that is not on the track fails the task, which is the right refusal.
+
+**The edit cache** is the trap a local dry run leaves behind: the plugin writes the id of an
+uncommitted edit to `app/build/gpp/<applicationId>.txt` and reuses it next time, so the run after a
+dry run fails with `This edit has expired`. A runner starts clean; a developer machine runs
+`rm -rf app/build/gpp` first.
+
+Two guards deserve their reasons written down. **Guard 3 cannot read `Guardrails` off a commit of
+`main`**: that job compares a pull request against its base and carries a job-level `if:`, so on the
+merge commit it reports `completed/skipped` — measured, not assumed. Where it did run is the pull
+request's head, which is the merge commit's second parent, and branch protection is strict, so the
+two carry the same tree; the guard reads a skipped or missing context off that parent when the trees
+are equal. A squash merge has no second parent and would be refused there: this repository merges
+with merge commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
+It had a released commit to seed a tag on; here a guessed tag would guard nothing, and the first
+release would otherwise be blocked until somebody guessed. The moment `finalize` creates the first
+tag, both guards compare against it, and a code that does not exceed it is refused. The price is
+stated: the first release is not checked for a bumped `versionName` or new notes, and the release
+PR that precedes it does that by hand.
+
+`.github/scripts/check_release_readiness.py` is guard 4, and its docstring records the two weaker
+forms that were tried against real revisions and passed the release they were meant to stop:
+comparing paths reads a rename as a change, and asking for any text absent from the base passes when
+a release adds locales, since a fresh translation of the *old* text is a new string. It checks every
+locale by text against every note the previous tag holds for that locale, and the error names the
+ones that lagged. It has a test beside it, `check_release_readiness.test.py`, and `release.yml` runs
+that before the check — the rule every CI script here follows, because a wrong answer is the failure
+that reports green. `resolve_release_tag.sh` has `resolve_release_tag.test.sh` on the same terms,
+run by both workflows before either resolves a tag.
+
+**No `environment:` on any job.** SpendControl has six because it has two apps and its deployments
+page answers "where is each version"; one app with three tracks has nothing to answer there that the
+Releases feed does not, and three environments to create in the repository settings would be a
+blocking prerequisite bought for no gain. `release.yml` carries `concurrency: group: release` with
+**no** `cancel-in-progress`: cancelling a run midway through publishing is the partial state — a
+bundle on Play with no tag and no GitHub Release — and a second dispatch queues instead, where guard 1
+turns a double click into a refusal. Recovery from that state is by hand: the bundle is a run
+artifact named `release-bundle`, and `gh release create <tag> --target <sha> --prerelease` with it
+attached is the whole of `finalize`.
+
+Two Play Console steps stand between this and the first release, and neither is in the repository:
+the service account behind `PLAY_SERVICE_ACCOUNT_JSON` needs **release manager** for the tracks and
+**manage store presence** for the listing — two different permissions, and the second fails as a
+`403` on `edits:validate` rather than as anything that names a permission — and the open-testing
+track has to exist, since `release.yml` publishes there by default. A release PR also checks
+`NOISE_LAB_ENABLED` is `false`, as the noise lab section says.
+
 ## The store listing
 
 `app/src/main/play/` is the one place the Google Play texts are written — title, short and full

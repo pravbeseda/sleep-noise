@@ -79,11 +79,38 @@ describe a build the world cannot download yet.
   `rollout.yml` drives the production percentage. Creating the service account and the open-testing
   track are prerequisites of stage 2, listed below.
 
+- **Which Gradle Play Publisher?** → 3.13.0, the newest of the 3.x line. Not 4.x: 4.0.0 is built
+  against Android Gradle Plugin 9 and this project is on AGP 8.12.2 with Gradle 8.13, and the
+  plugin's own release notes say to stay on 3.x rather than upgrade one to reach the other.
+- **Deployment environments?** → None. SpendControl has six, `<flavor>-<track>`, because two apps and
+  three tracks make "where is each version" a question the Releases feed cannot answer. One app with
+  three tracks does not, and three environments to create by hand would be a prerequisite bought for
+  nothing.
+- **Where does the release guard read its green checks from?** → From the merged pull request's head,
+  whenever the release commit is a merge whose tree equals its second parent's. Because the release
+  commit's own checks are vacuous: a push to `main` answers `decide-work` with false, so every Gradle
+  job reports success in seconds having executed nothing, and `Guardrails` — a pull-request-only job
+  — reports skipped. Measured on c4e9072, the merge that landed #58: `Instrumented tests (API 36)`
+  succeeded in nine seconds without booting an emulator. Strict branch protection is what makes the
+  parent answer for the commit, the two trees being identical. **The contract this creates:** a
+  release from `main` travels on a merge commit; a squash or rebase merge has no second parent and is
+  refused on `Guardrails`. This repository merges with merge commits and GitHub preselects that
+  method.
+- **What guards the very first release?** → Nothing, on two of the four counts, and the run says so
+  in a `::warning::`. No `v*+*` tag exists, so the version code has nothing to exceed and the notes
+  have nothing to be stale against — including the `versionName`, which still reads 1.0.4, the
+  version already on Play. Stage 4 is where it is bumped and the notes are written, which is the same
+  human step a seed tag would have been protecting; a seed tag would also have to be pushed onto a
+  guessed commit, since the history records only `Release 1.0.3 (5)`. Every release after the first
+  is compared against the tag the first one creates.
+
 ## Stages
 
 Four pull requests. Each is independently mergeable and leaves the repository in a working state.
 
 ### Stage 1 — The name and the store texts, under version control
+
+- [x] Merged — PR #58.
 
 - Set `app_name` to `Sleepy Cocktail` in the default bucket and delete the five translated copies,
   per the decision above.
@@ -170,9 +197,9 @@ Outside the repository, and blocking stage 2:
 
 | What | Where | Note |
 |---|---|---|
-| Play service account with API access | Play Console → Setup → API access | Needs **release manager** for the tracks and **store presence** for the listing — two different permissions, and the second fails as a 403 on `edits:validate` rather than as a permission error |
+| Invite the service account in the Play Console | Play Console → Users and permissions | **Open.** The account behind the secret below exists; it still needs **release manager** for the tracks and **manage store presence** for the listing — two different permissions, and the second fails as a 403 on `edits:validate` rather than as a permission error |
 | ~~`PLAY_SERVICE_ACCOUNT_JSON` secret~~ | GitHub repo secrets | **Done, 2026-09-09.** The JSON key of that account |
-| An open-testing track | Play Console | `release.yml` publishes there by default |
+| An open-testing track | Play Console | **Open.** `release.yml` publishes there by default |
 
 ## Rulings
 
@@ -208,6 +235,19 @@ Outside the repository, and blocking stage 2:
   and says what to add.
 - *Moot.* A reviewer noted the documented stale-green paragraph gave the wrong reason for CI being
   safe — a fresh checkout rather than build caching being off. The paragraph is gone with the fix.
+
+**Stage 2.** Decided without the user, each recorded because a reasonable person might have chosen
+otherwise:
+
+- The App Bundle attached to the GitHub Release is renamed `SleepNoise-<name>-<code>-release.aab`,
+  matching what the `applicationVariants` block already does to the APK. AGP names it
+  `app-release.aab`, which says nothing about which release it is once downloaded.
+- `resolve_release_tag.sh` gets its own test and promote/rollout run it before resolving, on the same
+  rule this repository already applies to `decide-work` and `no-deleted-tests`: a CI script that
+  answers wrongly is the failure that reports green.
+- Two `::error::` lines in `release.yml` run to 166 and 156 characters. The 140 limit is detekt's and
+  applies to Kotlin; a workflow annotation cannot be wrapped without breaking it, and `ci.yml`
+  already carries lines of that length.
 
 ## Parked
 
