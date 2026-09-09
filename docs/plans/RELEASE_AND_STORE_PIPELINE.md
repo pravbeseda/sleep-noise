@@ -96,6 +96,11 @@ describe a build the world cannot download yet.
   release from `main` travels on a merge commit; a squash or rebase merge has no second parent and is
   refused on `Guardrails`. This repository merges with merge commits and GitHub preselects that
   method.
+- **What version is the first release through this pipeline?** → **2.0.0**, up from the 1.0.4 that is
+  on Play. A major bump because the app is renamed, its store page is rewritten and it gained three of
+  its six noises since 1.0.4. It is written into `app/version.properties` in **stage 4**, not here:
+  `CLAUDE.md` reserves that file, `versionCode` and the versioning block for the release pull request,
+  and stage 4 is that pull request.
 - **What guards the very first release?** → Nothing, on two of the four counts, and the run says so
   in a `::warning::`. No `v*+*` tag exists, so the version code has nothing to exceed and the notes
   have nothing to be stale against — including the `versionName`, which still reads 1.0.4, the
@@ -181,7 +186,7 @@ strings on it.
   `publishListing --commit --rerun`, sending texts and graphics together.
 - Documented as the step that runs **after** the rollout reaches production, or beside it — never
   before, so the page never advertises a build nobody can install.
-- Bump `versionName`, write the release notes for the first release through the new pipeline, and
+- Bump `versionName` to **2.0.0**, write the release notes for the first release through the new pipeline, and
   record the whole path in `CLAUDE.md` and `README.md`.
 
 Files: `.github/workflows/publish-listing.yml`, `app/version.properties`,
@@ -248,6 +253,37 @@ otherwise:
 - Two `::error::` lines in `release.yml` run to 166 and 156 characters. The 140 limit is detekt's and
   applies to Kotlin; a workflow annotation cannot be wrapped without breaking it, and `ci.yml`
   already carries lines of that length.
+
+**Stage 2 review gate.** Four reviewers — spec, quality, security, compatibility.
+
+- *Fixed.* `--version-code` was credited with a refusal Gradle Play Publisher does not make. Checked
+  in `DefaultTrackManager.promote` at tag 3.13.0: the plugin fetches the source track and calls
+  `mergeChanges(listOf(versionCode), base)` on **every** release on it, so an older tag dispatched
+  after a newer one reached production rewrites the newer release backwards rather than failing. All
+  three places that claimed otherwise now say what it actually does. No guard was built: asking Play
+  what is on the track costs an API call, and the defect was the comment.
+- *Fixed.* `CLAUDE.md` still described guard 3 as reading only a skipped context off the merged pull
+  request's head, which is what it did before the decision above changed it to read all seven. One
+  decision, three places, one of them already disagreeing.
+- *Fixed.* `release.yml` carried its own copy of the tag-ordering pipeline that
+  `resolve_release_tag.sh` owns and tests, while `CLAUDE.md` called the script "the one copy". It now
+  calls the script; with no argument that script has exactly one failure, so `|| true` maps it to the
+  empty value the guards read as "first release".
+- *Fixed.* `track.set("internal")` restated the plugin's own default and `release.yml` passes
+  `--track` on every upload. Six lines gone.
+- *Fixed, not raised as a finding.* The workflow-level and job-level concurrency groups in
+  `promote.yml` and `rollout.yml` were the same string whenever the tag was typed out rather than
+  left empty, so the job would have waited on the group its own run holds. SpendControl never meets
+  this because its job key carries a flavor suffix; there are no flavors here. The two are now
+  different namespaces, `-dispatch-` and `-release-`.
+- *Fixed, beyond the step's files.* The "the stub is only for forks" rule was a comment in
+  `.github/actions/google-services/action.yml` that every caller had to remember, plus a copied
+  14-line assertion in `ci.yml` and a second one this step added to `release.yml`. It is now a
+  `require-real` input on the action itself, and both callers pass it. The second copy was this
+  step's own doing, which is why it was fixed here rather than parked.
+- *Dropped.* The spec reviewer noted that `rollout.yml`'s `mark-latest` job is not named by the
+  step's text. It is the other half of the `--prerelease` that `release.yml` sets: without it the
+  flag is set by automation and cleared by hand, and nothing else would ever clear it.
 
 ## Parked
 

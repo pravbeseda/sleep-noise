@@ -74,12 +74,16 @@ jobs:
           VERSION_NAME=$(sed -n 's/^versionName=//p' app/version.properties)
           VERSION_CODE=$(git rev-list --count HEAD)
           TAG="v${VERSION_NAME}+${VERSION_CODE}"
-          # Newest tag of this scheme, ordered by version code. The code is
-          # monotonic, so that is the correct order — and it avoids
-          # --sort=version:refname, which has no defined behaviour for '+'.
-          # Empty until the first release through this workflow has run:
-          # guards 2 and 4 read that as "nothing to compare against" and say so.
-          PREV=$(git tag --list 'v*+*' | awk -F+ '{print $2"\t"$0}' | sort -rn | head -1 | cut -f2)
+          # The newest v*+* tag is the previous release: the tag for this one
+          # does not exist yet, which guard 1 is about to insist on. The
+          # ordering lives in resolve_release_tag.sh, which promote and rollout
+          # already share and which has its own tests — a second copy of that
+          # awk pipeline here is a second thing to keep right.
+          #
+          # With no argument the script has exactly one failure, "no v*+* tag
+          # exists", so `|| true` maps that one case to an empty PREV. Guards 2
+          # and 4 read empty as "nothing to compare against" and say so.
+          PREV=$(.github/scripts/resolve_release_tag.sh 2>/dev/null || true)
           echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE tag=$TAG previous=${PREV:-none}"
           {
             echo "tag=$TAG"
@@ -261,25 +265,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Require the real google-services.json
-        # The shared action below falls back to a stub when the secret is
-        # missing, which is right for a fork pull request and wrong here: a stub
-        # ships an app whose Crashlytics and Analytics report to nobody. Asserted
-        # before the action rather than inside it, so the fallback rule stays in
-        # one place — the same step the alpha job in ci.yml carries.
-        env:
-          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
-        run: |
-          set -euo pipefail
-          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
-            echo "::error::GOOGLE_SERVICES_JSON_B64 is unset. A release must carry the real Firebase config, never the stub."
-            exit 1
-          fi
-
       - name: Provide google-services.json
+        # require-real because this job ships: the action's stub is for a fork
+        # pull request, and a release whose Crashlytics reports to nobody is
+        # worse than a release that stops here.
         uses: ./.github/actions/google-services
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          require-real: 'true'
 
       - name: Decode the upload keystore
         env:

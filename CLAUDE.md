@@ -637,12 +637,18 @@ Four flags are not optional, and each has a failure behind it that SpendControl 
   one would let a forgotten `--no-commit` publish everything.
 - **`--rerun`**: Gradle's per-task flag, not `--rerun-tasks`. Without it a publish whose inputs
   have not changed is up to date, uploads nothing, and reports success.
-- **`--track`** on every upload: it overrides the `play {}` block, so the dispatch input alone
-  decides the destination. The block's own `internal` is only where a hand-run publish that forgot
-  the flag would land, and open testing is not where such a run should end up.
+- **`--track`** on every upload: it decides the destination on its own, so the `play {}` block sets
+  no track at all. The plugin's own default is `internal`, which is where a hand-run publish that
+  forgot the flag lands — the right place for a run that did not say where it was going, and one
+  fewer value to keep in step with the workflow.
 - **`--version-code`** on every promotion: without it the task acts on whatever sits on the source
   track *now*, so completing an older tag after a newer release reached production would finish the
-  newer one's rollout. A code that is not on the track fails the task, which is the right refusal.
+  newer one's rollout. **It is not a guard, though it reads like one.** Gradle Play Publisher 3.13.0
+  does not check that the code is on the track: `DefaultTrackManager.promote` rewrites every release
+  on the source track with the code it is given. Dispatching an older tag after a newer one reached
+  production therefore rewrites the newer release backwards instead of failing. What protects
+  against that is the empty-tag default, which resolves to the newest release — so type a tag out
+  only when you mean an older one.
 
 **The edit cache** is the trap a local dry run leaves behind: the plugin writes the id of an
 uncommitted edit to `app/build/gpp/<applicationId>.txt` and reuses it next time, so the run after a
@@ -653,9 +659,12 @@ Two guards deserve their reasons written down. **Guard 3 cannot read `Guardrails
 `main`**: that job compares a pull request against its base and carries a job-level `if:`, so on the
 merge commit it reports `completed/skipped` — measured, not assumed. Where it did run is the pull
 request's head, which is the merge commit's second parent, and branch protection is strict, so the
-two carry the same tree; the guard reads a skipped or missing context off that parent when the trees
-are equal. A squash merge has no second parent and would be refused there: this repository merges
-with merge commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
+two carry the same tree. **All seven contexts are read off that parent, not just the skipped one** —
+because the release commit's own greens are vacuous: a push to `main` answers `decide-work` with
+false, so every Gradle job succeeds in seconds having executed nothing. Measured on c4e9072:
+`Instrumented tests (API 36)` succeeded in nine seconds without booting an emulator. A squash merge
+has no second parent and would be refused on `Guardrails`: this repository merges with merge
+commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
 It had a released commit to seed a tag on; here a guessed tag would guard nothing, and the first
 release would otherwise be blocked until somebody guessed. The moment `finalize` creates the first
 tag, both guards compare against it, and a code that does not exceed it is refused. The price is

@@ -42,7 +42,14 @@ permissions:
 # same tag typed out are different inputs and land in different groups here.
 # No cancel-in-progress: a cancelled run leaves an uncommitted Play edit.
 concurrency:
-  group: rollout-${{ inputs.tag }}
+  # `-dispatch-` and the job's `-release-` are different namespaces on
+  # purpose. This key is the raw input and the job's is the resolved tag, so
+  # with the tag typed out rather than left empty the two would otherwise be
+  # the same string — and the job would be waiting on the group its own run
+  # already holds. SpendControl never meets this because its job key carries a
+  # flavor suffix; there are no flavors here, so the suffix has to be the
+  # namespace instead.
+  group: rollout-dispatch-${{ inputs.tag }}
 
 jobs:
   # The tag is resolved once for the whole dispatch, as in promote.yml and for
@@ -109,7 +116,7 @@ jobs:
     # queues rather than racing it for a Play edit. No cancel-in-progress — a
     # cancelled run leaves an uncommitted edit, which Google expires.
     concurrency:
-      group: rollout-${{ needs.resolve.outputs.tag }}
+      group: rollout-release-${{ needs.resolve.outputs.tag }}
     steps:
       - name: Checkout the tag
         uses: actions/checkout@v4
@@ -162,11 +169,22 @@ jobs:
           ACTION: ${{ inputs.action }}
           FRACTION: ${{ inputs.user_fraction }}
         # --version-code names the release the tag names, as promote.yml does.
-        # Without it the task is handed a null version code and acts on
-        # whatever sits on the track now — so completing an older tag after a
-        # newer one reached production would finish the newer release's rollout
-        # while mark-latest cleared the older one's prerelease. A version code
-        # that is not on the track fails the task, which is the right refusal.
+        # Without it the task is handed a null version code and acts on whatever
+        # sits on the track now — so completing an older tag after a newer one
+        # reached production would finish the newer release's rollout while
+        # mark-latest cleared the older one's prerelease.
+        #
+        # What it does NOT do is refuse a code the track does not carry. Read in
+        # DefaultTrackManager.promote at tag 3.13.0: the plugin fetches the
+        # source track and calls mergeChanges(listOf(versionCode), base) on
+        # *every* release on it, which sets that release's versionCodes to the
+        # given code unconditionally, and Play accepts any bundle it already
+        # holds. So dispatching an older tag after a newer one reached
+        # production rewrites the newer release to the older code rather than
+        # failing — the rollback this flag looks like it prevents. The defence
+        # is the empty-tag default, which resolves to the newest release; there
+        # is no guard here because building one means asking Play what is on the
+        # track, and a flag that lies in a comment is the actual defect.
         run: |
           set -euo pipefail
           CODE="${TAG##*+}"

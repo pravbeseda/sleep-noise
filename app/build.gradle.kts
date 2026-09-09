@@ -303,12 +303,6 @@ if (project.hasProperty("playPublish")) {
         // Play App Signing re-signs what it distributes; Drevo.Keystore is the
         // upload key.
         defaultToAppBundles.set(true)
-        // Only a fallback: release.yml passes --track on every upload, so this
-        // decides nothing but where a hand-run publish would land. `internal`
-        // rather than the `beta` that workflow defaults to, because the run
-        // that reaches this value is the one that forgot to name a track, and
-        // open testing is not where such a run should end up.
-        track.set("internal")
         // Dry by default: a publish task opens an edit in Play and abandons it
         // unless the run passes --commit. Forgetting the flag publishes
         // nothing; the opposite default would let a forgotten --no-commit

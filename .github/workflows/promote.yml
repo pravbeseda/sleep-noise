@@ -45,7 +45,14 @@ permissions:
 # an omitted tag and the same tag typed out are different inputs here.
 # No cancel-in-progress: a cancelled promotion leaves an uncommitted Play edit.
 concurrency:
-  group: promote-${{ inputs.tag }}
+  # `-dispatch-` and the job's `-release-` are different namespaces on
+  # purpose. This key is the raw input and the job's is the resolved tag, so
+  # with the tag typed out rather than left empty the two would otherwise be
+  # the same string — and the job would be waiting on the group its own run
+  # already holds. SpendControl never meets this because its job key carries a
+  # flavor suffix; there are no flavors here, so the suffix has to be the
+  # namespace instead.
+  group: promote-dispatch-${{ inputs.tag }}
 
 jobs:
   # The tag is resolved once for the whole dispatch, so the concurrency group
@@ -112,7 +119,7 @@ jobs:
     # behind the first. No cancel-in-progress: a cancelled promotion leaves an
     # uncommitted Play edit, which Google expires.
     concurrency:
-      group: promote-${{ needs.resolve.outputs.tag }}
+      group: promote-release-${{ needs.resolve.outputs.tag }}
     steps:
       - name: Checkout the tag
         uses: actions/checkout@v4
@@ -165,9 +172,12 @@ jobs:
           FROM: ${{ inputs.to == 'production' && 'beta' || 'internal' }}
           TO: ${{ inputs.to }}
           FRACTION: ${{ inputs.production_user_fraction }}
-        # --version-code is what makes this exact rather than approximate: the
-        # tag carries the number, so whatever else has landed on the source
-        # track meanwhile is irrelevant. --commit because the build script
+        # --version-code names which code the destination release carries, so a
+        # promotion says which release it means rather than "whatever is on the
+        # source track". It does not verify that the code is on that track:
+        # DefaultTrackManager.promote at 3.13.0 rewrites every release on the
+        # source with the given code. See the longer note in rollout.yml, which
+        # is where an older tag can do real damage. --commit because the build script
         # leaves it off by default, --rerun (Gradle's per-task one) because a
         # task Gradle finds up to date would report success having sent nothing.
         run: |
