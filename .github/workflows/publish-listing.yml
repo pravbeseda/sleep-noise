@@ -1,0 +1,113 @@
+name: Publish the store listing
+
+# The store page, and nothing else. The three release verbs carry the artifact
+# and the release notes; this one carries what a visitor reads before installing
+# anything — title, short and full description, contact details, the default
+# language and the graphics — out of app/src/main/play/listings.
+#
+# It is deliberately not part of any release. A page describes what a visitor
+# can install, so it goes out **after** the rollout has reached production, or
+# beside it, and never before: a listing that advertises a build nobody can
+# download yet is a page that lies for as long as the rollout takes. Nothing
+# here enforces that ordering — Play would have to be asked what is live, which
+# is an API call and a guard for a mistake a dispatch already has to be typed to
+# make.
+#
+# dry_run defaults to **true**, the opposite of release.yml, and for the reason
+# the two differ: a release is dispatched to release something, while this page
+# is usually dispatched to see what a change would do to it. Without --commit
+# the plugin opens an edit, has Play validate every text and image, and
+# abandons it, which is the cheap way to ask whether the tree is publishable.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Validate the listing against Play and publish nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# The same group as release, promote and rollout, and for Play's reason rather
+# than GitHub's: every one of them opens an edit for this app as the same
+# service account, and creating an edit invalidates any active edit created by
+# the same user. A listing publish overlapping a rollout would void the other
+# run's edit mid-operation, so all four serialise on one name.
+concurrency:
+  group: play-edit
+
+jobs:
+  publish-listing:
+    name: Publish the listing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Nothing here packages an artifact, so verifyReleaseVersioning never
+          # runs and a shallow clone would do. Every checkout on the Play path
+          # is full anyway: a rule with no exception is a rule nobody has to
+          # remember which job was the exception.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide google-services.json
+        # No require-real, unlike the jobs that ship a binary: this one uploads
+        # text and images and builds nothing that anybody installs. The file is
+        # here because the Firebase plugins are applied unconditionally and
+        # every Gradle invocation in this project needs it.
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Decode the Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is unset. The plugin would fall back to Application Default Credentials, which a runner does not have."
+            exit 1
+          fi
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+
+      - name: Publish the store listing
+        env:
+          # A path rather than a credential, so it can sit here: the JSON itself
+          # was written to the runner's temp directory by the step above.
+          ORG_GRADLE_PROJECT_SN_PLAY_JSON: ${{ runner.temp }}/play.json
+          DRY_RUN: ${{ inputs.dry_run }}
+        # -PplayPublish is what applies the plugin at all (app/build.gradle.kts).
+        # --rerun is Gradle's per-task flag, not --rerun-tasks: a publish whose
+        # inputs have not changed is up to date, uploads nothing and reports
+        # success. --commit only on a real run, because the build script sets
+        # commit = false — which is why a dry run needs no flag of its own.
+        #
+        # The branch is written out rather than folded into a ${{ }} ternary:
+        # an empty string is falsy in a GitHub expression, so the obvious form
+        # of that ternary returns --commit for a dry run.
+        #
+        # This job wants two Play Console permissions and fails differently on
+        # each: without release manager the plugin cannot open an edit, and
+        # without "manage store presence" the run dies as a 403 on
+        # edits:validate rather than as anything that names a permission.
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: Play validates the edit and the run abandons it. Nothing on the store page changes."
+            ./gradlew -PplayPublish :app:publishReleaseListing --rerun --stacktrace
+          else
+            ./gradlew -PplayPublish :app:publishReleaseListing --commit --rerun --stacktrace
+          fi

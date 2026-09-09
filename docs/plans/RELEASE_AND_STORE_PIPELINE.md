@@ -109,9 +109,16 @@ describe a build the world cannot download yet.
   guessed commit, since the history records only `Release 1.0.3 (5)`. Every release after the first
   is compared against the tag the first one creates.
 
+- **One stage or two for the page and the release?** → **Two.** The page's workflow publishes nothing
+  by itself and can land whenever; the version bump is release-PR territory by `CLAUDE.md`'s own
+  rule, and merging 2.0.0 before a 2.0.0 exists would have every alpha build the `qa` group receives
+  call itself 2.0.0 in the meantime. Decided with the user after stage 3 merged, which is why the
+  stage list below has five entries where the plan opened with four.
+
 ## Stages
 
-Four pull requests. Each is independently mergeable and leaves the repository in a working state.
+Five pull requests. Each is independently mergeable and leaves the repository in a working state.
+Stage 4 was split in two once stage 3 had landed: see the decision below.
 
 ### Stage 1 — The name and the store texts, under version control
 
@@ -164,6 +171,8 @@ Done when: `release.yml` dispatched with `dry_run: true` passes every guard and 
 
 ### Stage 3 — Per-locale screenshots
 
+- [x] Merged — PR #62.
+
 - An instrumented test that drives the app through the three states worth showing — the mixer at
   rest, a session playing with the countdown, the mixer in the dark theme — in every locale the app
   ships, and copies the app's own window for each.
@@ -186,18 +195,39 @@ strings on it.
 ### Stage 4 — Publishing the store page
 
 - `.github/workflows/publish-listing.yml`, `workflow_dispatch` with a `dry_run` default of true:
-  `publishListing --commit --rerun`, sending texts and graphics together.
+  `publishReleaseListing`, with `--commit` only on a run that asked for it, sending texts and
+  graphics together. No push and no merge reaches it.
 - Documented as the step that runs **after** the rollout reaches production, or beside it — never
-  before, so the page never advertises a build nobody can install.
-- Bump `versionName` to **2.0.0**, write the release notes for the first release through the new pipeline, and
-  record the whole path in `CLAUDE.md` and `README.md`.
+  before, so the page never advertises a build nobody can install. Not enforced: Play would have to
+  be asked what is live, which is an API call and a guard for a mistake a dispatch has to be typed
+  to make.
+- Record the whole path in `CLAUDE.md` and `README.md`.
 
-Files: `.github/workflows/publish-listing.yml`, `app/version.properties`,
-`app/src/main/play/release-notes/**`, `CLAUDE.md`, `README.md`.
+Files: `.github/workflows/publish-listing.yml`, `app/build.gradle.kts` (one stale comment),
+`CLAUDE.md`, `README.md`.
 
 Lenses: security (a credential that can rewrite the public store page).
 
 Done when: a dry run validates the edit against Play and commits nothing.
+
+### Stage 5 — The first release through the pipeline
+
+Its own pull request, and dispatched rather than merged into: this is the release, and it is written
+when a release is actually going out.
+
+- Bump `versionName` to **2.0.0** in `app/version.properties`.
+- Write the release notes for it in all six locales — the first release has no previous tag, so
+  guard 4 has nothing to compare them against and this is the human step it stands in for.
+- Check `NOISE_LAB_ENABLED` is `false`, as the noise lab section of `CLAUDE.md` requires of every
+  release pull request.
+- Then the dispatches, in order: `release.yml` from `main` → `promote.yml` to production at a
+  fraction → `rollout.yml` to raise it and complete → `publish-listing.yml` for the page.
+
+Files: `app/version.properties`, `app/src/main/play/release-notes/**`.
+
+Lenses: compatibility (the version Play holds and the version the repository claims).
+
+Done when: 2.0.0 is on production and the store page describes it.
 
 ## Operational prerequisites
 
@@ -324,6 +354,24 @@ otherwise:
 - **The emulator is `pixel_2` and the test measures what it captured.** Play refuses a screenshot past
   a ratio of 2:1 and every modern phone profile is 20:9; the guard was watched failing on a 1080x2400
   display before the run was believed on a 1080x1920 one.
+
+**Stage 4.** Decided without the user, each recorded because a reasonable person might have chosen
+otherwise:
+
+- **The dry/commit branch is a shell `if`, not a `${{ }}` ternary.** An empty string is falsy in a
+  GitHub expression, so `inputs.dry_run && '' || '--commit'` — the obvious form — hands `--commit` to
+  the dry run. The two `gradlew` lines written out cost a duplicated task name and cannot fail that
+  way.
+- **No `require-real` on the google-services step,** unlike `release.yml` and the alpha job: this one
+  uploads text and images and builds nothing anybody installs, so a stub Firebase config changes
+  nothing about what is published. The file is there only because the plugins are applied
+  unconditionally.
+- **The page's ordering after the rollout is documented, not enforced.** Enforcing it means asking
+  Play what is live — an API call, a credential path and a guard, against a mistake that already
+  takes a deliberate dispatch to make.
+- **The checkout is full though nothing here packages an artifact.** `verifyReleaseVersioning` never
+  runs on this path, so a shallow clone would work; every checkout on the Play path is full so that
+  there is no exception for a reader to remember.
 
 ## Parked
 

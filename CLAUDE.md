@@ -620,7 +620,7 @@ fraction → `rollout.yml` to raise it and `complete`. Play holds one binary thr
 rather than a second build, so production gets the bundle testers had — and Play rejects a re-upload
 of a version code it holds, which makes promotion the only mechanism anyway. **The listing is
 untouched by all three.** `publishReleaseBundle` and `promoteReleaseArtifact` carry the artifact and
-`release-notes/` only; the store page is stage 4 of `docs/plans/RELEASE_AND_STORE_PIPELINE.md`.
+`release-notes/` only; the store page has a dispatch of its own, below.
 
 Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
 debug build and every CI job that publishes nothing need no Play credentials and never configure the
@@ -800,3 +800,31 @@ to it is not on the table either. The locale table in `StoreScreenshotTest` is a
 `PlayMetadataTest`'s, and the workflow refuses in both directions: a photographed locale with no
 listing, and a listing with no photographs. That is the only guard against two tables drifting apart,
 since neither direction shows up in a diff of images.
+
+### Publishing the page
+
+`.github/workflows/publish-listing.yml` is the fourth Play dispatch and the only one that touches the
+store page: `publishReleaseListing` sends what a visitor reads before installing anything — title,
+short and full description, contact details, the default language and the graphics — out of
+`app/src/main/play/listings`. The release notes are not among them; they travel with the artifact,
+which is why the three release verbs and this one never overlap in what they carry.
+
+**`dry_run` defaults to `true` here and to `false` in `release.yml`,** which is not an inconsistency:
+a release is dispatched to release something, while the page is usually dispatched to see what a
+change would do to it. Without `--commit` the plugin opens an edit, has Play validate every text and
+image, and abandons it — the cheap way to ask whether the tree is publishable at all.
+
+**The page goes out after the rollout reaches production, or beside it, never before.** A listing
+describes what a visitor can install, so publishing it first leaves the page lying for as long as the
+rollout takes. Nothing enforces the order: Play would have to be asked what is live, which is an API
+call and a guard for a mistake that already takes a deliberate dispatch to make.
+
+It shares the `play-edit` concurrency group with the three release verbs, on the same grounds they
+share it with each other — one service account, and a new edit invalidates any active one. And it is
+the job that wants the second Play Console permission: without **release manager** the plugin cannot
+open an edit at all, and without **manage store presence** the run dies as a `403` on
+`edits:validate` rather than as anything that names a permission.
+
+A locale with no `graphics/` directory has its images left exactly as Play holds them — checked in
+`PublishListings`, which builds its media list from the files it finds — so the texts can go out
+before a single screenshot has been taken.
