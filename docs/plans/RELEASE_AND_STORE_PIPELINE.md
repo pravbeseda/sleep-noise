@@ -81,7 +81,8 @@ Four pull requests. Each is independently mergeable and leaves the repository in
 
 ### Stage 1 — The name and the store texts, under version control
 
-- Rename `app_name` in all six `strings.xml` files.
+- Set `app_name` to `Sleepy Cocktail` in the default bucket and delete the five translated copies,
+  per the decision above.
 - Create `app/src/main/play/` in Gradle Play Publisher's layout: `listings/<locale>/title.txt`,
   `short-description.txt`, `full-description.txt`; `release-notes/<locale>/default.txt`;
   `contact-email.txt`; `default-language.txt`. No plugin yet — the tree is data at this point.
@@ -92,7 +93,7 @@ Four pull requests. Each is independently mergeable and leaves the repository in
   the app does not ship.
 - Update `README.md` and `CLAUDE.md`.
 
-Files: `app/src/main/res/values*/strings.xml`, `app/src/main/play/**`,
+Files: `app/src/main/res/values*/strings.xml`, `app/src/main/play/**`, `app/build.gradle.kts`,
 `app/src/test/java/ru/pravbeseda/sleepnoise/store/PlayMetadataTest.kt`, `README.md`, `CLAUDE.md`.
 
 Lenses: compatibility (the app's launcher label and its store identity change).

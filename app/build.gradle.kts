@@ -349,7 +349,7 @@ kover {
 // PlayMetadataTest reads the store texts straight off disk, and Gradle cannot
 // see that on its own: without this the unit tests report UP-TO-DATE when the
 // only thing that changed is the very thing they guard. Measured on this
-// project — a 32-character German title, four over Play's limit, left
+// project — a 32-character German title, two over Play's limit, left
 // testDebugUnitTest green and the whole Definition of done line with it.
 // src/main/res needs no such line: processDebugResources already declares it,
 // so a strings.xml edit reaches the tests through the compile chain.
