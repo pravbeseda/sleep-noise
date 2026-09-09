@@ -25,9 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Not optional: versionCode is the commit count and the app prints it at the bottom of the
-          # very screen being photographed. A shallow clone falls back to the floor, and 1.0.4 (5)
-          # would go out on the store page.
+          # Not optional, and narrower than it looks: versionCode is the commit count and the app
+          # prints it at the bottom of the very screen being photographed. That number is the build
+          # that was photographed, so it sits a commit or two behind the branch carrying the images
+          # and further behind whatever ships next — which is true of every screenshot on every store
+          # page. What the depth buys is the other case: shallow, versionCode falls back to the floor
+          # and the picture reads 1.0.4 (5), a build that never existed.
           fetch-depth: 0
 
       - name: Set up JDK 17
@@ -49,20 +52,11 @@ jobs:
         with:
           secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
-      - name: Free disk space for the emulator
-        # The same margin the instrumented tests need, and for the same reason: the emulator counts
-        # free space more strictly than df does and refuses to start rather than explain itself.
-        run: |
-          df -h /
-          sudo rm -rf "$ANDROID_HOME/ndk" /usr/share/dotnet /opt/ghc
-          df -h /
-
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
-            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+      # The same preparation the instrumented tests need, out of the same action: the emulator
+      # counts free space more strictly than df does and refuses to start rather than explain
+      # itself, and KVM ships owned by root.
+      - name: Prepare the runner for an emulator
+        uses: ./.github/actions/emulator-host
 
       - name: Take the screenshots
         uses: reactivecircus/android-emulator-runner@v2

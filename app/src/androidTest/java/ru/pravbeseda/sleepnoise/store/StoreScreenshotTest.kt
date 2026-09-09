@@ -113,6 +113,8 @@ class StoreScreenshotTest {
 
     @Test
     fun everyLocaleGetsItsOwnSetOfStoreScreenshots() {
+        assertEveryPlayCodeBelongsToItsLanguage()
+
         val root = File(context.getExternalFilesDir(null), SCREENSHOT_DIR)
         assertTrue("the screenshots of the last run could not be cleared out of $root", !root.exists() || root.deleteRecursively())
 
@@ -131,6 +133,22 @@ class StoreScreenshotTest {
 
         val taken = root.walkTopDown().count { it.extension == "jpg" }
         assertEquals("screenshots taken under $root", PLAY_LOCALES.size * SHOTS_PER_LOCALE, taken)
+    }
+
+    /**
+     * Play spells four of the six locales differently from the app, so the pairs are written out — and a
+     * written table is a table somebody edits. Two of its values swapped would file German under the
+     * Spanish listing while every check downstream still passed: the run would photograph six locales,
+     * write eighteen files, and hand the workflow the same set of directory names it expects. What a swap
+     * cannot survive is a Play code that no longer begins with the language it belongs to.
+     */
+    private fun assertEveryPlayCodeBelongsToItsLanguage() {
+        PLAY_LOCALES.forEach { (language, playLocale) ->
+            assertTrue(
+                "$language is filed under $playLocale, which belongs to another language",
+                playLocale == language || playLocale.startsWith("$language-"),
+            )
+        }
     }
 
     /**
