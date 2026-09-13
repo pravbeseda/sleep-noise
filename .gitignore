@@ -1,5 +1,7 @@
 *.iml
 .gradle
+# The Kotlin daemon writes sessions/*.salive here while a build runs (issue #59)
+.kotlin/
 .key
 /local.properties
 /.idea/

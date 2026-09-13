@@ -558,6 +558,42 @@ jobs:
         # than each file live in the script.
         run: .github/scripts/no-deleted-tests.sh
 
+      # Before the check, for the reason the deletion check's tests run first: a
+      # pattern that misses a keystore fails silently and still reports green.
+      - name: Test the key material check
+        run: .github/scripts/no-key-material.test.sh
+
+      - name: No key material added
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # The binary half of what the gitleaks step below cannot see; the
+        # reasoning lives in the script.
+        run: .github/scripts/no-key-material.sh
+
+      # Text secrets without a provider format — a password, a PEM private key,
+      # a token — which GitHub secret scanning does not cover on this repository.
+      # The CLI rather than gitleaks-action: that action wants a token that can
+      # comment on the pull request, and this job holds contents: read only.
+      # Pinned by version and by the tarball's own checksum, not by the checksum
+      # file of the same release, which whoever could swap the one could swap
+      # too. Only the pull request's commits are scanned: the history before
+      # this step existed was scanned locally in full — 265 commits as gitleaks
+      # counts them, merges aside — and nothing leaked.
+      - name: No secret in the pull request's commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$tarball" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --verbose \
+            --log-opts="$BASE_SHA..HEAD" .
+
   alpha:
     name: Alpha build (Firebase App Distribution)
     runs-on: ubuntu-latest
