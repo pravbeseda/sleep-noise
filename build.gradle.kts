@@ -54,6 +54,9 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom("$rootDir/config/detekt/detekt.yml")
     baseline = file("$rootDir/config/detekt/baseline.xml")
+    // Without it the SARIF report carries absolute runner paths, which code
+    // scanning cannot map onto the files of a pull request.
+    basePath = rootDir.absolutePath
     // Configured on the root project, next to Spotless, rather than inside
     // :app. Applying it there would mean editing app/build.gradle.kts, and the
     // Spotless ratchet then pulls that whole 300-line file into ktlint's scope

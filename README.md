@@ -134,7 +134,8 @@ red run blocks the merge, and the branch has to be current with `main` before it
 first four run locally; Guardrails compares the PR against its base commit, so it exists only on CI,
 and the instrumented tests run on emulators at API 26 and API 36 — one required context per level. A
 pull request that changes only Markdown skips the five Gradle jobs — they still report green, they
-just do no work.
+just do no work. A new lint or detekt finding shows up as an annotation on its line in the pull
+request diff; a pull request from a fork reads it from the job's report artifact instead.
 Before opening a PR:
 
 ```bash

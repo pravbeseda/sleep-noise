@@ -196,7 +196,7 @@ android {
     }
 
     lint {
-        // The 29 warnings this project already carries are recorded in the
+        // The 22 warnings this project already carries are recorded in the
         // baseline, so CI fails on new ones only. Clearing them out is phase 6
         // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
         // stops the count from quietly growing.
@@ -215,6 +215,8 @@ android {
         baseline = file("lint-baseline.xml")
         warningsAsErrors = true
         abortOnError = true
+        // CI uploads it to code scanning, which puts a finding on its line in the pull request diff.
+        sarifReport = true
 
         // These answer "is something newer available?", which depends on the day
         // and the machine rather than on the commit under test. Left as errors
