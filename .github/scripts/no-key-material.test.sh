@@ -82,6 +82,20 @@ add_non_ascii_path()   { mkdir -p ключи && printf '\xfe\xed\xfe\xed' > кл
 add_then_delete()      { printf '\xfe\xed\xfe\xed' > app/transient.jks
                          git add -f app/transient.jks && git commit --quiet -m "add a key"
                          rm app/transient.jks; }
+# A conflicted merge whose resolution sweeps in a key neither parent had: git log
+# shows a merge commit no diff unless asked to.
+merge_side_branch() { # [<extra-file-in-the-resolution>]
+  git checkout --quiet -b side
+  echo side > CLAUDE.md && git commit --quiet -am side
+  git checkout --quiet pr
+  echo pr > CLAUDE.md && git commit --quiet -am pr
+  git merge --quiet side >/dev/null 2>&1 || true
+  echo resolved > CLAUDE.md
+  if [ -n "${1:-}" ]; then printf '\xfe\xed\xfe\xed' > "$1"; fi
+  git add -A -f && git commit --quiet --no-edit
+}
+add_key_in_merge_resolution() { merge_side_branch upload.jks; }
+merge_without_a_key()         { merge_side_branch; }
 
 check "an untouched branch passes"                 pass nothing
 check "added prose passes"                         pass add_prose
@@ -97,6 +111,8 @@ check "the google-services action itself passes"   pass edit_the_action
 check "a directory that only starts with key passes" pass add_similar_dir
 check "a key under a non-ASCII path fails"         fail add_non_ascii_path
 check "a key added and deleted within the PR fails" fail add_then_delete
+check "a key added in a merge resolution fails"    fail add_key_in_merge_resolution
+check "a conflicted merge without a key passes"    pass merge_without_a_key
 
 # The message is half the check: a red job has to say which file, on the file.
 read -r dir base < <(prepare add_jks_elsewhere)

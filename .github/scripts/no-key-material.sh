@@ -30,8 +30,11 @@ found=0
 seen=$'\n'
 # Every commit, not the diff of the two trees: a key added in one commit and
 # deleted in the next leaves the trees equal and the key in the history the
-# pull request would merge. -z, because without it git quotes a path holding a
-# non-ASCII byte, and the anchored pattern then meets a quote, not a name.
+# pull request would merge. A merge commit is diffed against its first parent,
+# since git log shows a merge no diff by default, and a key swept into a
+# conflict resolution belongs to neither parent's commits. -z, because without
+# it git quotes a path holding a non-ASCII byte, and the anchored pattern then
+# meets a quote, not a name.
 while IFS= read -r -d '' file; do
   [ -n "$file" ] || continue
   grep -qiE "$pattern" <<<"$file" || continue
@@ -39,7 +42,7 @@ while IFS= read -r -d '' file; do
   seen+="$file"$'\n'
   found=1
   echo "::error file=$file::$file is key material and must never be committed: this repository is public, and its history keeps a key for good. Take it out of the branch with git rm --cached, rewrite the commit that added it, and keep the file where .gitignore already sends it."
-done < <(git log --format= --name-only -z --no-renames --diff-filter=d "$base..HEAD")
+done < <(git log --format= --name-only -z --no-renames --diff-merges=first-parent --diff-filter=d "$base..HEAD")
 
 if [ "$found" -eq 0 ]; then
   echo "No key material added."
