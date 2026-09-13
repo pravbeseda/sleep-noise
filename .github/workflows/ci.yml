@@ -283,6 +283,9 @@ jobs:
   detekt:
     name: Detekt
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     # Its own job for the same reason Format and Lint are: a complexity finding
     # and a formatting slip are answered differently, and one red job should not
     # hide the other.
@@ -334,9 +337,28 @@ jobs:
             build/reports/detekt/detekt.xml
           if-no-files-found: warn
 
+      # Puts a finding on its line in the pull request diff. The baseline is
+      # applied before any report is written, so only new findings travel.
+      # Skipped for a pull request from a fork: its token cannot be granted
+      # security-events: write, and a refused upload would redden a required
+      # check for a reason that has nothing to do with the code.
+      - name: Upload detekt findings to code scanning
+        if: >-
+          always() && steps.decide.outputs.run == 'true'
+          && hashFiles('build/reports/detekt/detekt.sarif') != ''
+          && (github.event_name != 'pull_request'
+              || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: build/reports/detekt/detekt.sarif
+          category: detekt
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     # Independent of unit-tests: a lint regression and a failing test are
     # different problems, and seeing both in one run beats fixing them serially.
     steps:
@@ -374,9 +396,9 @@ jobs:
 
       - name: Run lint
         if: steps.decide.outputs.run == 'true'
-        # warningsAsErrors is on and the 25 findings this code already carries
+        # warningsAsErrors is on and the 22 findings this code already carries
         # sit in app/lint-baseline.xml, so this fails on new warnings only.
-        # Lint reports 40 in total: the other 11 are version-currency checks,
+        # Lint reports 38 in total: the other 16 are version-currency checks,
         # marked informational in app/build.gradle.kts because their messages
         # embed version numbers and stop matching a baseline as releases appear.
         run: ./gradlew lint --stacktrace
@@ -396,6 +418,34 @@ jobs:
           # failed for a real reason, and burying that under a missing-file
           # error helps nobody.
           if-no-files-found: warn
+
+      # Code scanning gets what fails this job and nothing else. Every `note`
+      # here is a version-currency hint or the baseline summary, and a hint
+      # whose message embeds a version number would come back as a new alert
+      # with every release; the artifact above still carries all of them. A
+      # result without a level takes its rule's default, and SARIF's default
+      # is warning.
+      - name: Keep the lint findings that fail the build
+        if: >-
+          always() && steps.decide.outputs.run == 'true'
+          && hashFiles('app/build/reports/lint-results-debug.sarif') != ''
+        run: |
+          jq '.runs[] |= (
+                ((.tool.driver.rules // []) | map({(.id): (.defaultConfiguration.level // "warning")}) | add // {}) as $levels
+                | .results |= map(select((.level // $levels[.ruleId] // "warning") != "note"))
+              )' app/build/reports/lint-results-debug.sarif > "$RUNNER_TEMP/lint.sarif"
+
+      # Same conditions and the same reason as the detekt upload.
+      - name: Upload lint findings to code scanning
+        if: >-
+          always() && steps.decide.outputs.run == 'true'
+          && hashFiles('app/build/reports/lint-results-debug.sarif') != ''
+          && (github.event_name != 'pull_request'
+              || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/lint.sarif
+          category: lint
 
   guardrails:
     name: Guardrails
