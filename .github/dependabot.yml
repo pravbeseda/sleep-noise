@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+      firebase:
+        patterns:
+          - "com.google.firebase*"
+          - "com.google.gms.google-services"
+      # The Kotlin plugin and the Compose compiler plugin share one version.
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin.*"
+    ignore:
+      # Each major is a migration of its own, recorded in CLAUDE.md: AGP 9 moves
+      # Gradle Play Publisher to 4.x with it, and detekt 2.0 wants Kotlin 2.4 / AGP 9.
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "com.github.triplet.play"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "io.gitlab.arturbosch.detekt"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
