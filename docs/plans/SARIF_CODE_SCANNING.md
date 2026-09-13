@@ -83,11 +83,15 @@ they are today.
       warning by rule default and the warning by SARIF default. Against the real lint report it
       leaves 0 results. Dependabot pull requests are not excluded: their token is read-only by
       default, but the job-level `permissions` key can raise it, which a fork's cannot.
-- [ ] 3. Prove it on the pull request — files: none — done when the PR run uploads both categories
+- [x] 3. Prove it on the pull request — files: none — done when the PR run uploads both categories
       and the Security tab lists the two analyses. Then, on a throwaway commit pushed to the same
       branch and reverted before review, one new detekt finding appears as an annotation on its
       line. If the informational lint hints appear as alerts, they are dismissed or filtered here
-      rather than left as noise.
+      rather than left as noise. Done on PR #65: both analyses uploaded with 0 results, and their
+      checks — named after the tool, `Android Lint` and `detekt` — reported "No new alerts in code
+      changed by this pull request", with no complaint about a missing analysis of `main`. The
+      probe, an empty function, produced alert #1 (`EmptyFunctionBlock`,
+      `SarifProbe.kt:3`) as an annotation, while the required `Detekt` check failed as it should.
 - [x] 4. Update the documentation — files: `CLAUDE.md` (CI section), `README.md` if it describes the
       reports — lenses: none — done when both say where lint and detekt findings are read and why
       fork pull requests upload nothing.
