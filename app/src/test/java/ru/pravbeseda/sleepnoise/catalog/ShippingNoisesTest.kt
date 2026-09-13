@@ -1,4 +1,4 @@
-package ru.pravbeseda.sleepnoise.media
+package ru.pravbeseda.sleepnoise.catalog
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -6,6 +6,7 @@ import org.junit.Assert.assertNotSame
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.CURRENT_THEME
+import ru.pravbeseda.sleepnoise.media.SAMPLE_RATE_HZ
 import kotlin.random.Random
 
 /**

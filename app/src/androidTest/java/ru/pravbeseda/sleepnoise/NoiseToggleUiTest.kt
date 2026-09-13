@@ -17,10 +17,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.pravbeseda.sleepnoise.media.BROWN_NOISE
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
-import ru.pravbeseda.sleepnoise.media.PINK_NOISE
-import ru.pravbeseda.sleepnoise.media.SHIPPING_NOISES
+import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.catalog.PINK_NOISE
+import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**

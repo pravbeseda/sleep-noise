@@ -16,8 +16,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**

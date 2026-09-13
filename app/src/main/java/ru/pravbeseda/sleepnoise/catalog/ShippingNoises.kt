@@ -1,6 +1,13 @@
-package ru.pravbeseda.sleepnoise.media
+package ru.pravbeseda.sleepnoise.catalog
 
 import ru.pravbeseda.sleepnoise.R
+import ru.pravbeseda.sleepnoise.media.GreenNoise
+import ru.pravbeseda.sleepnoise.media.GreyNoise
+import ru.pravbeseda.sleepnoise.media.LeakyBrownNoise
+import ru.pravbeseda.sleepnoise.media.NoiseSource
+import ru.pravbeseda.sleepnoise.media.PinkNoise
+import ru.pravbeseda.sleepnoise.media.SurfNoise
+import ru.pravbeseda.sleepnoise.media.WhiteNoise
 import kotlin.random.Random
 
 /**
@@ -31,8 +38,8 @@ const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
  * [createSource] is a factory and not a shared instance for the reason [NoiseLabCandidate] gives: a filter
  * carries state, so one source handed to two channels would have them driving one filter.
  *
- * The two resource ids are plain `Int`s and this file imports no Android of its own, which is what keeps
- * `media/` buildable and testable off a device — `AndroidFreeSourcesTest` holds that line.
+ * The two resource ids are why this registry lives here and not in `media/`: `R` exists only inside an Android
+ * build, and `media/` is the part `AndroidFreeSourcesTest` keeps free of one.
  */
 class ShippingNoise(
     val volumeKey: String,

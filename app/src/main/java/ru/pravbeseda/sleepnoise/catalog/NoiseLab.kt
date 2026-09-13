@@ -1,5 +1,10 @@
-package ru.pravbeseda.sleepnoise.media
+package ru.pravbeseda.sleepnoise.catalog
 
+import ru.pravbeseda.sleepnoise.media.BlueNoise
+import ru.pravbeseda.sleepnoise.media.NoiseSource
+import ru.pravbeseda.sleepnoise.media.RainNoise
+import ru.pravbeseda.sleepnoise.media.VioletNoise
+import ru.pravbeseda.sleepnoise.media.WheelClatterNoise
 import kotlin.random.Random
 
 /**

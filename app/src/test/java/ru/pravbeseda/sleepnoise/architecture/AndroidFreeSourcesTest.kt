@@ -15,8 +15,9 @@ class AndroidFreeSourcesTest {
     // NoiseEngine* glob: a second class whose name merely starts with NoiseEngine is checked here.
     private val excludedFromMedia = "NoiseEngine.kt"
 
-    // androidx too: an androidx import is as unrunnable on the JVM as an android one.
-    private val androidImport = Regex("^import androidx?\\.")
+    // androidx too: an androidx import is as unrunnable on the JVM as an android one. And the generated R,
+    // which is neither, yet exists only inside an Android build.
+    private val androidBuildImport = Regex("^import (androidx?\\.|ru\\.pravbeseda\\.sleepnoise\\.R\\b)")
 
     @Test
     fun theAndroidFreeSourcesImportNothingFromAndroid() {
@@ -27,7 +28,7 @@ class AndroidFreeSourcesTest {
         // listOf, not a bare path: a Path is Iterable over its own segments, so `list + path` appends those.
         val violations = (mediaFiles + listOf(sleepTimer)).flatMap { file ->
             Files.readAllLines(file)
-                .filter { androidImport.containsMatchIn(it) }
+                .filter { androidBuildImport.containsMatchIn(it) }
                 .map { "${file.fileName}: $it" }
         }
 
