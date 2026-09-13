@@ -453,6 +453,11 @@ jobs:
     # Pull requests only. The check is a comparison against the base commit, and
     # a push to main has nothing to compare against.
     if: github.event_name == 'pull_request'
+    # The severity floor of the two lint steps at the end, in one place:
+    # shellcheck reads it directly, and actionlint passes it on when it runs
+    # shellcheck over a run: script.
+    env:
+      SHELLCHECK_OPTS: --severity=warning
     # No JDK, no Android SDK, no Gradle, no google-services.json: this job reads
     # the diff and counts lines. Adding the setup steps every other job here
     # needs would turn seconds into minutes for no gain.
@@ -593,6 +598,30 @@ jobs:
           tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" git --no-banner --redact --verbose \
             --log-opts="$BASE_SHA..HEAD" .
+
+      # A workflow is build configuration, and nothing else reads one before it
+      # runs. actionlint also hands every run: script to shellcheck; the step
+      # after it covers the scripts kept in files. Both stop at warning, through
+      # the job's SHELLCHECK_OPTS: below it this repository holds only style
+      # and deliberate choices, such as the
+      # unquoted $ARGS in promote.yml and rollout.yml. shellcheck is the
+      # runner's own, 0.9.0 on ubuntu-24.04, so a newer local copy can report
+      # what CI does not. actionlint is pinned the way gitleaks is above.
+      - name: Lint the workflows
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$tarball"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$tarball" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint"
+
+      - name: Lint the shell scripts
+        run: shellcheck .github/scripts/*.sh .github/actions/*/*.sh .githooks/*
 
   alpha:
     name: Alpha build (Firebase App Distribution)

@@ -32,7 +32,7 @@ fi
 # entire push on a non-zero exit, by design. It only avoids fixing one branch
 # and immediately tripping over the next.
 blocked=""
-while read -r local_ref local_sha remote_ref remote_sha; do
+while read -r _ _ remote_ref _; do
 	for p in $protected; do
 		if [ "$remote_ref" = "$p" ]; then
 			blocked="$blocked ${remote_ref#refs/heads/}"
