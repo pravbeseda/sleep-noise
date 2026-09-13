@@ -8,6 +8,14 @@ here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 check_script="$here/no-key-material.sh"
 failures=0
 
+# Every run of the check sees git's defaults as the runner has them, whatever
+# this machine's global config says: core.quotePath=false there once hid a
+# keystore under a non-ASCII path from every local run.
+run_check() { # <dir> <base>
+  ( cd "$1" && GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.quotePath GIT_CONFIG_VALUE_0=true \
+      BASE_SHA="$2" bash "$check_script" 2>&1 )
+}
+
 # A repository with a little of this one's shape: a module, the composite action
 # whose directory name is google-services, and prose.
 fixture() {
@@ -42,7 +50,7 @@ check() {
   local dir base; read -r dir base < <(prepare "$mutation")
 
   local actual=pass output
-  output=$( cd "$dir" && BASE_SHA="$base" bash "$check_script" 2>&1 ) || actual=fail
+  output=$(run_check "$dir" "$base") || actual=fail
 
   if [ "$actual" = "$expected" ]; then
     echo "ok   — $name"
@@ -67,6 +75,13 @@ add_nested_key_dir()   { mkdir -p app/.key && echo secret > app/.key/notes.txt; 
 add_keystore_doc()     { echo "how to rotate" > keystore.md; }
 edit_the_action()      { echo "# edited" >> .github/actions/google-services/action.yml; }
 add_similar_dir()      { mkdir -p app/src/main/keyboard && echo x > app/src/main/keyboard/.keep; }
+# git quotes a path holding a non-ASCII byte, so a pattern anchored at the end
+# of the name meets a closing quote instead of the extension.
+add_non_ascii_path()   { mkdir -p ключи && printf '\xfe\xed\xfe\xed' > ключи/upload.jks; }
+# The pull request's history keeps the key even though its final tree does not.
+add_then_delete()      { printf '\xfe\xed\xfe\xed' > app/transient.jks
+                         git add -f app/transient.jks && git commit --quiet -m "add a key"
+                         rm app/transient.jks; }
 
 check "an untouched branch passes"                 pass nothing
 check "added prose passes"                         pass add_prose
@@ -80,10 +95,12 @@ check "a .key/ directory deeper in the tree fails" fail add_nested_key_dir
 check "a document named after keystores passes"   pass add_keystore_doc
 check "the google-services action itself passes"   pass edit_the_action
 check "a directory that only starts with key passes" pass add_similar_dir
+check "a key under a non-ASCII path fails"         fail add_non_ascii_path
+check "a key added and deleted within the PR fails" fail add_then_delete
 
 # The message is half the check: a red job has to say which file, on the file.
 read -r dir base < <(prepare add_jks_elsewhere)
-message=$( cd "$dir" && BASE_SHA="$base" bash "$check_script" 2>&1 || true )
+message=$(run_check "$dir" "$base" || true)
 rm -rf "$dir"
 for expected in "::error file=app/release.jks::" "git rm --cached"; do
   if grep -qF -- "$expected" <<<"$message"; then
