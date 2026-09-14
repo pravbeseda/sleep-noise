@@ -27,9 +27,6 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.pravbeseda.sleepnoise.APP_PREFS
-import ru.pravbeseda.sleepnoise.CURRENT_LANGUAGE
-import ru.pravbeseda.sleepnoise.CURRENT_THEME
 import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE
@@ -40,6 +37,9 @@ import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.catalog.SURF_NOISE
 import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
+import ru.pravbeseda.sleepnoise.settings.APP_PREFS
+import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
+import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
 import ru.pravbeseda.sleepnoise.timer.TimerPreferences
 import java.io.File
 import java.util.concurrent.CountDownLatch

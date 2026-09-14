@@ -484,7 +484,7 @@ change, except D5, which removes the flash.
 - [x] **D1 — `support/FeedbackMail`.** The mailto intent and the debug info leave `MainActivity`.
       The version comes from `BuildConfig`, so the `PackageManager` lookup and its Crashlytics
       catch go with it.
-- [ ] **D2 — `ThemeController` and `LocaleController`** in a new `settings/` package: the stored
+- [x] **D2 — `ThemeController` and `LocaleController`** in a new `settings/` package: the stored
       theme and language, applying them, the theme icon and the language list. The dialogs stay in
       the Activity and call into them. `APP_PREFS`, `CURRENT_THEME` and `CURRENT_LANGUAGE` leave the top of
       `MainActivity.kt` for the same package, and `DEFAULT_NOISE_ENABLED` for `catalog/`, beside
@@ -557,10 +557,11 @@ volumes, theme, language, and timer.
 ## Phase 6 — Cleanup
 
 Lint's real findings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 20 of them
+`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 18 of them
 now; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
 measured by emptying the baseline. It started at 29 real findings; the four `DefaultLocale`
-entries were the first to go, and the two `Uri.parse` ones left with the feedback mail in phase 4.
+entries were the first to go, and in phase 4 the two `Uri.parse` ones left with the feedback mail
+and the two `SharedPreferences.edit` ones with the theme and language controllers.
 
 ### Deadline: targetSdk
 

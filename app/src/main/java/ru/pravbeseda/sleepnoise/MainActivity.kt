@@ -20,10 +20,8 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.core.content.ContextCompat
-import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
@@ -32,27 +30,23 @@ import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
-import ru.pravbeseda.sleepnoise.models.AppTheme
-import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
+import ru.pravbeseda.sleepnoise.settings.APP_PREFS
+import ru.pravbeseda.sleepnoise.settings.LocaleController
+import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.NoiseControl
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import java.util.Locale
 
-const val APP_PREFS = "AppPreferences"
-const val CURRENT_THEME = "selectedTheme"
-const val CURRENT_LANGUAGE = "selectedLanguage"
-
-/** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
-const val DEFAULT_NOISE_ENABLED = true
-
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: ImageButton
     private lateinit var timerView: TimerView
     private var isPlaying = false
     private lateinit var preferences: SharedPreferences
+    private lateinit var themeController: ThemeController
+    private lateinit var localeController: LocaleController
     private var playbackBinder: PlaybackService.LocalBinder? = null
     private val rowsByVolumeKey = LinkedHashMap<String, NoiseControlView>()
 
@@ -104,8 +98,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        applyTheme(storedTheme())
-        applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
+        themeController = ThemeController(this)
+        localeController = LocaleController(this)
+        setTheme(themeController.style)
+        localeController.applyStored()
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -137,7 +133,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("RestrictedApi")
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu, menu)
-        updateThemeIcon(menu)
+        menu.findItem(R.id.theme_button)?.setIcon(themeController.icon)
         // hack to show icons in popup menu
         if (menu is MenuBuilder) {
             menu.setOptionalIconsVisible(true)
@@ -160,7 +156,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.theme_button -> {
-            setThemePreference(storedTheme().next())
+            themeController.switchToNext()
+            recreate()
             true
         }
 
@@ -239,31 +236,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
 
-    private fun storedTheme(): AppTheme = AppTheme.fromKey(preferences.getString(CURRENT_THEME, null))
-
-    private fun setThemePreference(theme: AppTheme) {
-        preferences.edit().putString(CURRENT_THEME, theme.key).apply()
-        recreate()
-    }
-
-    private fun applyTheme(theme: AppTheme) {
-        setTheme(
-            when (theme) {
-                AppTheme.PURPLE -> R.style.Theme_SleepNoise_Purple
-                AppTheme.DARK -> R.style.Theme_SleepNoise_Dark
-            },
-        )
-    }
-
-    /** The icon names the theme in force, so the button says where the last press landed. */
-    private fun updateThemeIcon(menu: Menu?) {
-        val icon = when (storedTheme()) {
-            AppTheme.PURPLE -> R.drawable.ic_theme_purple
-            AppTheme.DARK -> R.drawable.ic_theme_dark
-        }
-        menu?.findItem(R.id.theme_button)?.setIcon(icon)
-    }
-
     /**
      * One [NoiseControlView] per noise, built from the two registries rather than declared in the layout:
      * the shipping ones from [SHIPPING_NOISES], then the lab's candidates when it is switched on. A new
@@ -311,23 +283,15 @@ class MainActivity : AppCompatActivity() {
     private fun languageSelection() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(R.string.select_language)
-        val languages = arrayOf(
-            Language("ar", R.drawable.ic_arabic, R.string.arabic, "Arabic"),
-            Language("en", R.drawable.flag_united_kingdom, R.string.english),
-            Language("de", R.drawable.flag_germany, R.string.german, "German"),
-            Language("ru", R.drawable.flag_russia, R.string.russian, "Russian"),
-            Language("es", R.drawable.flag_spain, R.string.spanish, "Spanish"),
-            Language("uk", R.drawable.flag_ukraine, R.string.ukrainian, "Ukrainian"),
-            Language("", R.drawable.flag_united_nations, R.string.another_language),
-        )
+        val languages = localeController.languages
         var selected = languages.indexOfFirst { it.code == getString(R.string.lang) }
-        val listAdapter = LanguagesArrayAdapter(this, languages)
+        val listAdapter = LanguagesArrayAdapter(this, languages.toTypedArray())
         builder.setSingleChoiceItems(listAdapter, selected) { _: DialogInterface, i: Int ->
             selected = i
         }
         builder.setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
             if (languages[selected].code != "") {
-                setLanguage(languages[selected].code)
+                localeController.select(languages[selected].code)
                 recreate()
             } else {
                 showNewLanguageMessage()
@@ -335,28 +299,6 @@ class MainActivity : AppCompatActivity() {
         }
         builder.setNegativeButton(R.string.cancel, null)
         builder.create().show()
-    }
-
-    private fun setLanguage(language: String?) {
-        val lang = if (!language.isNullOrBlank()) {
-            val ed = preferences.edit()
-            ed.putString(CURRENT_LANGUAGE, language)
-            ed.apply()
-            language
-        } else {
-            val savedLang = preferences.getString(CURRENT_LANGUAGE, null)
-            if (!savedLang.isNullOrBlank()) {
-                savedLang
-            } else {
-                getString(R.string.lang)
-            }
-        }
-        applyLanguage(lang)
-    }
-
-    private fun applyLanguage(languageCode: String) {
-        val locales = LocaleListCompat.forLanguageTags(languageCode)
-        AppCompatDelegate.setApplicationLocales(locales)
     }
 
     private fun showNewLanguageMessage() {

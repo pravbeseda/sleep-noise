@@ -18,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**
