@@ -14,7 +14,7 @@ appcompat = "1.7.1"
 constraintlayout = "2.2.1"
 material = "1.12.0"
 detekt = "1.23.8"
-spotless = "8.9.0"
+spotless = "8.10.2"
 ktlint = "1.8.0"
 kover = "0.9.9"
 # 3.13.0, not 4.x: Gradle Play Publisher 4.0.0 is built against Android Gradle
