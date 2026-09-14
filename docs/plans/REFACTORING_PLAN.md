@@ -486,9 +486,10 @@ change, except D5, which removes the flash.
       catch go with it.
 - [ ] **D2 — `ThemeController` and `LocaleController`** in a new `settings/` package: the stored
       theme and language, applying them, the theme icon and the language list. The dialogs stay in
-      the Activity and call into them. `APP_PREFS`, `CURRENT_THEME`, `CURRENT_LANGUAGE` and
-      `DEFAULT_NOISE_ENABLED` leave the top of `MainActivity.kt` for the same package; the
-      service, `NoiseControlView` and four test files change only their imports.
+      the Activity and call into them. `APP_PREFS`, `CURRENT_THEME` and `CURRENT_LANGUAGE` leave the top of
+      `MainActivity.kt` for the same package, and `DEFAULT_NOISE_ENABLED` for `catalog/`, beside
+      the other noise defaults; the service, `NoiseControlView` and four test files change only
+      their imports.
 - [ ] **D3 — the noise rows leave `MainActivity`.** `ui/NoiseRows` builds one `NoiseControlView`
       per registry entry into the two containers and opens `APP_PREFS` itself. The Activity passes
       the volume callback and keeps `noiseRows` for the UI tests.
@@ -498,11 +499,14 @@ change, except D5, which removes the flash.
       in `setPlayingState(false)` goes, since the owner already holds the value.
 - [ ] **D5 — `PlaybackState` and `PlaybackViewModel`.**
   - `playback/PlaybackState` (`playing`, `paused`, `remainingMillis`, `timerMinutes`) and its
-    transitions — bind snapshot, tick, pause, stop, timer change — as a pure function, written
-    test-first. The file joins the roots of `AndroidFreeSourcesTest` and the Kover filter in the
+    transitions — start requested, bind snapshot, tick, pause, stop, timer change — as a pure
+    function, written test-first. The service reports no start, so a start is the ViewModel's own
+    transition, made as it sends `ACTION_START` — the order `MainActivity` uses today. The file joins the roots of `AndroidFreeSourcesTest` and the Kover filter in the
     same PR, since `CLAUDE.md` asks for the two to change together.
   - `PlaybackViewModel` binds through the application context, exposes
-    `StateFlow<PlaybackState>` and sends start and stop. It connects in `onStart` and disconnects
+    `StateFlow<PlaybackState>`, and carries all three calls that reach the service today: start,
+    stop and the live `setVolume` the noise rows push. D3's volume callback therefore calls the
+    Activity's binder until D5 and the ViewModel from then on. It connects in `onStart` and disconnects
     in `onStop` unless `isChangingConfigurations`: a `recreate()` keeps the binding and the last
     state, while an app in the background holds no binding, so the service's lifetime is
     unchanged. `onCleared` unbinds.
