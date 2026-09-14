@@ -193,28 +193,6 @@
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            data = Uri.parse(&quot;mailto:$email&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt"
-            line="358"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            data = Uri.parse(&quot;mailto:$email&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/ru/pravbeseda/sleepnoise/MainActivity.kt"
-            line="358"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="        prefs.edit().putInt(TIMER_VALUE_KEY, minutes).apply()"
         errorLine2="        ~~~~~~~~~~~~">

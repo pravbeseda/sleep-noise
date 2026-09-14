@@ -97,6 +97,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── catalog/                 # SHIPPING_NOISES + NOISE_LAB_CANDIDATES — which noises the app offers
 ├── media/                   # NoiseEngine + NoiseMixer + the noise sources
 ├── playback/                # PlaybackService (foreground) + AudioFocus
+├── support/                 # FeedbackMail — the mail to the developer, with device and app version
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider
 ├── models/ · adapters/

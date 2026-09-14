@@ -7,8 +7,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -27,7 +25,6 @@ import androidx.appcompat.view.menu.MenuBuilder
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
@@ -38,6 +35,7 @@ import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
+import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.NoiseControl
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
@@ -172,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         R.id.mail -> {
-            mailToMe()
+            startActivity(FeedbackMail.chooser(this))
             true
         }
 
@@ -366,41 +364,10 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(R.string.title_language_need)
         builder.setMessage(R.string.text_language_need)
         builder.setPositiveButton(R.string.mail) { _, _ ->
-            mailToMe()
+            startActivity(FeedbackMail.chooser(this))
         }
         builder.setNegativeButton(R.string.cancel, null)
         builder.show()
-    }
-
-    private fun mailToMe() {
-        val email = "kalugaman@gmail.com"
-        val subject = getString(R.string.app_name)
-        val body = getDebugInfo()
-
-        val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:$email")
-            putExtra(Intent.EXTRA_SUBJECT, subject)
-            putExtra(Intent.EXTRA_TEXT, body)
-        }
-        startActivity(Intent.createChooser(intent, getString(R.string.mail_choose)))
-    }
-
-    private fun getDebugInfo(): String {
-        var appVersion = ""
-        try {
-            val pInfo = this.packageManager.getPackageInfo(packageName, 0)
-            appVersion = pInfo.versionName.toString()
-        } catch (e: PackageManager.NameNotFoundException) {
-            // The app asking for its own package and not finding it should be impossible.
-            FirebaseCrashlytics.getInstance().recordException(e)
-        }
-        var res = "\ndevice: " + Build.DEVICE
-        res += "\nmodel: " + Build.MODEL
-        res += "\nSDK: " + Build.VERSION.SDK_INT
-        res += "\nOSVer: " + Build.VERSION.RELEASE
-        if (appVersion != "") res += "\nAppVer: $appVersion"
-        res += "\n\n"
-        return res
     }
 
     private fun showCreditsDialog() {

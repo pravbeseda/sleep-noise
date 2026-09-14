@@ -481,7 +481,7 @@ change, except D5, which removes the flash.
 
 ### Deliverables — one PR each, in this order
 
-- [ ] **D1 — `support/FeedbackMail`.** The mailto intent and the debug info leave `MainActivity`.
+- [x] **D1 — `support/FeedbackMail`.** The mailto intent and the debug info leave `MainActivity`.
       The version comes from `BuildConfig`, so the `PackageManager` lookup and its Crashlytics
       catch go with it.
 - [ ] **D2 — `ThemeController` and `LocaleController`** in a new `settings/` package: the stored
@@ -556,11 +556,11 @@ volumes, theme, language, and timer.
 
 ## Phase 6 — Cleanup
 
-Lint reports 36 findings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`). 25 of them are real and parked in
-`app/lint-baseline.xml`; the other 11 are version-currency checks marked informational in
-`app/build.gradle.kts`, so this phase is measured by emptying the baseline. It started at 29
-real findings; the four `DefaultLocale` entries were the first to go.
+Lint's real findings (`./gradlew lint`, report at
+`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 20 of them
+now; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
+measured by emptying the baseline. It started at 29 real findings; the four `DefaultLocale`
+entries were the first to go, and the two `Uri.parse` ones left with the feedback mail in phase 4.
 
 ### Deadline: targetSdk
 
