@@ -94,7 +94,8 @@ spotless task fails instead of silently checking nothing.
 app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
-├── media/                   # NoiseEngine + NoiseMixer + the noise sources and the registry of them
+├── catalog/                 # SHIPPING_NOISES + NOISE_LAB_CANDIDATES — which noises the app offers
+├── media/                   # NoiseEngine + NoiseMixer + the noise sources
 ├── playback/                # PlaybackService (foreground) + AudioFocus
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider
@@ -145,9 +146,9 @@ Before opening a PR:
 ```
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
-its test in the same commit. `AndroidFreeSourcesTest` checks that boundary, `androidx.*` included,
-for two roots only: `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`. Anywhere else the
-rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
+its test in the same commit. `AndroidFreeSourcesTest` checks that boundary, `androidx.*` and the
+generated `R` included, for two roots only: `media/` minus `NoiseEngine.kt`, plus
+`timer/SleepTimer.kt`. Anywhere else the rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
 uncovered says which behaviour and why. Bug fixes start with a test that reproduces the bug. No test
 gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage floor under
 the noise and timer logic; `CLAUDE.md` says what it is and which classes it counts.

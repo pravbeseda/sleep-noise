@@ -4,6 +4,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE_CUTOFF_HZ
 import kotlin.math.sqrt
 import kotlin.random.Random
 

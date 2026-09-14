@@ -29,12 +29,12 @@ import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
-import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
-import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.media.SHIPPING_NOISES
-import ru.pravbeseda.sleepnoise.media.ShippingNoise
+import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
+import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
+import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.models.Language
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
@@ -272,7 +272,7 @@ class MainActivity : AppCompatActivity() {
      * noise is an entry in a registry and nothing else — a row wired up by hand here is the mistake the
      * component replaced.
      *
-     * Both registries are read straight out of `media/` rather than through the service binder: this runs
+     * Both registries are read straight out of `catalog/` rather than through the service binder: this runs
      * in onCreate and the binder does not arrive until after onStart, so a registry behind it would draw
      * nothing.
      */

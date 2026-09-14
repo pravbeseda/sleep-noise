@@ -2,6 +2,8 @@ package ru.pravbeseda.sleepnoise.media
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE
+import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import kotlin.random.Random
 
 /**

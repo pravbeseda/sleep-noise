@@ -25,13 +25,13 @@ import ru.pravbeseda.sleepnoise.APP_PREFS
 import ru.pravbeseda.sleepnoise.DEFAULT_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.media.DEFAULT_LAB_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_CANDIDATES
-import ru.pravbeseda.sleepnoise.media.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
+import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
+import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
+import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
-import ru.pravbeseda.sleepnoise.media.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.media.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import kotlin.random.Random
 
