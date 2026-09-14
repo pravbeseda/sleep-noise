@@ -21,6 +21,7 @@ import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.catalog.PINK_NOISE
 import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
+import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 
 /**

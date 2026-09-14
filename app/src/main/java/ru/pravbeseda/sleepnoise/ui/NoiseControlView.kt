@@ -13,8 +13,8 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.edit
-import ru.pravbeseda.sleepnoise.DEFAULT_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.R
+import ru.pravbeseda.sleepnoise.catalog.DEFAULT_NOISE_ENABLED
 
 /** A seekbar's range as a volume. */
 private const val PERCENT_SCALE = 100f

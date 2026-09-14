@@ -196,7 +196,7 @@ android {
     }
 
     lint {
-        // The 20 warnings this project already carries are recorded in the
+        // The 18 warnings this project already carries are recorded in the
         // baseline, so CI fails on new ones only. Clearing them out is phase 6
         // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
         // stops the count from quietly growing.

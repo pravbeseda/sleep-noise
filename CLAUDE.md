@@ -195,7 +195,7 @@ It checks out with `fetch-depth: 0` because `versionCode` is the commit count an
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 20 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 18 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **A finding that turns `Lint` or `Detekt` red is read on its line in the pull request diff**, not in an artifact: both jobs upload their SARIF report to GitHub code scanning, under the categories `lint` and `detekt`, and hold `security-events: write` for it — the only two jobs that do. Both baselines are applied before a report is written, so only new findings travel. Lint's report is filtered with `jq` first: every `note` in it is a version-currency hint or the baseline summary, and a hint whose message embeds a version number would come back as a new alert with every release, so code scanning gets what fails the job and the HTML/XML artifact keeps the rest. The upload is skipped for a pull request from a fork — its token cannot be granted that permission, and a refused upload would redden a required check for a reason unrelated to the code — so a fork reads the artifact. Nothing uploads on a push to `main`: `decide-work` answers false there, and a code scanning run on every merge would buy a report that is almost always empty.
 
@@ -429,7 +429,7 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 
 ### Preferences
 
-Two distinct stores. `APP_PREFS` ("AppPreferences") holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`, the two that are constants at the top of `MainActivity.kt`. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+Two distinct stores. `APP_PREFS` ("AppPreferences") holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`, the two that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
@@ -455,8 +455,9 @@ Both themes are dark ones, so both are built on plain `Theme.AppCompat` — the 
 variant for a `uiMode` to select — and **night mode is not touched at all**: a `DayNight` parent held
 in the dark by a forced `MODE_NIGHT_YES` is the same appearance reached the long way round. For the
 same reason **there is no `values-night/`**: that qualifier would answer for both themes at once, so
-every colour that separates them is named in the style instead. `applyTheme` still runs **before**
-`super.onCreate`, and changing the theme still calls `recreate()`. The status bar is told to use light
+every colour that separates them is named in the style instead. `settings/ThemeController` holds the
+stored theme and maps it to its style and its action-bar icon; `MainActivity` still sets that style
+**before** `super.onCreate`, and changing the theme still calls `recreate()`. The status bar is told to use light
 icons unconditionally — neither theme has a light background left for dark ones to sit on.
 
 `Theme.SleepNoise.Purple` puts the splash colour on the window as a gradient
@@ -469,9 +470,9 @@ what `colorOnAccent` is for: `colorOnPrimary` is the cats and the text, and thos
 Supported: en (default), ar, de, es, ru, uk. The mechanism is non-obvious:
 
 - Each `values-XX/strings.xml` defines `<string name="lang">XX</string>`. `getString(R.string.lang)` is how the code asks "which locale is actually active" — used to preselect the language dialog and to decide whether to append "(Language)" to the menu title.
-- The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`.
+- The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`, both by `settings/LocaleController`; the picker dialog stays in `MainActivity` and calls into it.
 
-To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, add a `Language(...)` entry to the array in `MainActivity.languageSelection()`, and add a listing and a release note under `app/src/main/play/` — `PlayMetadataTest` derives the store's locales from these `values*` directories, so it fails until the store texts exist too.
+To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, add a `Language(...)` entry to `LocaleController.languages`, and add a listing and a release note under `app/src/main/play/` — `PlayMetadataTest` derives the store's locales from these `values*` directories, so it fails until the store texts exist too.
 The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is handled via `BidiFormatter` and `android:supportsRtl`/`layoutDirection="locale"` in the manifest.
 
 `app_name` is **not** translated: `Sleepy Cocktail` is one string in the default bucket and no `values-XX` carries a copy. A brand spelled differently in six locales is six names to search for; the descriptive half of the Play title is what gets translated instead.

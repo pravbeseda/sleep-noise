@@ -31,6 +31,9 @@ const val DEFAULT_SILENT_NOISE_VOLUME = 0.0f
  */
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
 
+/** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
+const val DEFAULT_NOISE_ENABLED = true
+
 /**
  * One noise the app ships: where its level and its switch are stored, what it starts at, what it is called,
  * and how to build it.
