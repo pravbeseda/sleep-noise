@@ -196,7 +196,7 @@ android {
     }
 
     lint {
-        // The 22 warnings this project already carries are recorded in the
+        // The 20 warnings this project already carries are recorded in the
         // baseline, so CI fails on new ones only. Clearing them out is phase 6
         // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
         // stops the count from quietly growing.
@@ -205,13 +205,6 @@ android {
         // That writes every issue it finds, informational ones included; drop
         // those from the file again, or each run reports them as baseline
         // entries "not found in the project" once their version numbers move.
-        //
-        // The file also holds two pairs of entries that look like generator
-        // duplicates and are not: lint reports DefaultLocale at
-        // TimerView.kt:43 and UseKtx at MainActivity.kt:356 twice each. Three
-        // String.format call sites yield four findings. Deleting a "duplicate"
-        // leaves that copy unmatched, which turns it into a new error and
-        // reddens CI. Both disappear on their own in phase 6.
         baseline = file("lint-baseline.xml")
         warningsAsErrors = true
         abortOnError = true
