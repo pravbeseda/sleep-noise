@@ -92,7 +92,7 @@ spotless task fails instead of silently checking nothing.
 
 ```
 app/src/main/java/ru/pravbeseda/sleepnoise/
-├── MainActivity.kt          # UI wiring, the theme and language dialogs, playback control
+├── MainActivity.kt          # UI wiring, the theme button and the language dialog, playback control
 ├── CreditsDialogFragment.kt
 ├── catalog/                 # SHIPPING_NOISES + NOISE_LAB_CANDIDATES — which noises the app offers
 ├── media/                   # NoiseEngine + NoiseMixer + the noise sources
