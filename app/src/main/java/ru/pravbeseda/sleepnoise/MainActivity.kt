@@ -272,7 +272,7 @@ class MainActivity : AppCompatActivity() {
      * noise is an entry in a registry and nothing else — a row wired up by hand here is the mistake the
      * component replaced.
      *
-     * Both registries are read straight out of `media/` rather than through the service binder: this runs
+     * Both registries are read straight out of `catalog/` rather than through the service binder: this runs
      * in onCreate and the binder does not arrive until after onStart, so a registry behind it would draw
      * nothing.
      */

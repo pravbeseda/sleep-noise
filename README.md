@@ -94,7 +94,8 @@ spotless task fails instead of silently checking nothing.
 app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── MainActivity.kt          # UI wiring, theme and language selection, playback control
 ├── CreditsDialogFragment.kt
-├── media/                   # NoiseEngine + NoiseMixer + the noise sources and the registry of them
+├── catalog/                 # SHIPPING_NOISES + NOISE_LAB_CANDIDATES — which noises the app offers
+├── media/                   # NoiseEngine + NoiseMixer + the noise sources
 ├── playback/                # PlaybackService (foreground) + AudioFocus
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider
