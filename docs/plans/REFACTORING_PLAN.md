@@ -19,7 +19,7 @@ SpendControl repository.
 | 1 | Extract pure noise sources + tests | Zero test coverage of the only real logic | Low | 2-3 h |
 | 2 | Single-track mixing engine | Data race on released `AudioTrack`, double battery drain | Medium | 3-4 h |
 | 3 | Foreground playback service | Playback and timer die with the Activity; no audio focus | High | 1 day |
-| 4 | ViewModel and state hoisting | 384-line god object, state lost on recreate | Medium | 1 day |
+| 4 | ViewModel and state hoisting | 410-line Activity; controls flash the wrong state on recreate | Medium | 1-1.5 days |
 | 5 | Settings consolidation | Two prefs stores, magic strings, two sources of truth for locale | Low | 3-4 h |
 | 6 | Cleanup: lint, insets, R8, dead deps | 40 lint warnings, unused Compose stack, no minification | Low | 3-4 h |
 
@@ -457,31 +457,70 @@ swiped away; a phone call interrupts the noise; unplugging headphones stops it.
 
 ## Phase 4 — ViewModel and state hoisting
 
-**Goal:** break up the 422-line `MainActivity` and stop losing state on recreate.
+**Goal:** `MainActivity` renders state it does not own, and a theme or language change
+mid-playback shows the right controls from the first frame.
 
-`isPlaying` is a plain field. Phase 3 made it survivable — the Activity re-reads it from the
-service on every bind — but everything else in the Activity still does not survive;
-`android:configChanges="orientation|screenSize"` only covers rotation, not system language,
-font size, or theme changes.
+Rewritten on 14 September 2026: the original tasks predated phase 3 and `NoiseControlView`.
+Where the code stands:
 
-### Tasks
+- `MainActivity` is 410 lines: the service binding, theme, language, the feedback mail, the noise
+  rows and the menu.
+- Nothing is lost on `recreate()` any more. The Activity re-reads `isPlaying`, `isPaused` and
+  `remainingMillis` from the service on every bind, and the timer and the volumes from preferences.
+  What is left is a flash: until `onServiceConnected` arrives, a playing session shows the play
+  icon and the timer seekbar.
+- The white/brown duplication is gone — every noise row is a `NoiseControlView`.
+- `TimerView` writes `timer_prefs` itself, and `setPlayingState(false)` silently reloads the
+  stored value.
 
-- [ ] Add `PlaybackViewModel` exposing a single `StateFlow<PlaybackState>`
-      (`isPlaying`, `whiteVolume`, `brownVolume`, `timerMinutes`, `remaining`).
-- [ ] Extract `ThemeController` and `LocaleController` out of `MainActivity`.
-- [ ] Move the mailto intent and `getDebugInfo()` into a `support/` helper. Read the version
-      from `BuildConfig` only — `getDebugInfo()` currently re-reads it via `PackageManager`.
-- [ ] Collapse the duplicated white/brown code paths (two identical `SeekBar` listeners, two
-      identical `setXxxNoiseVolume` methods) into one loop over a channel list.
-- [ ] Give `TimerView` a listener callback instead of letting it write to `SharedPreferences`
-      itself; persistence moves up to the ViewModel. Also drop the hidden side effect where
-      `setPlayingState(false)` silently reloads the stored value.
-- [ ] `MainActivity` keeps only view binding and menu wiring — target under 150 lines.
+Two decisions were taken before starting. A `PlaybackViewModel` owns the service connection,
+rather than the Activity merely being split into helpers. And the noise volumes stay where they
+are: `NoiseControlView` keeps reading and writing its own keys, and putting them behind one facade
+is phase 5's `SettingsRepository`. Every deliverable below is a refactoring with no behaviour
+change, except D5, which removes the flash.
+
+### Deliverables — one PR each, in this order
+
+- [ ] **D1 — `support/FeedbackMail`.** The mailto intent and the debug info leave `MainActivity`.
+      The version comes from `BuildConfig`, so the `PackageManager` lookup and its Crashlytics
+      catch go with it.
+- [ ] **D2 — `ThemeController` and `LocaleController`** in a new `settings/` package: the stored
+      theme and language, applying them, the theme icon and the language list. The dialogs stay in
+      the Activity and call into them. `APP_PREFS`, `CURRENT_THEME` and `CURRENT_LANGUAGE` leave the top of
+      `MainActivity.kt` for the same package, and `DEFAULT_NOISE_ENABLED` for `catalog/`, beside
+      the other noise defaults; the service, `NoiseControlView` and four test files change only
+      their imports.
+- [ ] **D3 — the noise rows leave `MainActivity`.** `ui/NoiseRows` builds one `NoiseControlView`
+      per registry entry into the two containers and opens `APP_PREFS` itself. The Activity passes
+      the volume callback and keeps `noiseRows` for the UI tests.
+- [ ] **D4 — `TimerView` stores nothing.** It is given the minutes to show and reports the user's
+      changes through a listener; its owner — the Activity until D5, the ViewModel from then on —
+      reads and writes `TimerPreferences`. The reload hidden
+      in `setPlayingState(false)` goes, since the owner already holds the value.
+- [ ] **D5 — `PlaybackState` and `PlaybackViewModel`.**
+  - `playback/PlaybackState` (`playing`, `paused`, `remainingMillis`, `timerMinutes`) and its
+    transitions — start requested, bind snapshot, tick, pause, stop, timer change — as a pure
+    function, written test-first. The service reports no start, so a start is the ViewModel's own
+    transition, made as it sends `ACTION_START` — the order `MainActivity` uses today. The file joins the roots of `AndroidFreeSourcesTest` and the Kover filter in the
+    same PR, since `CLAUDE.md` asks for the two to change together.
+  - `PlaybackViewModel` binds through the application context, exposes
+    `StateFlow<PlaybackState>`, and carries all three calls that reach the service today: start,
+    stop and the live `setVolume` the noise rows push. D3's volume callback therefore calls the
+    Activity's binder until D5 and the ViewModel from then on. It connects in `onStart` and disconnects
+    in `onStop` unless `isChangingConfigurations`: a `recreate()` keeps the binding and the last
+    state, while an app in the background holds no binding, so the service's lifetime is
+    unchanged. `onCleared` unbinds.
+  - `lifecycle-viewmodel-ktx` becomes a direct dependency in `gradle/libs.versions.toml`. Today it
+    arrives only through the Compose stack that phase 6 removes.
+  - An instrumented test changes the theme mid-playback and asserts the pause icon and the
+    countdown after `recreate()`. The flash itself is a race no test pins reliably, and the PR
+    says so.
 
 ### Done when
 
-Rotating the device or changing the theme mid-playback keeps the UI state consistent, and
-`MainActivity` no longer touches `SharedPreferences` directly.
+`MainActivity` holds view wiring and the menu only — under 200 lines — and no longer touches
+`SharedPreferences`; a theme or language change mid-playback shows the pause icon and the
+countdown with no play-icon frame in between.
 
 ---
 
