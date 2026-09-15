@@ -1,21 +1,17 @@
 package ru.pravbeseda.sleepnoise.store
 
 import android.Manifest
-import android.app.LocaleManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Handler
-import android.os.LocaleList
 import android.os.Looper
 import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
-import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -29,6 +25,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
+import ru.pravbeseda.sleepnoise.SYSTEM_LOCALE
+import ru.pravbeseda.sleepnoise.applyAppLocale
+import ru.pravbeseda.sleepnoise.awaitLanguage
 import ru.pravbeseda.sleepnoise.catalog.BROWN_NOISE
 import ru.pravbeseda.sleepnoise.catalog.GREEN_NOISE
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
@@ -37,6 +36,7 @@ import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.catalog.SURF_NOISE
 import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
+import ru.pravbeseda.sleepnoise.read
 import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
@@ -108,7 +108,7 @@ class StoreScreenshotTest {
         timerPreferences.saveTimerValue(0)
         // The per-app locale belongs to the framework rather than to these preferences, so removing the
         // key leaves the device in whichever language was photographed last.
-        applyLocale(SYSTEM_LOCALE)
+        applyAppLocale(SYSTEM_LOCALE)
     }
 
     @Test
@@ -163,45 +163,12 @@ class StoreScreenshotTest {
         }
         // Before the launch, so that the Activity comes up in the language rather than being recreated into
         // it from inside its own onCreate.
-        applyLocale(language)
+        applyAppLocale(language)
         ActivityScenario.launch(MainActivity::class.java).use { screen ->
             screen.awaitLanguage(language)
             screen.hideScrollbars()
             body(screen)
         }
-    }
-
-    /**
-     * Who owns a per-app locale changes at API 33, and so does the way in. Below it AppCompat holds the
-     * locale itself and its own call is the only door. From 33 the framework holds it, and AppCompat's call
-     * reaches it through a context it picks up from a running Activity: asked before the first launch it
-     * stored nothing at all — measured on an API 36 emulator, where `getApplicationLocales` came back empty
-     * and every locale was photographed in English. So the framework is asked directly.
-     */
-    private fun applyLocale(language: String) {
-        // An empty tag list is how both of them spell "follow the system", which is what the test hands
-        // the device back.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags(language)
-        } else {
-            instrumentation.runOnMainSync { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language)) }
-        }
-    }
-
-    /**
-     * The locale is applied asynchronously either way, so the screen is asked what language it came up in and
-     * given [LANGUAGE_ATTEMPTS] recreations to come up in the right one.
-     */
-    private fun ActivityScenario<MainActivity>.awaitLanguage(language: String) {
-        repeat(LANGUAGE_ATTEMPTS) {
-            if (read { it.getString(R.string.lang) } == language) return
-            Thread.sleep(SETTLE_MILLIS)
-            recreate()
-        }
-        fail(
-            "the screen is in ${read { it.getString(R.string.lang) }} and was asked for $language; " +
-                "its own configuration says ${read { it.resources.configuration.locales.toLanguageTags() }}",
-        )
     }
 
     /**
@@ -290,12 +257,6 @@ class StoreScreenshotTest {
         )
     }
 
-    private fun <T : Any> ActivityScenario<MainActivity>.read(of: (MainActivity) -> T): T {
-        var value: T? = null
-        onActivity { value = of(it) }
-        return requireNotNull(value) { "the screen answered with nothing" }
-    }
-
     private fun MainActivity.timerLabel(): TextView = findViewById(R.id.timerTextView)
 
     private fun MainActivity.playButton(): ImageButton = findViewById(R.id.playButton)
@@ -337,9 +298,6 @@ class StoreScreenshotTest {
 
         const val SILENT = 0f
 
-        /** What both locale APIs read as "follow the system", and what the device is left holding. */
-        const val SYSTEM_LOCALE = ""
-
         /** An hour and a half: long enough that the countdown reads hh:mm:ss and is told apart from the idle value. */
         const val TIMER_MINUTES = 90
 
@@ -366,7 +324,6 @@ class StoreScreenshotTest {
         const val MAX_RATIO = 2
         const val COPY_TIMEOUT_SECONDS = 5L
 
-        const val LANGUAGE_ATTEMPTS = 5
         const val TICK_ATTEMPTS = 20
         const val SETTLE_MILLIS = 500L
     }

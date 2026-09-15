@@ -24,7 +24,10 @@ class LocaleController(context: Context) {
 
     fun applyStored() = applyLanguage(preferences.getString(CURRENT_LANGUAGE, "en") ?: "en")
 
-    /** Stores [code] and applies it; the screen shows it once it is recreated. */
+    /**
+     * Stores [code] and applies it. The locale change recreates the screen by itself; a `recreate()` on top
+     * of it races the change and brings the screen back in the previous language.
+     */
     fun select(code: String) {
         preferences.edit { putString(CURRENT_LANGUAGE, code) }
         applyLanguage(code)
