@@ -292,7 +292,6 @@ class MainActivity : AppCompatActivity() {
         builder.setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
             if (languages[selected].code != "") {
                 localeController.select(languages[selected].code)
-                recreate()
             } else {
                 showNewLanguageMessage()
             }

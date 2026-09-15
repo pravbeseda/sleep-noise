@@ -544,8 +544,11 @@ disagree — `preferences.getString(CURRENT_LANGUAGE)` and the per-locale
 - [ ] Pick one source of truth for the locale. Recommended: keep
       `AppCompatDelegate.getApplicationLocales()` as the authority and drop the stored
       language key, using `R.string.lang` only as the fallback for a fresh install.
-- [ ] Consider `AppCompatDelegate.setApplicationLocales` without `recreate()` — it already
-      restarts the Activity itself, so the current code recreates twice.
+- [x] `AppCompatDelegate.setApplicationLocales` without `recreate()` — it already restarts the
+      Activity itself. The second restart was not just waste: from API 33 it raced the framework's
+      locale change, and the Activity it created came up in the previous language, with only the
+      menu updated when the change arrived. `LanguageSelectionUiTest` switches the language through
+      the dialog several times and checks the texts on the screen.
 
 ### Done when
 
