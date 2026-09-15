@@ -81,11 +81,11 @@ jobs:
           # leaveApksInstalledAfterRun is what makes the pull possible at all: the pictures are written
           # to the app's own external files directory, and uninstalling the app takes that directory
           # with it. Without the flag the run passes and pulls nothing.
+          #
+          # One command per line: the action runs each line as its own `sh -c`, so a `\` continuation
+          # hands Gradle a task named `\`.
           script: |
-            ./gradlew connectedDebugAndroidTest \
-              -PstoreScreenshots \
-              -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true \
-              --stacktrace
+            ./gradlew connectedDebugAndroidTest -PstoreScreenshots -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --stacktrace
             adb pull /sdcard/Android/data/ru.pravbeseda.sleepnoise/files/play-screenshots "$RUNNER_TEMP"
 
       - name: File them under their listings
