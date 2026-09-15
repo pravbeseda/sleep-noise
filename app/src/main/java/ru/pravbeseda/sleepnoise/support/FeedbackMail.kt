@@ -11,10 +11,15 @@ import ru.pravbeseda.sleepnoise.R
 object FeedbackMail {
     private const val ADDRESS = "kalugaman@gmail.com"
 
-    /** A chooser rather than the bare intent, so a user with several mail apps is asked which one. */
+    /**
+     * A chooser rather than the bare intent, so a user with several mail apps is asked which one.
+     * An ACTION_SEND, since Gmail ignores the subject and body of an ACTION_SENDTO; the mailto selector
+     * still limits the choice to mail apps.
+     */
     fun chooser(context: Context): Intent {
-        val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = "mailto:$ADDRESS".toUri()
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            selector = Intent(Intent.ACTION_SENDTO, "mailto:".toUri())
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(ADDRESS))
             putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.app_name))
             putExtra(
                 Intent.EXTRA_TEXT,

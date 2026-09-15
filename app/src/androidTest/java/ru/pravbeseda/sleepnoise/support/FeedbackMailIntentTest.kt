@@ -22,8 +22,10 @@ class FeedbackMailIntentTest {
         val mail = IntentCompat.getParcelableExtra(chooser, Intent.EXTRA_INTENT, Intent::class.java)
 
         assertEquals(Intent.ACTION_CHOOSER, chooser.action)
-        assertEquals(Intent.ACTION_SENDTO, mail?.action)
-        assertEquals("mailto:kalugaman@gmail.com", mail?.dataString)
+        assertEquals(Intent.ACTION_SEND, mail?.action)
+        assertEquals(listOf("kalugaman@gmail.com"), mail?.getStringArrayExtra(Intent.EXTRA_EMAIL)?.toList())
+        assertEquals(Intent.ACTION_SENDTO, mail?.selector?.action)
+        assertEquals("mailto:", mail?.selector?.dataString)
         assertEquals(context.getString(R.string.app_name), mail?.getStringExtra(Intent.EXTRA_SUBJECT))
         val body = mail?.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         assertTrue(body, body.contains("\nAppVer: ${BuildConfig.VERSION_NAME}\n"))
