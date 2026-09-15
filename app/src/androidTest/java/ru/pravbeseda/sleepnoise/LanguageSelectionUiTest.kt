@@ -1,14 +1,9 @@
 package ru.pravbeseda.sleepnoise
 
-import android.app.LocaleManager
 import android.content.Context
-import android.os.Build
-import android.os.LocaleList
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
-import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
@@ -41,14 +36,14 @@ class LanguageSelectionUiTest {
     @Before
     fun startInRussian() {
         preferences.edit(commit = true) { putString(CURRENT_LANGUAGE, STARTING_LANGUAGE) }
-        applyLocale(STARTING_LANGUAGE)
+        applyAppLocale(STARTING_LANGUAGE)
     }
 
     /** The per-app locale belongs to the framework rather than to the preferences, so both are handed back. */
     @After
     fun leaveAnUntouchedInstall() {
         preferences.edit(commit = true) { remove(CURRENT_LANGUAGE) }
-        applyLocale("")
+        applyAppLocale(SYSTEM_LOCALE)
     }
 
     @Test
@@ -96,35 +91,9 @@ class LanguageSelectionUiTest {
         onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
     }
 
-    private fun applyLocale(language: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags(language)
-        } else {
-            instrumentation.runOnMainSync { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language)) }
-        }
-    }
-
-    /** The locale set before the launch is applied asynchronously, so the screen gets a few recreations to catch up. */
-    private fun ActivityScenario<MainActivity>.awaitLanguage(language: String) {
-        repeat(LANGUAGE_ATTEMPTS) {
-            if (read { it.getString(R.string.lang) } == language) return
-            Thread.sleep(SETTLE_MILLIS)
-            recreate()
-        }
-        assertEquals(language, read { it.getString(R.string.lang) })
-    }
-
-    private fun <T> ActivityScenario<MainActivity>.read(query: (MainActivity) -> T): T {
-        var value: T? = null
-        onActivity { value = query(it) }
-        @Suppress("UNCHECKED_CAST") // onActivity runs its block synchronously, so the value is always set here.
-        return value as T
-    }
-
     private companion object {
         const val STARTING_LANGUAGE = "ru"
         val PICKED_LANGUAGES = listOf("de", "es", "en", "ru")
-        const val LANGUAGE_ATTEMPTS = 5
         const val SETTLE_MILLIS = 2_000L
     }
 }
