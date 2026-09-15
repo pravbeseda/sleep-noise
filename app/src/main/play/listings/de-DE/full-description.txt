@@ -25,6 +25,6 @@ In Halbstundenschritten einstellbar, und die Wiedergabe endet von selbst. Sie l�
 - Kein Konto und keine Anmeldung.
 - Keine Audiodateien zum Herunterladen — alles entsteht auf dem Gerät, die Wiedergabe braucht also keine Verbindung.
 
-Sechs Sprachen: Englisch, Arabisch, Deutsch, Spanisch, Russisch und Ukrainisch. Zwei dunkle Designs, denn ein Bildschirm am Bett sollte keine Lampe sein.
+Zwei dunkle Designs, denn ein Bildschirm am Bett sollte keine Lampe sein.
 
 Du erreichst den Entwickler unter kalugaman@gmail.com. Ich beantworte gern deine Fragen und denke über deine Vorschläge nach.

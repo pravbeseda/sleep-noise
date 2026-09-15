@@ -25,6 +25,6 @@ Set it in half-hour steps and playback stops on its own. It keeps running when y
 - No account and no sign-up.
 - No sound files to download — everything is generated on the device, so playback needs no connection.
 
-Six languages: English, Arabic, German, Spanish, Russian and Ukrainian. Two dark themes, because a bedside screen should not be a lamp.
+Two dark themes, because a bedside screen should not be a lamp.
 
 You can write to the developer at kalugaman@gmail.com. I will be glad to answer your questions and to consider your suggestions.
