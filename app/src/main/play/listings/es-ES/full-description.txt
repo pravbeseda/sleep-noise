@@ -25,6 +25,6 @@ Ajústalo en pasos de media hora y la reproducción se detiene sola. Sigue sonan
 - Sin cuenta y sin registro.
 - Sin archivos de sonido que descargar: todo se genera en el dispositivo, así que la reproducción no necesita conexión.
 
-Seis idiomas: inglés, árabe, alemán, español, ruso y ucraniano. Dos temas oscuros, porque una pantalla en la mesilla de noche no debería ser una lámpara.
+Dos temas oscuros, porque una pantalla en la mesilla de noche no debería ser una lámpara.
 
 Puedes escribir al desarrollador a kalugaman@gmail.com. Estaré encantado de responder a tus preguntas y de considerar tus sugerencias.
