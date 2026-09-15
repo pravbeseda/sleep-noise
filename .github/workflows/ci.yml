@@ -56,6 +56,8 @@ jobs:
       - name: Set up Android SDK
         if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
@@ -162,6 +164,8 @@ jobs:
       - name: Set up Android SDK
         if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
@@ -263,6 +267,8 @@ jobs:
       - name: Set up Android SDK
         if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
@@ -312,6 +318,8 @@ jobs:
       - name: Set up Android SDK
         if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
@@ -383,6 +391,8 @@ jobs:
       - name: Set up Android SDK
         if: steps.decide.outputs.run == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
@@ -650,6 +660,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
