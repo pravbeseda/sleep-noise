@@ -72,7 +72,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The commit count is the version code, and the tag list is what
           # guards 1 and 2 compare against — both need the whole history.
@@ -274,7 +274,7 @@ jobs:
     if: inputs.dry_run != true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Not optional here: versionCode is the commit count, and
           # verifyReleaseVersioning rejects a shallow clone outright rather than
@@ -282,18 +282,18 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         # require-real because this job ships: the action's stub is for a fork
@@ -354,7 +354,7 @@ jobs:
           --commit --rerun --stacktrace
 
       - name: Upload the bundle as a run artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # What `finalize` attaches to the GitHub Release, and what a by-hand
           # recovery downloads when the run died between the upload and the tag.
@@ -375,14 +375,14 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Only the release notes are read here, but every checkout in the
           # release path is full: the rule has no exception to remember.
           fetch-depth: 0
 
       - name: Download the bundle this run built
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-bundle
           path: bundle

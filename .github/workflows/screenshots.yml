@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Not optional, and narrower than it looks: versionCode is the commit count and the app
           # prints it at the bottom of the very screen being photographed. That number is the build
@@ -34,18 +34,18 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         # No require-real here, unlike the alpha and release jobs: this build is installed on an
@@ -134,7 +134,7 @@ jobs:
 
       - name: Keep a copy whatever happens next
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: store-screenshots
           path: ${{ runner.temp }}/play-screenshots
