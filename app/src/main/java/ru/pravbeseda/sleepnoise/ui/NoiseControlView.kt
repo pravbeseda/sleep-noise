@@ -13,14 +13,12 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.edit
+import androidx.core.content.res.use
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.catalog.DEFAULT_NOISE_ENABLED
 
 /** A seekbar's range as a volume. */
 private const val PERCENT_SCALE = 100f
-
-/** What a switched-off noise's label and slider fade to: plainly off, still readable, still movable. */
-private const val DISABLED_CONTROLS_ALPHA = 0.5f
 
 /** The level a noise switched on from silence lands at: the quietest one that is not silence. */
 private const val MIN_AUDIBLE_PROGRESS = 1
@@ -53,6 +51,9 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
     private val label: TextView
     private val slider: SeekBar
 
+    /** What a switched-off noise's label and slider fade to: plainly off, still readable, still movable. */
+    private val disabledControlsAlpha: Float
+
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
@@ -63,6 +64,7 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
         controls = findViewById(R.id.noiseControls)
         label = findViewById(R.id.noiseLabel)
         slider = findViewById(R.id.noiseSlider)
+        disabledControlsAlpha = context.obtainStyledAttributes(intArrayOf(R.attr.disabledControlsAlpha)).use { it.getFloat(0, 1f) }
     }
 
     /**
@@ -105,7 +107,7 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
 
         val show = {
             label.text = noise.label(slider.progress)
-            controls.alpha = if (noiseToggle.isChecked) 1f else DISABLED_CONTROLS_ALPHA
+            controls.alpha = if (noiseToggle.isChecked) 1f else disabledControlsAlpha
             onVolumeChanged(if (noiseToggle.isChecked) slider.progress / PERCENT_SCALE else 0f)
         }
 
