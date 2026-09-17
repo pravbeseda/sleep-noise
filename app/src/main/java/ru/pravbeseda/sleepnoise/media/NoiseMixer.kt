@@ -1,10 +1,10 @@
 package ru.pravbeseda.sleepnoise.media
 
 /**
- * Sums its channels by volume and converts the result to PCM 16-bit. Holds the mixing law only:
- * no audio platform, no threading — the caller owns both.
+ * Sums its channels by volume, scales the sum by [fade] and converts the result to PCM 16-bit. Holds the mixing
+ * law only: no audio platform, no threading — the caller owns both, and drives the fade.
  */
-class NoiseMixer(private val sources: List<NoiseSource>) {
+class NoiseMixer(private val sources: List<NoiseSource>, private val fade: Fade) {
     private var scratch = FloatArray(0)
     private var mixed = FloatArray(0)
 
@@ -24,6 +24,7 @@ class NoiseMixer(private val sources: List<NoiseSource>) {
                 mixed[i] += scratch[i] * volume
             }
         }
+        fade.apply(mixed)
         for (i in out.indices) {
             // Without the clamp the sum of two loud channels wraps the Short conversion into an audible crack.
             out[i] = (mixed[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()

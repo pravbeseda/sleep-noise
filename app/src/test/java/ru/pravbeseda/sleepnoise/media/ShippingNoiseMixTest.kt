@@ -16,7 +16,7 @@ import kotlin.random.Random
 class ShippingNoiseMixTest {
     @Test
     fun everyShippingNoiseAtFullVolumeBarelyReachesTheMixersClamp() {
-        val mixer = NoiseMixer(SHIPPING_NOISES.mapIndexed { index, noise -> noise.createSource(Random(SEED + index)) })
+        val mixer = NoiseMixer(SHIPPING_NOISES.mapIndexed { index, noise -> noise.createSource(Random(SEED + index)) }, openFade())
         val fullVolume = FloatArray(SHIPPING_NOISES.size) { 1.0f }
         val out = ShortArray(BUFFER_SIZE)
 

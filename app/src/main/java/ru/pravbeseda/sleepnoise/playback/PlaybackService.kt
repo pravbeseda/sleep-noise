@@ -68,7 +68,11 @@ class PlaybackService : Service() {
         SHIPPING_NOISES.forEach { put(it.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
         labCandidates.forEach { put(it.preferenceKey, NoiseChannel(it.createSource(Random.Default))) }
     }
-    private val noiseEngine = NoiseEngine(channels.values.toList())
+
+    // Called on the engine's writer thread; the teardown belongs on the main thread with everything else here.
+    private val noiseEngine = NoiseEngine(channels.values.toList()) {
+        handler.post { if (fadingOut) stopPlayback(fade = false) }
+    }
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
 
@@ -99,15 +103,21 @@ class PlaybackService : Service() {
 
     private var pausedByFocusLoss = false
 
+    /** Stopped as far as the user can tell, and still audible: the session ends once the engine is silent. */
+    private var fadingOut = false
+
     // Lazy, like the intents: a Service has no context to ask for a system service until it is created.
     private val audioFocus: AudioFocus by lazy {
         AudioFocus(getSystemService(AudioManager::class.java)) { change ->
             when (change) {
-                AudioFocus.Change.LOST -> stopPlayback()
+                AudioFocus.Change.LOST -> stopPlayback(fade = false)
 
-                // The session goes on without sound: a phone call must not extend the sleep timer.
-                AudioFocus.Change.PAUSE -> {
-                    noiseEngine.stop()
+                // Nothing is to be heard over a call, a fade included.
+                AudioFocus.Change.PAUSE -> if (fadingOut) {
+                    stopPlayback(fade = false)
+                } else {
+                    // The session goes on without sound: a phone call must not extend the sleep timer.
+                    noiseEngine.stopNow()
                     pausedByFocusLoss = true
                     listener?.onPaused(true)
                 }
@@ -124,7 +134,8 @@ class PlaybackService : Service() {
     /** Registered from code and never in the manifest: a manifest receiver would wake the app when nothing is playing. */
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            stopPlayback()
+            // At once, fade or no fade: the output has just moved to the phone's speaker.
+            stopPlayback(fade = false)
         }
     }
     private var noisyReceiverRegistered = false
@@ -145,7 +156,7 @@ class PlaybackService : Service() {
             val timer = sleepTimer ?: return
             val now = SystemClock.elapsedRealtime()
             if (timer.hasExpired(now)) {
-                stopPlayback()
+                stopPlayback(fade = true)
                 return
             }
             val remaining = timer.remaining(now)
@@ -202,7 +213,7 @@ class PlaybackService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> startPlayback(intent.getIntExtra(EXTRA_TIMER_MINUTES, 0))
-            ACTION_STOP -> stopPlayback()
+            ACTION_STOP -> stopPlayback(fade = true)
         }
         return START_NOT_STICKY
     }
@@ -222,7 +233,8 @@ class PlaybackService : Service() {
         noiseEngine.release()
         unregisterNoisyReceiver()
         // Only a session that ran ever took the focus, and a stopped one has already given it back.
-        if (playing) audioFocus.abandon()
+        if (playing || fadingOut) audioFocus.abandon()
+        fadingOut = false
     }
 
     private fun startPlayback(timerMinutes: Int) {
@@ -245,15 +257,21 @@ class PlaybackService : Service() {
                     noiseEngine.start()
                     listener?.onPaused(false)
                 } else {
-                    stopPlayback()
+                    stopPlayback(fade = false)
                 }
             }
             return
         }
+        if (fadingOut) {
+            // Play pressed during a fade-out: the engine turns the fade around, and the session is taken up
+            // again below. Focus is simply requested again; the receiver would otherwise be registered twice.
+            fadingOut = false
+            unregisterNoisyReceiver()
+        }
         // Focus first: a refused request means playback never starts, so stop the way the Stop action
         // does rather than leaving a notification over silence.
         if (!audioFocus.request()) {
-            stopPlayback()
+            stopPlayback(fade = false)
             return
         }
         val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
@@ -266,7 +284,7 @@ class PlaybackService : Service() {
                 preferences.noiseVolume(candidate.preferenceKey, candidate.enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
         }
         pausedByFocusLoss = false
-        // Reached only when playback was stopped, and a stop always unregisters, so this is never a double.
+        // Reached only when playback was stopped, and a stop or a turned-around fade unregisters, so this is never a double.
         ContextCompat.registerReceiver(
             this,
             noisyReceiver,
@@ -282,20 +300,31 @@ class PlaybackService : Service() {
         }
     }
 
-    private fun stopPlayback() {
+    /**
+     * Stops at once as far as the user can tell. A faded stop keeps the notification, the focus and the
+     * receiver until the engine reports silence, so nothing audible is left without them.
+     */
+    private fun stopPlayback(fade: Boolean) {
         handler.removeCallbacks(tick)
         sleepTimer = null
-        noiseEngine.stop()
+        // A paused engine is already silent and a stopped one has nothing to fade: neither would report the end of one.
+        val fadeOut = fade && playing && !pausedByFocusLoss
         playing = false
         pausedByFocusLoss = false
-        unregisterNoisyReceiver()
-        audioFocus.abandon()
-        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        fadingOut = fadeOut
+        if (fadeOut) {
+            noiseEngine.stop()
+        } else {
+            noiseEngine.stopNow()
+            unregisterNoisyReceiver()
+            audioFocus.abandon()
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
         listener?.onPlaybackStopped()
     }
 
-    // Called from both stopPlayback() and onDestroy(), and stopSelf() puts them in that order.
+    // Called from stopPlayback(), a turned-around fade and onDestroy(), and stopSelf() puts the first before the last.
     private fun unregisterNoisyReceiver() {
         if (!noisyReceiverRegistered) return
         noisyReceiverRegistered = false

@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
  * are served by exactly one writer thread, cost their caller no measurable wait, produce no
  * `IllegalStateException`, and leave no thread behind once the engine is released.
  *
+ * Every other stop is a [NoiseEngine.stopNow], so both a fade turned around and a session turned over are hammered.
  * The dwell between start and stop is varied so the stop lands at different points of the writer's loop —
  * before the track exists, inside a `write()`, and after several buffers have gone out.
  */
@@ -28,7 +29,7 @@ class NoiseEngineHammerTest {
             NoiseChannel(WhiteNoise()).apply { volume = WHITE_VOLUME },
             NoiseChannel(BrownNoise()).apply { volume = BROWN_VOLUME },
         ),
-    )
+    ) {}
 
     @Before
     fun captureUncaughtExceptions() {
@@ -67,7 +68,9 @@ class NoiseEngineHammerTest {
             assertEquals("writer threads alive during cycle $cycle", 1, liveWriterThreads().size)
 
             val stopStartedAt = System.nanoTime()
-            engine.stop()
+            // Both stops: a faded one is turned around by the next start on the same track, a cut one ends the
+            // session and has the next start build a new track.
+            if (cycle % 2 == 0) engine.stop() else engine.stopNow()
             worstStopMillis = maxOf(worstStopMillis, (System.nanoTime() - stopStartedAt) / NANOS_PER_MILLI)
 
             // A stop parks that thread rather than ending it: nothing is spawned per session.
