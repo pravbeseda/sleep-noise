@@ -22,9 +22,11 @@ class NoiseMixerTest {
 
     private fun expected(sample: Int) = ShortArray(bufferSize) { sample.toShort() }
 
+    private fun mixerOf(sources: List<NoiseSource>) = NoiseMixer(sources, openFade())
+
     @Test
     fun sourcesAreSummedScaledByTheirVolumes() {
-        val mixer = NoiseMixer(listOf(ConstantNoise(1.0f), ConstantNoise(0.5f)))
+        val mixer = mixerOf(listOf(ConstantNoise(1.0f), ConstantNoise(0.5f)))
         val out = ShortArray(bufferSize)
 
         // 1.0 * 0.5 + 0.5 * 0.25 = 0.625, and 0.625 * Short.MAX_VALUE truncates to 20479.
@@ -35,7 +37,7 @@ class NoiseMixerTest {
 
     @Test
     fun aSumAboveOneClampsInsteadOfWrappingTheShortConversion() {
-        val mixer = NoiseMixer(listOf(ConstantNoise(1.0f), ConstantNoise(0.8f)))
+        val mixer = mixerOf(listOf(ConstantNoise(1.0f), ConstantNoise(0.8f)))
         val out = ShortArray(bufferSize)
 
         mixer.mix(floatArrayOf(1.0f, 1.0f), out)
@@ -45,7 +47,7 @@ class NoiseMixerTest {
 
     @Test
     fun aSumBelowMinusOneClampsInsteadOfWrappingTheShortConversion() {
-        val mixer = NoiseMixer(listOf(ConstantNoise(-1.0f), ConstantNoise(-0.8f)))
+        val mixer = mixerOf(listOf(ConstantNoise(-1.0f), ConstantNoise(-0.8f)))
         val out = ShortArray(bufferSize)
 
         mixer.mix(floatArrayOf(1.0f, 1.0f), out)
@@ -57,7 +59,7 @@ class NoiseMixerTest {
     fun aChannelAtVolumeZeroIsNotGenerated() {
         val silent = ConstantNoise(1.0f)
         val audible = ConstantNoise(0.5f)
-        val mixer = NoiseMixer(listOf(silent, audible))
+        val mixer = mixerOf(listOf(silent, audible))
         val out = ShortArray(bufferSize)
 
         mixer.mix(floatArrayOf(0.0f, 1.0f), out)
@@ -70,7 +72,7 @@ class NoiseMixerTest {
 
     @Test
     fun repeatedMixesDoNotAccumulateThePreviousResult() {
-        val mixer = NoiseMixer(listOf(ConstantNoise(0.5f), ConstantNoise(0.25f)))
+        val mixer = mixerOf(listOf(ConstantNoise(0.5f), ConstantNoise(0.25f)))
         val volumes = floatArrayOf(1.0f, 1.0f)
         val out = ShortArray(bufferSize)
 
@@ -79,5 +81,18 @@ class NoiseMixerTest {
         mixer.mix(volumes, out)
 
         assertArrayEquals(first, out)
+    }
+
+    @Test
+    fun theFadeScalesTheSumBeforeTheClamp() {
+        val fade = Fade(4).apply { fadeIn() }
+        val mixer = NoiseMixer(listOf(ConstantNoise(1.0f), ConstantNoise(0.6f)), fade)
+        val out = ShortArray(bufferSize)
+
+        mixer.mix(floatArrayOf(1.0f, 1.0f), out)
+
+        // 1.6 scaled by 0, 1/16, 1/4 and 9/16 before clamping; a fade after the clamp would scale 1.0 instead.
+        val rising = shortArrayOf(0, 3276, 13106, 29490)
+        assertArrayEquals(rising + ShortArray(bufferSize - rising.size) { Short.MAX_VALUE }, out)
     }
 }

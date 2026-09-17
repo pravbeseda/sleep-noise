@@ -25,18 +25,28 @@ import kotlin.concurrent.withLock
  * `join()` to arrange it. Reusing the thread rather than spawning one per session also means an app
  * flapping audio focus costs a flag and a signal, not a thread and a stack per flap.
  *
+ * A session fades in over [FADE_DURATION_MS] and [stop] fades it out over the same time; [stopNow] cuts at
+ * once. A [start] during a fade-out turns the fade around on the same track. [onFadedOut] is called on the
+ * writer thread once a fade-out has reached silence and the session has ended, or once that session died
+ * of a failed track instead — whoever waits for the fade is told either way.
+ *
  * The sources are never reset, so a stop/start cycle resumes the brown integrator where it left off —
  * the behaviour the app has today.
  *
- * [start], [stop] and [release] are expected on one thread (the app's main thread). The first two are
- * each a no-op when the engine is already in the state they ask for, and all three are a no-op once
- * the engine has been released.
+ * [start], [stop], [stopNow] and [release] are expected on one thread (the app's main thread). Each is a
+ * no-op when the engine is already in the state it asks for, and all are a no-op once the engine has
+ * been released.
  */
-class NoiseEngine(private val channels: List<NoiseChannel>) {
-    private val mixer = NoiseMixer(channels.map { it.source })
+class NoiseEngine(private val channels: List<NoiseChannel>, private val onFadedOut: () -> Unit) {
+    /** Driven by the writer thread alone, from the state it reads under [lock]. */
+    private val fade = Fade(SAMPLE_RATE_HZ * FADE_DURATION_MS / MILLIS_PER_SECOND)
+    private val mixer = NoiseMixer(channels.map { it.source }, fade)
 
-    /** What the caller last asked for, which is not what the writer is doing yet. [RELEASED] is final. */
-    private enum class State { STOPPED, PLAYING, RELEASED }
+    /**
+     * What the caller last asked for, which is not what the writer is doing yet. [FADING_OUT] is a stop the
+     * writer is still ramping down; it turns it into [STOPPED] itself. [RELEASED] is final.
+     */
+    private enum class State { STOPPED, PLAYING, FADING_OUT, RELEASED }
 
     private val lock = ReentrantLock()
     private val stateChanged = lock.newCondition()
@@ -50,6 +60,11 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
 
     fun start() {
         lock.withLock {
+            if (state == State.FADING_OUT) {
+                // The writer is still on this session's track; it reads the new state on its next cycle.
+                state = State.PLAYING
+                return
+            }
             if (state != State.STOPPED) return
             state = State.PLAYING
             session++
@@ -62,10 +77,15 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         }
     }
 
-    /** Silences the engine without waiting for the writer to notice: it does so within one write. */
+    /** Fades the engine out without waiting for the writer: [onFadedOut] says when it is silent. */
     fun stop() {
-        // No signal: the writer waits on the condition only while the state is already STOPPED.
-        lock.withLock { if (state == State.PLAYING) state = State.STOPPED }
+        // No signal here or in stopNow(): the writer waits on the condition only while the state is already STOPPED.
+        lock.withLock { if (state == State.PLAYING) state = State.FADING_OUT }
+    }
+
+    /** Silences the engine without a fade and without waiting for the writer to notice: it does so within one write. */
+    fun stopNow() {
+        lock.withLock { if (state == State.PLAYING || state == State.FADING_OUT) state = State.STOPPED }
     }
 
     /**
@@ -86,10 +106,14 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         }
     }
 
-    /** Parks until [start] asks for sound again, and answers null once [release] has ended the engine. */
+    /**
+     * Parks until [start] asks for sound again, and answers null once [release] has ended the engine. A stop that
+     * arrived before the writer woke still gets a session: it is a fade-out of silence, which ends at once and
+     * tells [onFadedOut] so.
+     */
     private fun awaitPlaying(): Int? = lock.withLock {
         while (state == State.STOPPED) stateChanged.await()
-        if (state == State.PLAYING) session else null
+        if (state == State.RELEASED) null else session
     }
 
     private fun playOneSession(session: Int) {
@@ -104,43 +128,76 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
         val chunk = ShortArray(chunkSamples)
         val volumes = FloatArray(channels.size)
 
+        var fadedOut = false
         val track = buildTrack(bufferSizeBytes)
         try {
+            fade.cut()
             track.play()
-            while (isPlaying()) {
+            var step = nextStep()
+            while (step == Step.WRITE) {
                 channels.forEachIndexed { index, channel -> volumes[index] = channel.volume }
                 mixer.mix(volumes, chunk)
                 val written = track.write(chunk, 0, chunk.size)
                 if (written < 0) {
                     // A dead track reports itself here rather than by throwing; looping on it would spin.
                     Log.e(TAG, "AudioTrack.write failed with $written; stopping playback.")
-                    stopFromWriter(session)
+                    fadedOut = stopFromWriter(session)
                     break
                 }
+                step = nextStep()
             }
+            if (step == Step.FADED_OUT) fadedOut = true
             track.stop()
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Audio playback failed", e)
-            stopFromWriter(session)
+            fadedOut = stopFromWriter(session)
         } finally {
             track.release()
         }
+        if (fadedOut) onFadedOut()
     }
 
+    private enum class Step { WRITE, FADED_OUT, END }
+
     /**
+     * Points the fade at what the caller last asked for, and ends a fade-out that has reached silence under the
+     * same lock a [start] would take, so a start cannot slip in between the check and the end.
+     *
      * Deliberately blind to the session number: a stop and a start the writer never got to see leave it
      * playing on the track it already has, which is the stop/start behaviour the engine has always had.
      */
-    private fun isPlaying(): Boolean = lock.withLock { state == State.PLAYING }
+    private fun nextStep(): Step = lock.withLock {
+        when (state) {
+            State.PLAYING -> {
+                fade.fadeIn()
+                Step.WRITE
+            }
+
+            State.FADING_OUT -> if (fade.isSilent) {
+                state = State.STOPPED
+                Step.FADED_OUT
+            } else {
+                fade.fadeOut()
+                Step.WRITE
+            }
+
+            State.STOPPED, State.RELEASED -> Step.END
+        }
+    }
 
     /**
      * Drops the caller's request, because this session is ending for a reason the caller does not know
      * about — a dead track, not a stop. Only its own session is dropped: a [start] that arrived while
      * the write was failing is a newer request than anything this session can speak for, and leaving it
      * standing is what has the writer build a fresh track for it instead of parking over it.
+     *
+     * Answers whether it ended a fade-out, whose caller is waiting on [onFadedOut] and must still hear it.
      */
-    private fun stopFromWriter(session: Int) {
-        lock.withLock { if (state == State.PLAYING && this.session == session) state = State.STOPPED }
+    private fun stopFromWriter(session: Int): Boolean = lock.withLock {
+        if (this.session != session) return@withLock false
+        val wasFadingOut = state == State.FADING_OUT
+        if (state == State.PLAYING || wasFadingOut) state = State.STOPPED
+        wasFadingOut
     }
 
     private fun buildTrack(bufferSizeBytes: Int): AudioTrack = AudioTrack.Builder()
@@ -182,5 +239,9 @@ class NoiseEngine(private val channels: List<NoiseChannel>) {
          * settings apart.
          */
         const val WRITES_PER_BUFFER = 2
+
+        /** How long a start rises from silence and a [stop] falls back to it. */
+        const val FADE_DURATION_MS = 1000
+        private const val MILLIS_PER_SECOND = 1000
     }
 }
