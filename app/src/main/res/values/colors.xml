@@ -4,16 +4,16 @@
   both of them at once, so the colours are picked by the style in themes.xml instead.
 -->
 <resources>
-    <!-- Dark: black all the way down, with a deep plum accent and no pure white anywhere. -->
+    <!-- Dark: black all the way down, with a pale moon-yellow accent and no pure white anywhere. -->
     <color name="dark_background">#000000</color>
-    <color name="dark_accent">#6D4FA8</color>
+    <color name="dark_accent">#E8D99A</color>
     <!-- Text, icons and the cats alike, as in the purple theme: one foreground over one window. -->
     <color name="dark_foreground">#9E98AC</color>
     <color name="dark_foreground_dim">#736E80</color>
-    <!-- The play triangle on the accent circle: lighter than the text, or the button reads as disabled. -->
-    <color name="dark_on_accent">#D6D0E0</color>
-    <!-- The unfilled half of a slider: the accent at 40 %, since 30 % of it over black is 1.24:1. -->
-    <color name="dark_slider_track">#666D4FA8</color>
+    <!-- The play triangle on the accent circle, which is far too light to carry a light one. -->
+    <color name="dark_on_accent">#000000</color>
+    <!-- The unfilled half of a slider: the accent at 30 %, a groove rather than a second fill. -->
+    <color name="dark_slider_track">#4DE8D99A</color>
 
     <!-- Purple: the splash colour carried into the app, over a slightly darker top. -->
     <color name="purple_background_top">#25064F</color>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Three colours the platform has no attribute for, and both themes have to answer differently. -->
+<!-- Values the platform has no attribute for, and both themes have to answer differently. -->
 <resources>
     <!-- What is drawn *on* an accent-coloured surface: the play triangle on its circle. -->
     <attr name="colorOnAccent" format="color"/>
@@ -11,4 +11,6 @@
       to be dim over black reaches 2.04:1 there.
     -->
     <attr name="colorVersionText" format="color"/>
+    <!-- How far a switched-off noise's label and slider fade: a dim foreground over black cannot give up half. -->
+    <attr name="disabledControlsAlpha" format="float"/>
 </resources>
