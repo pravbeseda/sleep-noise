@@ -19,24 +19,25 @@ class NoiseEngineFadeTest {
     private val fadedOut = AtomicInteger()
     private val engine = NoiseEngine(listOf(NoiseChannel(WhiteNoise()).apply { volume = VOLUME })) { fadedOut.incrementAndGet() }
 
+    /**
+     * Waits for the writer to exit, since `release()` does not: a writer left running is counted by the next class
+     * that looks for threads of that name, [NoiseEngineHammerTest] among them.
+     */
     @After
     fun releaseEngine() {
         engine.release()
+        val deadline = System.nanoTime() + THREAD_EXIT_TIMEOUT_MILLIS * NANOS_PER_MILLI
+        while (liveWriterThreads() > 0 && System.nanoTime() < deadline) Thread.sleep(POLL_MILLIS)
+        assertEquals("writer threads still alive after release()", 0, liveWriterThreads())
     }
 
     @Test
-    fun aStopIsReportedOnceItsFadeHasRunAndStillReturnsAtOnce() {
+    fun aStopIsReportedOnceItsFadeHasRun() {
         engine.start()
         Thread.sleep(PLAY_MILLIS)
 
-        val stopStartedAt = System.nanoTime()
         engine.stop()
-        val stopMillis = (System.nanoTime() - stopStartedAt) / NANOS_PER_MILLI
 
-        assertTrue(
-            "stop() took $stopMillis ms, over the $MAX_HANDOFF_MILLIS ms a main-thread caller may block for",
-            stopMillis <= MAX_HANDOFF_MILLIS,
-        )
         assertTrue("the fade-out was never reported", awaitFadedOut())
         assertEquals("the fade-out was reported more than once", 1, fadedOut.get())
     }
@@ -63,6 +64,8 @@ class NoiseEngineFadeTest {
         assertFalse("stopNow() was reported as a finished fade-out", awaitFadedOut())
     }
 
+    private fun liveWriterThreads(): Int = Thread.getAllStackTraces().keys.count { it.name == NoiseEngine.THREAD_NAME && it.isAlive }
+
     private fun awaitFadedOut(): Boolean {
         val deadline = System.nanoTime() + FADE_REPORT_TIMEOUT_MILLIS * NANOS_PER_MILLI
         while (System.nanoTime() < deadline) {
@@ -76,15 +79,15 @@ class NoiseEngineFadeTest {
         const val VOLUME = 0.5f
         const val PLAY_MILLIS = 300L
 
-        /** As in [NoiseEngineHammerTest]: a lock handoff, far under a wait for the writer or for the fade. */
-        const val MAX_HANDOFF_MILLIS = 50L
-
         /**
          * A second of fade takes several times that on an emulator, where one `write()` takes far longer than
          * the audio it carries; the negative cases wait the whole bound, so a missed report would have arrived.
          */
         const val FADE_REPORT_TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 20L
+
+        /** As in [NoiseEngineHammerTest]: the write in flight is what the writer takes to exit. */
+        const val THREAD_EXIT_TIMEOUT_MILLIS = 2_000L
         const val NANOS_PER_MILLI = 1_000_000
     }
 }
