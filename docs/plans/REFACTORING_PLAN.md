@@ -510,8 +510,8 @@ change, except D5, which removes the flash.
     in `onStop` unless `isChangingConfigurations`: a `recreate()` keeps the binding and the last
     state, while an app in the background holds no binding, so the service's lifetime is
     unchanged. `onCleared` unbinds.
-  - `lifecycle-viewmodel-ktx` becomes a direct dependency in `gradle/libs.versions.toml`. Today it
-    arrives only through the Compose stack that phase 6 removes.
+  - `lifecycle-viewmodel-ktx` becomes a direct dependency in `gradle/libs.versions.toml`. It is not
+    on the classpath today: AppCompat brings the plain `lifecycle-viewmodel` 2.6, without the `-ktx`.
   - An instrumented test changes the theme mid-playback and asserts the pause icon and the
     countdown after `recreate()`. The flash itself is a race no test pins reliably, and the PR
     says so.
@@ -599,7 +599,7 @@ present requirement; the lint finding is about the cycle after it.
 - [ ] Replace `android:fitsSystemWindows="true"` with
       `ViewCompat.setOnApplyWindowInsetsListener`, which is the supported approach under the
       mandatory edge-to-edge of targetSdk 35+.
-- [ ] Drop the unused Compose stack (Compose BOM, material3, activity-compose, ui-tooling,
+- [x] Drop the unused Compose stack (Compose BOM, material3, activity-compose, ui-tooling,
       `buildFeatures.compose`) — the UI is entirely XML and Views. Alternatively, commit to a
       Compose migration, but do not leave it half-declared.
 - [x] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.

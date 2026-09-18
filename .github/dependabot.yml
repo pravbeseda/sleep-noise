@@ -14,7 +14,6 @@ updates:
         patterns:
           - "com.google.firebase*"
           - "com.google.gms.google-services"
-      # The Kotlin plugin and the Compose compiler plugin share one version.
       kotlin:
         patterns:
           - "org.jetbrains.kotlin.*"
@@ -27,6 +26,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "io.gitlab.arturbosch.detekt"
         update-types: ["version-update:semver-major"]
+      # androidx.core 1.19 requires compileSdk 37 and AGP 9.1, so it moves with the AGP major.
+      - dependency-name: "androidx.core:core-ktx"
+        versions: [">=1.19.0"]
 
   - package-ecosystem: github-actions
     directory: /
