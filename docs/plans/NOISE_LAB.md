@@ -35,8 +35,8 @@ gain, which only clips — is the lever.
   rather than in `MainActivity.kt` as first written — not an environment variable, not `BuildConfig.DEBUG`, not a
   runtime setting. Turning the lab off is editing `true` to `false`: a `const val` is inlined, so
   every branch behind it becomes unreachable, while the sources, channels and preference keys stay
-  in the tree for the next experiment. It does not make the APK smaller — `isMinifyEnabled` is false
-  for `release`, so the candidate classes ship unused — and nothing about the decision rests on that:
+  in the tree for the next experiment. Whether the APK gets smaller is left to R8, which minifies
+  `release` and drops what the constant makes unreachable — and nothing about the decision rests on that:
   the reason is that the comparison has to be possible on the alpha build the phone actually runs at
   night, which a `BuildConfig.DEBUG` gate would have prevented. The constant sits in `media/` because
   `PlaybackService` needs it as much as the Activity does: a flag the UI alone honoured would leave a
