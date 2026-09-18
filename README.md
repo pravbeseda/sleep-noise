@@ -104,8 +104,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── models/ · adapters/
 ```
 
-The UI is XML layouts with AppCompat Views throughout. The Compose dependencies present in the
-build are unused leftovers, scheduled for removal — do not treat them as the intended direction.
+The UI is XML layouts with AppCompat Views throughout; there is no Compose in the build.
 
 Architecture notes, including the parts that are non-obvious (how the active locale is detected,
 why the theme is applied before `super.onCreate`, how versioning works), live in
