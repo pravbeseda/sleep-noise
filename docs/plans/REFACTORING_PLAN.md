@@ -602,7 +602,7 @@ present requirement; the lint finding is about the cycle after it.
 - [ ] Drop the unused Compose stack (Compose BOM, material3, activity-compose, ui-tooling,
       `buildFeatures.compose`) — the UI is entirely XML and Views. Alternatively, commit to a
       Compose migration, but do not leave it half-declared.
-- [ ] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.
+- [x] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.
 - [ ] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
       `NewerVersionAvailable` 2).
 - [x] Replace the odd `android:tint="@color/cardview_dark_background"` on the play button
