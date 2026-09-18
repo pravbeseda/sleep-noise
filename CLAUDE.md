@@ -300,7 +300,7 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
   still a literal in several places, and phase 5 of the plan is where that ends. Do not add the
   twentieth occurrence in the meantime.
 - **New dependencies go through `gradle/libs.versions.toml`,** with a line in the PR description
-  saying why. The Compose stack is the cautionary tale: ten artifacts on the classpath, none used, until
+  saying why. The Compose stack is the cautionary tale: nine artifacts on the classpath, none used, until
   they were removed. A library the code imports is declared directly, not left to arrive transitively.
 - **`versionCode`, `app/version.properties` and the versioning block of `app/build.gradle.kts` are
   release-PR territory.** Every other PR leaves them alone. See the versioning section for why the
