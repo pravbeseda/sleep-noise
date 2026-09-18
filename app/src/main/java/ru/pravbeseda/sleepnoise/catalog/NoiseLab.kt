@@ -12,10 +12,9 @@ import kotlin.random.Random
  * a flag the UI alone honoured would leave a stored lab volume playing with no slider to turn it down.
  *
  * Putting the lab away is editing this to `false`. It is a `const val`, so the compiler inlines it and
- * every branch behind it becomes unreachable — the release build does not shrink (`isMinifyEnabled` is
- * false), so the candidate classes stay in the APK, unused. Their sources, preference keys and tests
- * deliberately stay in the tree too, which makes the next experiment a rebuild rather than a
- * re-implementation.
+ * every branch behind it becomes unreachable — R8 then drops the candidate classes from the release APK.
+ * Their sources, preference keys and tests deliberately stay in the tree, which makes the next experiment
+ * a rebuild rather than a re-implementation.
  */
 const val NOISE_LAB_ENABLED = false
 
