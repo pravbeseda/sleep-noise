@@ -7,8 +7,8 @@ six shipping locales, and replace the by-hand Play release with the three-verb p
 runs (`release` → `promote` → `rollout`). Add a per-locale screenshot run so the store page can be
 rebuilt from the repository rather than from a developer's desktop.
 
-The store page is published by its own dispatch, never by the release job, because the page must not
-describe a build the world cannot download yet.
+The store page is published when a release reaches everyone — never by the release job, because the
+page must not describe a build the world cannot download yet — and by its own dispatch in between.
 
 ## Where this project stands
 
@@ -160,8 +160,9 @@ deliberately over-long title, and the app installs showing the new label.
 - `.github/scripts/check_release_readiness.py` and `resolve_release_tag.sh`, adapted: one module, no
   flavors.
 - Tag scheme `v<versionName>+<versionCode>`, e.g. `v1.1.0+58`.
-- **The listing is untouched by all three.** `publishBundle` and `promoteArtifact` carry the
-  artifact and the release notes only.
+- `publishBundle` and `promoteArtifact` carry the artifact and the release notes only. The listing
+  moves once, at the full rollout, when `complete` or a promotion at `1` calls the screenshot run on
+  the tag (PR #98).
 
 Files: `gradle/libs.versions.toml`, `app/build.gradle.kts`, `.github/workflows/{release,promote,rollout}.yml`,
 `.github/scripts/*`, `CLAUDE.md`, `README.md`.
