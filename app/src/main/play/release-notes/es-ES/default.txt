@@ -1,5 +1,7 @@
-Tres ruidos nuevos —oleaje, gris y verde— llevan la mezcla a seis, y cada uno tiene ahora su propio interruptor junto a su control de volumen.
+El ruido ahora sube suavemente al pulsar reproducir y se desvanece al detenerlo o cuando termina el temporizador.
 
-Un nuevo diseño para la aplicación.
+El tema negro tiene ahora un sereno acento marfil en lugar de violeta, y los ruidos apagados se leen mejor en él.
 
-Errores corregidos y estabilidad de la aplicación mejorada.
+Errores corregidos.
+
+La aplicación ocupa menos espacio.

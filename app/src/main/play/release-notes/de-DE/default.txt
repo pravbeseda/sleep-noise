@@ -1,5 +1,7 @@
-Drei neue Rauschsorten — Brandung, Grau und Grün — bringen die Mischung auf sechs, und jede hat jetzt ihren eigenen Schalter neben ihrem Regler.
+Das Rauschen wird jetzt beim Start sanft lauter und klingt sanft aus, wenn Sie es stoppen oder der Timer abläuft.
 
-Ein neues Design für die App.
+Das schwarze Design hat jetzt einen ruhigen Elfenbeinton statt Violett als Akzent, und ausgeschaltete Rauschsorten sind darin besser lesbar.
 
-Fehler behoben und die Stabilität der App verbessert.
+Fehler behoben.
+
+Die App braucht weniger Speicherplatz.

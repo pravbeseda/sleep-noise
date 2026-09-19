@@ -1,5 +1,7 @@
-Three new noises — surf, grey and green — bring the mix to six, and every one of them now has its own switch beside its slider.
+The noise now fades in gently when you press play, and fades out when you stop it or the timer runs out.
 
-A new design for the app.
+The black theme has a calm ivory accent instead of purple, and switched-off noises are easier to read in it.
 
-Bugs fixed and the app's stability improved.
+Bugs fixed.
+
+The app takes up less space.
