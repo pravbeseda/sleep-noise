@@ -203,6 +203,7 @@ jobs:
     # "what everyone has", and `complete` is the moment the second becomes true.
     # Its own job rather than a step of `rollout` so that the write token below
     # never sits in the job that runs Gradle and the plugin's dependency graph.
+    # promote.yml carries the same job for a promotion at fraction 1; change both.
     if: inputs.action == 'complete'
     permissions:
       contents: write

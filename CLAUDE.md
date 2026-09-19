@@ -625,7 +625,10 @@ flavors:
 - **`promote.yml`** — "version X moves to track Y". Takes the tag (empty means the newest), checks
   *it* out so the notes come from the released commit, and runs `:app:promoteReleaseArtifact
   --from-track <from> --promote-track <to> --version-code <the code in the tag> --commit --rerun`,
-  adding `--release-status inProgress --user-fraction <f>` for a staged production rollout. **Only
+  adding `--release-status inProgress --user-fraction <f>` for a staged production rollout. A
+  fraction of `1` sends no status, so the plugin's default `completed` reaches everyone in that one
+  run, and the promotion clears `prerelease` and marks the release `Latest` itself, as `complete`
+  does — with no rollout to follow, nothing else would (issue #96). **Only
   the destination is asked for; the source is derived** — `production` from `beta`, `beta` from
   `internal`. Two dropdowns offered four combinations of which two were mis-clicks.
 - **`rollout.yml`** — the production percentage and stopping it: `set-fraction`, `complete`,

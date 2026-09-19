@@ -192,3 +192,22 @@ jobs:
           fi
           # $ARGS is deliberately unquoted: it is a list of flags, not one word.
           ./gradlew -PplayPublish :app:promoteReleaseArtifact $ARGS --stacktrace
+
+  mark-latest:
+    name: Clear the prerelease flag
+    runs-on: ubuntu-latest
+    needs: [resolve, promote]
+    # A fraction of 1 sends no --release-status, so the plugin's default,
+    # `completed`, puts the release in front of everyone in this one run and
+    # rollout.yml's `complete` is never dispatched to clear the flag (issue #96).
+    # The same job as rollout.yml's mark-latest, for the same moment; change both.
+    if: inputs.to == 'production' && inputs.production_user_fraction == '1'
+    permissions:
+      contents: write
+    steps:
+      - name: Mark the release as latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: gh release edit "$TAG" --prerelease=false --latest

@@ -198,7 +198,8 @@ A Play release is a tag, `v<versionName>+<versionCode>`, created by three manual
 `.github/workflows/`: `release.yml` checks the commit — the tag must be new, the version code higher
 than the last release's, CI green, the release notes changed — then builds a signed App Bundle,
 uploads it to Play's open-testing track and creates a GitHub prerelease with the bundle attached;
-`promote.yml` moves that exact build to production at a rollout fraction; `rollout.yml` raises the
+`promote.yml` moves that exact build to production at a rollout fraction — at `1`, to everyone,
+marking the GitHub Release as latest; `rollout.yml` raises the
 fraction, completes it — which also marks the GitHub Release as latest — or halts it. Nothing is
 ever rebuilt after `release.yml`, and none of the three touches the store listing. The plugin behind
 them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`, so an ordinary
