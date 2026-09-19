@@ -2,7 +2,7 @@
 agp = "8.13.2"
 coreSplashscreen = "1.2.0"
 firebaseBom = "34.19.0"
-kotlin = "2.2.10"
+kotlin = "2.4.20"
 # 1.18.0, not 1.19: androidx.core 1.19 requires compileSdk 37 and AGP 9.1. Move it
 # with the AGP major, not before.
 coreKtx = "1.18.0"
