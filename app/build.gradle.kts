@@ -285,8 +285,9 @@ android {
 // GPP reads src/main/play, the tree the store texts already live in. The three
 // workflows under .github/workflows use two of its tasks, publishReleaseBundle
 // and promoteReleaseArtifact, and both carry the artifact and release-notes/
-// only. The store page is a fourth task, publishReleaseListing, dispatched on
-// its own by .github/workflows/publish-listing.yml — never by a release.
+// only. The store page is a fourth task, publishReleaseListing, run when a
+// release reaches everyone (screenshots.yml, called by promote and rollout) and
+// by hand through .github/workflows/publish-listing.yml.
 if (project.hasProperty("playPublish")) {
     apply(plugin = "com.github.triplet.play")
 

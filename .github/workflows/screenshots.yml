@@ -1,9 +1,29 @@
 name: Screenshots
 
-# By hand and never on its own. The pictures change when the screen does, which is a judgement nobody
-# should have to make on every merge, and the run costs an emulator boot and eighteen photographs.
+# Two ways in, and neither is a merge: the pictures change when the screen does, which is a judgement
+# nobody should have to make on every merge, and the run costs an emulator boot and eighteen photographs.
+#
+# By hand, it photographs the dispatch ref and pushes a branch. Called by promote.yml or rollout.yml at
+# the moment a release reaches everyone, it photographs that release's tag and publishes the store page
+# from it before pushing the same branch — so the page shows what a visitor installs, and changes on the
+# day it becomes true rather than on the day somebody remembers.
 on:
   workflow_dispatch: {}
+  workflow_call:
+    inputs:
+      ref:
+        description: The commit to photograph and publish from — the release tag
+        type: string
+        required: true
+      publish:
+        description: Publish the store page from the photographed tree
+        type: boolean
+        default: false
+    secrets:
+      GOOGLE_SERVICES_JSON_B64:
+        required: false
+      PLAY_SERVICE_ACCOUNT_JSON:
+        required: false
 
 permissions:
   # The run commits what it took. main is protected, so it pushes a branch and prints the link that
@@ -13,6 +33,8 @@ permissions:
 
 concurrency:
   # Two runs would fight over nothing but the branch names, and there is still no reason to have two.
+  # Never play-edit, though the call publishes: the caller already holds that group for the whole run,
+  # and GitHub cancels a called workflow that asks for its caller's group as a deadlock.
   group: store-screenshots
 
 jobs:
@@ -25,6 +47,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Empty on a dispatch, which checks out the dispatch ref.
+          ref: ${{ inputs.ref }}
           # Not optional, and narrower than it looks: versionCode is the commit count and the app
           # prints it at the bottom of the very screen being photographed. That number is the build
           # that was photographed, so it sits a commit or two behind the branch carrying the images
@@ -139,6 +163,27 @@ jobs:
           name: store-screenshots
           path: ${{ runner.temp }}/play-screenshots
           if-no-files-found: ignore
+
+      - name: Decode the Play service account
+        if: inputs.publish
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is unset."
+            exit 1
+          fi
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play.json"
+
+      # The texts go out with the pictures: publishReleaseListing sends the whole listing, and the
+      # tag's texts describe the release now in front of everyone, which is when the page should
+      # change. The same command publish-listing.yml runs, which stays the way to publish by hand.
+      - name: Publish the store page
+        if: inputs.publish
+        env:
+          ORG_GRADLE_PROJECT_SN_PLAY_JSON: ${{ runner.temp }}/play.json
+        run: ./gradlew -PplayPublish :app:publishReleaseListing --commit --rerun --stacktrace
 
       - name: Push them as a branch
         run: |
