@@ -1,4 +1,4 @@
-Das Rauschen wird jetzt beim Start sanft lauter und klingt sanft aus, wenn Sie es stoppen oder der Timer abläuft.
+Das Rauschen wird jetzt beim Start sanft lauter und klingt sanft aus, wenn du es stoppst oder der Timer abläuft.
 
 Das schwarze Design hat jetzt einen ruhigen Elfenbeinton statt Violett als Akzent, und ausgeschaltete Rauschsorten sind darin besser lesbar.
 
