@@ -9,8 +9,8 @@ plugins {
     // build, a debug build and every CI job that publishes nothing need no Play
     // credentials and never configure the plugin.
     alias(libs.plugins.play.publisher) apply false
-    id("com.google.gms.google-services") version "4.4.2" apply false
-    id("com.google.firebase.crashlytics") version "3.0.2" apply false
+    id("com.google.gms.google-services") version "4.5.0" apply false
+    id("com.google.firebase.crashlytics") version "3.0.8" apply false
 }
 
 // Spotless reads ktlint_code_style out of .editorconfig but not max_line_length,

@@ -1,8 +1,8 @@
 [versions]
-agp = "8.12.2"
+agp = "8.13.2"
 coreSplashscreen = "1.2.0"
 firebaseBom = "34.19.0"
-kotlin = "2.2.10"
+kotlin = "2.4.20"
 # 1.18.0, not 1.19: androidx.core 1.19 requires compileSdk 37 and AGP 9.1. Move it
 # with the AGP major, not before.
 coreKtx = "1.18.0"
@@ -14,11 +14,11 @@ appcompat = "1.8.0"
 constraintlayout = "2.2.2"
 material = "1.14.0"
 detekt = "1.23.8"
-spotless = "8.9.0"
+spotless = "8.10.2"
 ktlint = "1.8.0"
 kover = "0.9.9"
 # 3.13.0, not 4.x: Gradle Play Publisher 4.0.0 is built against Android Gradle
-# Plugin 9, and this project is on AGP 8.12.2 with Gradle 8.13. Move it with the
+# Plugin 9, and this project is on AGP 8.13.2 with Gradle 8.13. Move it with the
 # AGP major, not before.
 playPublisher = "3.13.0"
 
