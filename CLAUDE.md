@@ -274,8 +274,8 @@ percentage literals and their empty seekbar callbacks with them. The 6 `MagicNum
 remain sit in `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1), and the 2
 `EmptyFunctionBlock` ones in `timer/TimerView`.
 
-The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9,
-two minors and a major ahead of this project. Revisit when the project moves, not before.
+The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9;
+the project is on Kotlin 2.4 but still a major behind on AGP. Revisit when AGP moves, not before.
 
 ## Kotlin conventions
 
@@ -647,7 +647,7 @@ that calls the screenshot workflow on the tag — see the store listing section 
 Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
 debug build and every CI job that publishes nothing need no Play credentials and never configure the
 plugin. It is 3.13.0 and not 4.x on purpose: 4.0.0 is built against AGP 9, and this project is on
-8.12.2 — the version moves with the AGP major, and `gradle/libs.versions.toml` says so beside the
+8.13.2 — the version moves with the AGP major, and `gradle/libs.versions.toml` says so beside the
 number. The service account JSON arrives as `SN_PLAY_JSON`, the same `SN_*` shape as the keystore
 properties; CI decodes `PLAY_SERVICE_ACCOUNT_JSON` into `$RUNNER_TEMP` and hands the path over as
 `ORG_GRADLE_PROJECT_SN_PLAY_JSON`.
