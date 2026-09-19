@@ -5,13 +5,15 @@ name: Publish the store listing
 # anything — title, short and full description, contact details, the default
 # language and the graphics — out of app/src/main/play/listings.
 #
-# It is deliberately not part of any release. A page describes what a visitor
-# can install, so it goes out **after** the rollout has reached production, or
-# beside it, and never before: a listing that advertises a build nobody can
-# download yet is a page that lies for as long as the rollout takes. Nothing
-# here enforces that ordering — Play would have to be asked what is live, which
-# is an API call and a guard for a mistake a dispatch already has to be typed to
-# make.
+# This is the hand-run way to publish the page. The regular one runs without
+# it: when a release reaches everyone, promote.yml and rollout.yml call
+# screenshots.yml on the tag, which photographs it and publishes the page with
+# the same task. A page describes what a visitor can install, so a hand run
+# goes out **after** the rollout has reached production, or beside it, and never
+# before: a listing that advertises a build nobody can download yet is a page
+# that lies for as long as the rollout takes. Nothing here enforces that
+# ordering — Play would have to be asked what is live, which is an API call and
+# a guard for a mistake a dispatch already has to be typed to make.
 #
 # dry_run defaults to **true**, the opposite of release.yml, and for the reason
 # the two differ: a release is dispatched to release something, while this page

@@ -214,3 +214,20 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.resolve.outputs.tag }}
         run: gh release edit "$TAG" --prerelease=false --latest
+
+  store-page:
+    name: Refresh the store page
+    # Behind mark-latest, so it runs on `complete` and is skipped with it
+    # otherwise. A failure here leaves the old page and nothing else: the
+    # release is out by now. promote.yml carries the same job for a promotion
+    # at fraction 1; change both.
+    needs: [resolve, mark-latest]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/screenshots.yml
+    with:
+      ref: ${{ needs.resolve.outputs.tag }}
+      publish: true
+    secrets:
+      GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
