@@ -6,17 +6,16 @@ updates:
       interval: weekly
     commit-message:
       prefix: build
+    # One pull request for every minor and patch bump: under strict branch
+    # protection each merged bump puts the others behind main. A major that is
+    # not ignored below still arrives on its own, so it cannot block the rest.
     groups:
-      androidx:
+      gradle:
         patterns:
-          - "androidx.*"
-      firebase:
-        patterns:
-          - "com.google.firebase*"
-          - "com.google.gms.google-services"
-      kotlin:
-        patterns:
-          - "org.jetbrains.kotlin.*"
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # Each major is a migration of its own, recorded in CLAUDE.md: AGP 9 moves
       # Gradle Play Publisher to 4.x with it, and detekt 2.0 wants Kotlin 2.4 / AGP 9.
@@ -25,6 +24,9 @@ updates:
       - dependency-name: "com.github.triplet.play"
         update-types: ["version-update:semver-major"]
       - dependency-name: "io.gitlab.arturbosch.detekt"
+        update-types: ["version-update:semver-major"]
+      # Gradle 9.6 removed an internal API every AGP 8.x release relies on.
+      - dependency-name: "gradle-wrapper"
         update-types: ["version-update:semver-major"]
       # androidx.core 1.19 requires compileSdk 37 and AGP 9.1, so it moves with the AGP major.
       - dependency-name: "androidx.core:core-ktx"

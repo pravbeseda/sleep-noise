@@ -80,7 +80,7 @@ page must not describe a build the world cannot download yet — and by its own 
   track are prerequisites of stage 2, listed below.
 
 - **Which Gradle Play Publisher?** → 3.13.0, the newest of the 3.x line. Not 4.x: 4.0.0 is built
-  against Android Gradle Plugin 9 and this project is on AGP 8.12.2 with Gradle 8.13, and the
+  against Android Gradle Plugin 9 and this project is on AGP 8.13.2 with Gradle 8.13, and the
   plugin's own release notes say to stay on 3.x rather than upgrade one to reach the other.
 - **Deployment environments?** → None. SpendControl has six, `<flavor>-<track>`, because two apps and
   three tracks make "where is each version" a question the Releases feed cannot answer. One app with
