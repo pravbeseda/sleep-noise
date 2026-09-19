@@ -637,11 +637,12 @@ flavors:
 
 So the whole path is: bump `versionName` and write the notes on `main` → `release.yml` from `main`,
 which uploads to `beta`, tags and creates the prerelease → `promote.yml` to `production` at a
-fraction → `rollout.yml` to raise it and `complete`. Play holds one binary throughout: promotion
+fraction → `rollout.yml` to raise it and `complete`, which also refreshes the store page. Play holds one binary throughout: promotion
 rather than a second build, so production gets the bundle testers had — and Play rejects a re-upload
-of a version code it holds, which makes promotion the only mechanism anyway. **The listing is
-untouched by all three.** `publishReleaseBundle` and `promoteReleaseArtifact` carry the artifact and
-`release-notes/` only; the store page has a dispatch of its own, below.
+of a version code it holds, which makes promotion the only mechanism anyway. `publishReleaseBundle`
+and `promoteReleaseArtifact` carry the artifact and `release-notes/` only. **The listing moves once,
+when the release reaches everyone:** `complete`, and a promotion at `1`, end in a `store-page` job
+that calls the screenshot workflow on the tag — see the store listing section below.
 
 Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
 debug build and every CI job that publishes nothing need no Play credentials and never configure the
@@ -814,6 +815,18 @@ The mix in the picture is staged, and has to be: an untouched install has one no
 at zero, which photographs as a screen nobody is using. The levels are in the test, and the toggles
 show both states on purpose.
 
+**It runs on its own when a release reaches everyone.** `rollout.yml`'s `complete` and `promote.yml`'s
+promotion at `1` both end in a `store-page` job behind `mark-latest`, which calls this workflow through
+`workflow_call` with the release tag and `publish: true`: it photographs the tag, so the version line
+in the picture is the released build's, publishes the listing from that tree, and then pushes the
+branch like a dispatch does. It runs inside the caller's `play-edit` group and keeps its own
+`store-screenshots` group, never `play-edit` — GitHub cancels a called workflow that asks for its
+caller's group as a deadlock. The caller holds that group through the emulator run, about ten minutes
+on top of the rollout. The images reach Play before anybody has looked at them; what stands between
+them is `StoreScreenshotTest`'s four assertions. A failure there leaves the old page and nothing else,
+since the release is already out. Dispatched by hand it photographs the dispatch ref and publishes
+nothing.
+
 **The workflow pushes a branch and prints the link that opens the pull request.** It does not open one
 itself — a pull request created with `GITHUB_TOKEN` triggers no workflow, so all seven required checks
 would go unreported and the merge button would stay blocked. `main` is protected, so a push straight
@@ -824,8 +837,9 @@ since neither direction shows up in a diff of images.
 
 ### Publishing the page
 
-`.github/workflows/publish-listing.yml` is the fourth Play dispatch and the only one that touches the
-store page: `publishReleaseListing` sends what a visitor reads before installing anything — title,
+`.github/workflows/publish-listing.yml` is the fourth Play dispatch and publishes the store page by
+hand, between releases; the page's regular update is the call described under the screenshots above,
+which runs the same task. `publishReleaseListing` sends what a visitor reads before installing anything — title,
 short and full description, contact details, the default language and the graphics — out of
 `app/src/main/play/listings`. The release notes are not among them; they travel with the artifact,
 which is why the three release verbs and this one never overlap in what they carry.
@@ -837,8 +851,9 @@ image, and abandons it — the cheap way to ask whether the tree is publishable 
 
 **The page goes out after the rollout reaches production, or beside it, never before.** A listing
 describes what a visitor can install, so publishing it first leaves the page lying for as long as the
-rollout takes. Nothing enforces the order: Play would have to be asked what is live, which is an API
-call and a guard for a mistake that already takes a deliberate dispatch to make.
+rollout takes. The automatic publish keeps that order by construction, since it runs at the full
+rollout; a hand dispatch of this workflow is not checked: Play would have to be asked what is live,
+which is an API call and a guard for a mistake that already takes a deliberate dispatch to make.
 
 It shares the `play-edit` concurrency group with the three release verbs, on the same grounds they
 share it with each other — one service account, and a new edit invalidates any active one. And it is

@@ -173,8 +173,9 @@ Translations are the most welcome contribution — the app even asks users for t
 
 The three phone screenshots each listing shows are photographs of the running app, taken by an
 instrumented test and committed to the repository, so the store page can be rebuilt from a checkout.
-The `Screenshots` workflow is dispatched by hand, boots an emulator, walks every locale through the
-three states and pushes what it took as a branch to open a pull request from. Locally the same run is
+The `Screenshots` workflow boots an emulator, walks every locale through the three states and pushes
+what it took as a branch to open a pull request from. It runs on its own when a release reaches every
+user, and can be dispatched by hand in between. Locally the same run is
 `./gradlew connectedAndroidTest -PstoreScreenshots
 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`; without the first property an
 ordinary instrumented run leaves the errand out, and without the second the pictures go with the app
@@ -201,16 +202,17 @@ uploads it to Play's open-testing track and creates a GitHub prerelease with the
 `promote.yml` moves that exact build to production at a rollout fraction — at `1`, to everyone,
 marking the GitHub Release as latest; `rollout.yml` raises the
 fraction, completes it — which also marks the GitHub Release as latest — or halts it. Nothing is
-ever rebuilt after `release.yml`, and none of the three touches the store listing. The plugin behind
+ever rebuilt after `release.yml`. The moment a release reaches everyone — `complete`, or a promotion
+at `1` — also photographs that release's tag and publishes the store page from it. The plugin behind
 them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`, so an ordinary
 build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
 notes are in [`CLAUDE.md`](CLAUDE.md), under "The release path".
 
-The store page itself is published by a fourth workflow, `publish-listing.yml`, dispatched by hand
-and never by a release: it sends the titles, descriptions, contact details and screenshots from
+The store page goes out at that moment and not before, so that it never describes a build nobody
+can install yet. To publish it by hand in between there is a fourth workflow, `publish-listing.yml`:
+it sends the titles, descriptions, contact details and screenshots from
 `app/src/main/play/listings`, and its `dry_run` input defaults to true, so a run that says nothing
-else has Play validate the texts and change nothing. The page goes out once the rollout has reached
-production, so that it never describes a build nobody can install yet.
+else has Play validate the texts and change nothing.
 
 ## Credits
 
