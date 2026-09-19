@@ -1,30 +1,48 @@
-Seis ruidos, generados en vivo en tu teléfono, mezclados como más te gusten.
+Sleepy Cocktail: ruido para dormir y descansar. Mezcla seis ruidos en tu propio «cóctel», pon el temporizador y duérmete.
 
-Sleepy Cocktail no reproduce grabaciones. Cada sonido se sintetiza muestra a muestra mientras escuchas, así que nada se repite ni entra en bucle, y la aplicación ocupa unos pocos megabytes en lugar de unos cientos.
+<b>Para qué sirve el ruido</b>
 
-<b>Los seis ruidos</b>
+Lo que quita el sueño no es tanto el volumen como lo repentino: un portazo, un coche que pasa, voces al otro lado de la pared. Un ruido constante llena el silencio y, sobre ese fondo, esos sonidos se notan menos y molestan menos.
 
-- <b>Blanco</b> — toda la banda, igual en cada frecuencia. El enmascarador clásico.
-- <b>Rosa</b> — más suave y más grave, el equilibrio que a casi todo el mundo le resulta descansado.
-- <b>Marrón</b> — un retumbo grave, el más oscuro de los tres.
-- <b>Oleaje</b> — olas que rompen a su propio ritmo, nunca con un periodo fijo.
-- <b>Gris</b> — ajustado a la sensibilidad del oído, para que toda la banda se oiga pareja.
-- <b>Verde</b> — el centro de la banda, donde el ambiente al aire libre concentra su peso.
+<b>A quién puede venirle bien</b>
 
-<b>Mézclalos</b>
+- A quien duerme en un sitio ruidoso: junto a una carretera, en una residencia, en un tren, al lado de alguien que ronca.
+- A quien le cuesta dormirse en silencio total, cuando los pensamientos no paran.
+- A madres y padres de bebés: a muchos niños un ruido constante les ayuda a calmarse y dormirse. Los pediatras aconsejan dejar el teléfono a no menos de dos metros de la cuna, con el volumen bajo, y apagar el ruido cuando el bebé se haya dormido; para eso está el temporizador.
+- A personas con pitidos en los oídos (acúfenos): un fondo suave hace que el pitido se note menos, y la terapia sonora forma parte de las guías clínicas sobre acúfenos. Un otorrinolaringólogo o un audiólogo te ayudará a encontrar el enfoque adecuado.
+- A quien trabaja o estudia rodeado de conversaciones: el ruido ayuda a aislarse de las voces y a concentrarse.
 
-Cada ruido tiene su propio interruptor y su propio control de volumen. Oleaje sobre marrón, rosa a solas, los seis a la vez: la mezcla es tuya y la aplicación la recuerda.
+El ruido no cura. Ayuda a dormir cuando molestan los sonidos del entorno, pero aún no hay pruebas convincentes de que resuelva el insomnio. Si llevas semanas durmiendo mal, consulta a un médico. Y cuida tu oído: elige un volumen bajo, sobre todo con auriculares.
+
+<b>Los seis ruidos de la aplicación</b>
+
+- <b>Blanco</b> — brillante y sibilante, como una radio entre emisoras. Enmascara bien las voces y los sonidos bruscos.
+- <b>Rosa</b> — más suave que el blanco, parecido a una lluvia constante. Un buen punto de partida.
+- <b>Marrón</b> — un zumbido grave y profundo, como una cascada lejana o la cabina de un avión.
+- <b>Oleaje</b> — las olas llegan y se retiran con un ritmo vivo e irregular.
+- <b>Gris</b> — ajustado al oído: graves, medios y agudos suenan igual de fuertes. Uniforme y tranquilo.
+- <b>Verde</b> — solo las frecuencias medias: un fondo suave, sin retumbo ni siseo.
+
+<b>Tu propio cóctel</b>
+
+Cada ruido tiene su propio control de volumen y su interruptor. Oleaje sobre marrón, solo rosa o los seis a la vez: ajústalo de oído. La aplicación recordará tu mezcla.
 
 <b>Temporizador de sueño</b>
 
-Ajústalo en pasos de media hora y la reproducción se detiene sola. Sigue sonando cuando sales de la aplicación o bloqueas la pantalla, porque el sonido vive en un servicio en segundo plano y no en la pantalla.
+De media hora a diez horas, en pasos de media hora. Cuando se acabe el tiempo, el ruido se apagará suavemente. Sin temporizador, suena hasta que lo apagues.
 
-<b>Lo que esta aplicación no hace</b>
+<b>No molesta mientras duermes</b>
 
-- Sin anuncios. Ni en la pantalla, ni entre los sonidos, nunca.
-- Sin cuenta y sin registro.
-- Sin archivos de sonido que descargar: todo se genera en el dispositivo, así que la reproducción no necesita conexión.
+- El sonido sube suavemente al empezar y baja suavemente al parar.
+- Sigue sonando con la pantalla apagada y mientras usas otra aplicación.
+- Se calla durante una llamada y vuelve a sonar después.
+- Se detiene si desconectas los auriculares, para que el ruido no salga de repente por el altavoz.
 
-Dos temas oscuros, porque una pantalla en la mesilla de noche no debería ser una lámpara.
+<b>Nada de más</b>
 
-Puedes escribir al desarrollador a kalugaman@gmail.com. Estaré encantado de responder a tus preguntas y de considerar tus sugerencias.
+- Sin anuncios.
+- Sin registro.
+- Funciona sin internet: el sonido se genera en el teléfono, no se descarga. Por eso la aplicación ocupa pocos megabytes y el ruido nunca se repite en bucle.
+- Dos temas oscuros, para que la pantalla no deslumbre de noche.
+
+Puedes escribir al desarrollador a kalugaman@gmail.com. Estaré encantado de responder a tus preguntas y de comentar tus sugerencias.

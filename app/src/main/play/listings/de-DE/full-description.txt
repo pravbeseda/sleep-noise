@@ -1,30 +1,48 @@
-Sechs Rauschsorten, live auf dem Telefon erzeugt und gemischt, wie du sie magst.
+Sleepy Cocktail — Rauschen zum Schlafen und Entspannen. Mische sechs Rauschsorten zu deinem eigenen „Cocktail“, stell den Timer und schlaf ein.
 
-Sleepy Cocktail spielt keine Aufnahmen ab. Jeder Klang wird Sample für Sample erzeugt, während du zuhörst, also wiederholt sich nichts und nichts läuft im Loop — und die App bleibt wenige Megabyte groß statt einiger hundert.
+<b>Wozu Rauschen gut ist</b>
 
-<b>Die sechs Rauschsorten</b>
+Beim Schlafen stört weniger die Lautstärke als das Plötzliche: Eine Tür knallt, ein Auto fährt vorbei, hinter der Wand wird geredet. Gleichmäßiges Rauschen füllt die Stille, und vor diesem Hintergrund fallen solche Geräusche weniger auf und stören weniger.
 
-- <b>Weiß</b> — das ganze Band, auf jeder Frequenz gleich stark. Der klassische Maskierer.
-- <b>Rosa</b> — weicher und tiefer, für die meisten die ruhigste Mischung.
-- <b>Braun</b> — ein tiefes Grollen, das dunkelste der drei.
-- <b>Brandung</b> — Wellen, die in ihrem eigenen Takt brechen, nie in festem Rhythmus.
-- <b>Grau</b> — an die Empfindlichkeit des Ohrs angepasst, sodass das ganze Band gleich laut klingt.
-- <b>Grün</b> — die Mitte des Bandes, in der das Rauschen im Freien sein Gewicht hat.
+<b>Für wen es nützlich sein kann</b>
 
-<b>Misch sie</b>
+- Für alle, die an einem lauten Ort schlafen: an einer Straße, im Wohnheim, im Zug, neben jemandem, der schnarcht.
+- Für alle, die in völliger Stille schwer einschlafen, weil die Gedanken kreisen.
+- Für Eltern von Babys: Vielen Kindern hilft gleichmäßiges Rauschen, sich zu beruhigen und einzuschlafen. Kinderärzte raten, das Handy mindestens zwei Meter vom Bettchen entfernt aufzustellen, leise zu stellen und das Rauschen auszuschalten, sobald das Kind schläft — dafür gibt es den Timer.
+- Für Menschen mit Ohrgeräuschen (Tinnitus): Ein sanfter Hintergrund macht das Klingeln weniger auffällig, und Geräuschtherapie gehört zu den klinischen Leitlinien für Tinnitus. Den passenden Weg findest du gemeinsam mit einer HNO-Praxis oder einem Audiologen.
+- Für alle, die zwischen Gesprächen arbeiten oder lernen: Rauschen hilft, Stimmen auszublenden und sich zu konzentrieren.
 
-Jede Rauschsorte hat ihren eigenen Schalter und ihren eigenen Regler. Brandung über Braun, Rosa allein, alle sechs zusammen — die Mischung gehört dir, und die App merkt sie sich.
+Rauschen heilt nicht. Es hilft beim Schlafen, wenn Geräusche von außen stören, aber überzeugende Belege, dass es gegen Schlaflosigkeit hilft, gibt es bisher nicht. Wenn dein Schlaf seit Wochen gestört ist, lass dich ärztlich beraten. Und schone dein Gehör: Wähle eine leise Lautstärke, besonders mit Kopfhörern.
 
-<b>Einschlaf-Timer</b>
+<b>Die sechs Rauschsorten der App</b>
 
-In Halbstundenschritten einstellbar, und die Wiedergabe endet von selbst. Sie läuft weiter, wenn du die App verlässt oder den Bildschirm sperrst, denn der Klang lebt in einem Hintergrunddienst und nicht auf dem Bildschirm.
+- <b>Weiß</b> — hell und zischend, wie ein Radio zwischen zwei Sendern. Überdeckt Stimmen und scharfe Geräusche gut.
+- <b>Rosa</b> — weicher als Weiß, wie gleichmäßiger Regen. Ein guter Einstieg.
+- <b>Braun</b> — ein tiefes, dunkles Brummen, wie ein ferner Wasserfall oder eine Flugzeugkabine.
+- <b>Brandung</b> — Wellen rollen heran und ziehen sich zurück, in einem lebendigen, unregelmäßigen Rhythmus.
+- <b>Grau</b> — auf das Gehör abgestimmt: Tiefen, Mitten und Höhen klingen gleich laut. Gleichmäßig und ruhig.
+- <b>Grün</b> — nur die mittleren Frequenzen: ein sanfter Hintergrund ohne Brummen und Zischen.
 
-<b>Was diese App nicht tut</b>
+<b>Dein eigener Cocktail</b>
 
-- Keine Werbung. Nicht auf dem Bildschirm, nicht zwischen den Klängen, nie.
-- Kein Konto und keine Anmeldung.
-- Keine Audiodateien zum Herunterladen — alles entsteht auf dem Gerät, die Wiedergabe braucht also keine Verbindung.
+Jede Rauschsorte hat ihren eigenen Lautstärkeregler und Schalter. Brandung über Braun, nur Rosa oder alle sechs zugleich — mische nach Gehör. Die App merkt sich deine Mischung.
 
-Zwei dunkle Designs, denn ein Bildschirm am Bett sollte keine Lampe sein.
+<b>Schlaf-Timer</b>
 
-Du erreichst den Entwickler unter kalugaman@gmail.com. Ich beantworte gern deine Fragen und denke über deine Vorschläge nach.
+Von einer halben Stunde bis zu zehn Stunden, in Halbstundenschritten. Ist die Zeit um, klingt das Rauschen sanft aus. Ohne Timer läuft es, bis du es ausschaltest.
+
+<b>Stört nicht, während du schläfst</b>
+
+- Der Klang wird beim Start sanft lauter und beim Stoppen sanft leiser.
+- Er spielt bei ausgeschaltetem Bildschirm weiter und auch, während du eine andere App nutzt.
+- Während eines Anrufs verstummt er und läuft danach weiter.
+- Er stoppt, wenn du die Kopfhörer abziehst, damit das Rauschen nicht plötzlich aus dem Lautsprecher kommt.
+
+<b>Nichts Überflüssiges</b>
+
+- Keine Werbung.
+- Keine Registrierung.
+- Funktioniert ohne Internet: Der Klang entsteht auf dem Handy und wird nicht heruntergeladen. Deshalb ist die App nur wenige Megabyte groß, und das Rauschen wiederholt sich nie in einer Schleife.
+- Zwei dunkle Designs, damit der Bildschirm nachts nicht blendet.
+
+Du erreichst den Entwickler unter kalugaman@gmail.com. Ich beantworte gern deine Fragen und bespreche deine Vorschläge.
