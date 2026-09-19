@@ -1,30 +1,48 @@
-Six noises, generated live on your phone, mixed the way you like them.
+Sleepy Cocktail — noise for sleep and rest. Blend six noises into your own "cocktail", set the timer and drift off.
 
-Sleepy Cocktail plays no recordings. Every sound is synthesized sample by sample while you listen, so nothing loops and nothing repeats — and the app stays a few megabytes instead of a few hundred.
+<b>Why noise helps</b>
 
-<b>The six noises</b>
+What keeps you awake is often not how loud things are but how sudden: a door slams, a car goes by, voices start up behind the wall. A steady noise fills the silence, and against it those sounds stand out less and bother you less.
 
-- <b>White</b> — the full band, even across every frequency. The classic masker.
-- <b>Pink</b> — softer and deeper, the balance most people find restful.
-- <b>Brown</b> — a low rumble, the darkest of the three.
-- <b>Surf</b> — waves that break at their own pace, never on a fixed period.
-- <b>Grey</b> — shaped to the ear's own sensitivity, so the whole band is heard as level.
-- <b>Green</b> — the middle of the band, where an outdoor ambience carries its weight.
+<b>Who it may help</b>
 
-<b>Mix them</b>
+- People who sleep somewhere noisy: by a road, in a dorm, on a train, next to someone who snores.
+- People who find it hard to fall asleep in total silence, when thoughts keep creeping in.
+- Parents of babies: steady noise helps many little ones settle and fall asleep. Pediatricians advise keeping the phone as far from the crib as possible, keeping the volume low and switching the noise off once the baby is asleep — that is what the timer is for.
+- People with ringing in the ears (tinnitus): a soft background makes the ringing less noticeable, and sound therapy is part of the clinical guidelines for tinnitus. An ENT doctor or an audiologist can help you find the right approach.
+- People who work or study around conversation: noise helps shut out voices and focus.
 
-Every noise has its own switch and its own slider. Surf over brown, pink on its own, all six at once — the mix is yours, and the app remembers it.
+Noise is not a cure. It helps you sleep when the sounds around you get in the way, but there is no convincing evidence yet that it resolves insomnia. If your sleep has been disrupted for weeks, see a doctor. And protect your hearing: keep the volume low, especially with headphones.
+
+<b>The app's six noises</b>
+
+- <b>White</b> — bright and hissy, like a radio between stations. Good at masking voices and sharp sounds.
+- <b>Pink</b> — softer than white, like steady rain. A good place to start.
+- <b>Brown</b> — a deep, low rumble, like a distant waterfall or an airplane cabin.
+- <b>Surf</b> — waves roll in and out in a living, uneven rhythm.
+- <b>Grey</b> — tuned to the ear, so lows, mids and highs sound equally loud. Even and calm.
+- <b>Green</b> — the mid frequencies only: a soft background with no rumble and no hiss.
+
+<b>Your own cocktail</b>
+
+Each noise has its own volume slider and its own switch. Surf over brown, pink on its own or all six at once — mix by ear. The app remembers your mix.
 
 <b>Sleep timer</b>
 
-Set it in half-hour steps and playback stops on its own. It keeps running when you leave the app or lock the screen, because the sound lives in a background service rather than on the screen.
+From half an hour to ten hours, in half-hour steps. When time is up, the noise fades out gently. Without the timer it plays until you turn it off.
 
-<b>What this app does not do</b>
+<b>Stays out of your way while you sleep</b>
 
-- No ads. Not on the screen, not between sounds, not ever.
-- No account and no sign-up.
-- No sound files to download — everything is generated on the device, so playback needs no connection.
+- The sound fades in gently when it starts and fades out gently when it stops.
+- It keeps playing with the screen off and while you use another app.
+- It goes quiet during a call and picks up again afterwards.
+- It stops if you unplug your headphones, so the noise never suddenly comes out of the speaker.
 
-Two dark themes, because a bedside screen should not be a lamp.
+<b>Nothing extra</b>
 
-You can write to the developer at kalugaman@gmail.com. I will be glad to answer your questions and to consider your suggestions.
+- No ads.
+- No sign-up.
+- Works offline: the sound is generated on your phone, not downloaded. That keeps the app to a few megabytes, and the noise never repeats in a loop.
+- Two dark themes, so the screen won't dazzle you at night.
+
+You can write to the developer at kalugaman@gmail.com. I will be glad to answer your questions and discuss your suggestions.
