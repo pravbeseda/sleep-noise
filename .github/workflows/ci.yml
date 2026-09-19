@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The decision below diffs against the pull request's merge base, so
           # the history has to reach it. A shallow checkout would otherwise do:
@@ -48,7 +48,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -61,7 +61,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         if: steps.decide.outputs.run == 'true'
@@ -89,7 +89,7 @@ jobs:
         # always() alone would upload nothing from a skipped job and hide the
         # decision behind a missing artifact.
         if: always() && steps.decide.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
           path: app/build/reports/tests/testDebugUnitTest
@@ -130,7 +130,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The decision below diffs against the pull request's merge base, so
           # the history has to reach it. Nothing else in this job needs the
@@ -156,7 +156,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -169,7 +169,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         if: steps.decide.outputs.run == 'true'
@@ -227,7 +227,7 @@ jobs:
         # always() alone would upload nothing from a skipped job and hide the
         # decision behind a missing artifact.
         if: always() && steps.decide.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # The API level is part of the name because upload-artifact@v4 fails
           # on a duplicate one and both matrix legs reach this step.
@@ -245,7 +245,7 @@ jobs:
     # should not hide the other behind a single red job.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Spotless ratchets from origin/main (see the root build.gradle.kts),
           # so that ref has to exist. The default shallow, single-branch
@@ -259,7 +259,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -272,7 +272,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         if: steps.decide.outputs.run == 'true'
@@ -297,7 +297,7 @@ jobs:
     # hide the other.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # For the decision below, not for detekt: unlike Format, detekt has no
           # ratchet — it analyses the whole source tree every run and the
@@ -310,7 +310,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -323,7 +323,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         if: steps.decide.outputs.run == 'true'
@@ -337,7 +337,7 @@ jobs:
 
       - name: Upload detekt report
         if: always() && steps.decide.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: detekt-report
           path: |
@@ -371,7 +371,7 @@ jobs:
     # different problems, and seeing both in one run beats fixing them serially.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The decision below diffs against the pull request's merge base; lint
           # itself needs no history.
@@ -383,7 +383,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.decide.outputs.run == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -396,7 +396,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.decide.outputs.run == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         if: steps.decide.outputs.run == 'true'
@@ -415,7 +415,7 @@ jobs:
 
       - name: Upload lint report
         if: always() && steps.decide.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-report
           path: |
@@ -473,7 +473,7 @@ jobs:
     # needs would turn seconds into minutes for no gain.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Needed to reach the base commit: the default shallow checkout cannot
           # resolve github.event.pull_request.base.sha.
@@ -645,7 +645,7 @@ jobs:
     # serialises runs on main, so two of these never overlap.
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Not optional here: versionCode is the commit count, and
           # verifyReleaseVersioning rejects a shallow clone outright rather than
@@ -653,7 +653,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -664,7 +664,7 @@ jobs:
           packages: platform-tools
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Provide google-services.json
         # require-real because this job delivers to testers: the action's stub is
