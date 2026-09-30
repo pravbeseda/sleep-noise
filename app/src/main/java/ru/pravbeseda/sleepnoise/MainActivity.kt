@@ -2,30 +2,30 @@ package ru.pravbeseda.sleepnoise
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ComponentName
 import android.content.DialogInterface
-import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.menu.MenuBuilder
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
-import ru.pravbeseda.sleepnoise.playback.PlaybackService
+import ru.pravbeseda.sleepnoise.playback.PlaybackState
+import ru.pravbeseda.sleepnoise.playback.PlaybackViewModel
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
-import ru.pravbeseda.sleepnoise.timer.TimerPreferences
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import ru.pravbeseda.sleepnoise.ui.NoiseRows
@@ -33,10 +33,9 @@ import ru.pravbeseda.sleepnoise.ui.NoiseRows
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: ImageButton
     private lateinit var timerView: TimerView
-    private var isPlaying = false
     private lateinit var themeController: ThemeController
     private lateinit var localeController: LocaleController
-    private var playbackBinder: PlaybackService.LocalBinder? = null
+    private val playback: PlaybackViewModel by viewModels()
 
     /**
      * Every noise's row, by the key that noise stores its level under. The rows are built from the
@@ -49,41 +48,6 @@ class MainActivity : AppCompatActivity() {
     // The answer is not read: the foreground service plays either way, a denial only costs the
     // user the ongoing notification and its Stop action.
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
-
-    private val playbackListener = object : PlaybackService.Listener {
-        override fun onTick(remainingMillis: Long) {
-            timerView.showCountdown(remainingMillis)
-        }
-
-        /** Silent while another app holds the output: the button offers to start it again. */
-        override fun onPaused(paused: Boolean) {
-            showPausedState(paused)
-        }
-
-        /** Every stop: the notification's Stop action, the sleep timer expiring, or the ACTION_STOP sent here. */
-        override fun onPlaybackStopped() {
-            showPlayingState(false)
-        }
-    }
-
-    private val playbackConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as? PlaybackService.LocalBinder ?: return
-            playbackBinder = binder
-            binder.listener = playbackListener
-            showPlayingState(binder.isPlaying)
-            // Only when true: showPausedState(false) means "playing again", which a stopped service is not.
-            if (binder.isPaused) showPausedState(true)
-            // Non-zero only while the service is playing with a timer, so it needs no further guard.
-            if (binder.remainingMillis > 0) {
-                timerView.showCountdown(binder.remainingMillis)
-            }
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            playbackBinder = null
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         themeController = ThemeController(this)
@@ -105,20 +69,23 @@ class MainActivity : AppCompatActivity() {
 
         playButton = findViewById(R.id.playButton)
 
-        val timerPreferences = TimerPreferences(this)
         timerView = findViewById(R.id.timerView)
-        timerView.minutes = timerPreferences.getTimerValue()
-        timerView.onMinutesChanged = timerPreferences::saveTimerValue
+        timerView.onMinutesChanged = playback::setTimerMinutes
 
-        noiseRows = NoiseRows.build(findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer)) { volumeKey, volume ->
-            playbackBinder?.setVolume(volumeKey, volume)
-        }
+        noiseRows = NoiseRows.build(findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer), playback::setVolume)
 
         playButton.setOnClickListener {
-            if (isPlaying) {
-                stopPlayback()
+            if (playback.state.value.audible) {
+                playback.stop()
             } else {
-                startPlayback()
+                askForNotificationPermission()
+                playback.start()
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                playback.state.collect(::render)
             }
         }
     }
@@ -174,50 +141,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        bindService(Intent(this, PlaybackService::class.java), playbackConnection, BIND_AUTO_CREATE)
+        playback.connect()
     }
 
     override fun onStop() {
         super.onStop()
-        // The service clears the listener in onUnbind, which is the only way out of a binding.
-        playbackBinder = null
-        unbindService(playbackConnection)
-    }
-
-    private fun startPlayback() {
-        askForNotificationPermission()
-        showPlayingState(true)
-
-        val startIntent = playbackIntent(PlaybackService.ACTION_START)
-            .putExtra(PlaybackService.EXTRA_TIMER_MINUTES, timerView.minutes)
-        ContextCompat.startForegroundService(this, startIntent)
-    }
-
-    private fun stopPlayback() {
-        showPlayingState(false)
-
-        startService(playbackIntent(PlaybackService.ACTION_STOP))
-    }
-
-    private fun showPlayingState(playing: Boolean) {
-        isPlaying = playing
-        showPlayButtonIcon(playing)
-        timerView.setPlayingState(playing)
+        // A recreate() keeps the binding, and with it the state the next instance shows from its first frame.
+        if (!isChangingConfigurations) playback.disconnect()
     }
 
     /**
-     * A paused session is still a session: the countdown stays on screen and the seekbar stays
-     * hidden, and only the button changes, so that pressing it asks the service to resume rather
-     * than to stop.
+     * A paused session is still a session: the countdown stays on screen and the seekbar stays hidden,
+     * and only the button changes, so that pressing it asks the service to resume rather than to stop.
      */
-    private fun showPausedState(paused: Boolean) {
-        isPlaying = !paused
-        showPlayButtonIcon(!paused)
-    }
-
-    private fun showPlayButtonIcon(playing: Boolean) {
-        val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
-        playButton.setImageResource(icon)
+    private fun render(state: PlaybackState) {
+        playButton.setImageResource(if (state.audible) R.drawable.ic_pause else R.drawable.ic_play)
+        timerView.minutes = state.timerMinutes
+        timerView.setPlayingState(state.playing)
+        if (state.remainingMillis > 0) timerView.showCountdown(state.remainingMillis)
     }
 
     // The contract itself short-circuits when the permission is already held, so there is nothing to check first.
@@ -226,8 +167,6 @@ class MainActivity : AppCompatActivity() {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-
-    private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
 
     private fun languageSelection() {
         val builder = AlertDialog.Builder(this)

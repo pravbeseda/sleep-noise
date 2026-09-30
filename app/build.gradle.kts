@@ -321,6 +321,9 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -359,6 +362,7 @@ kover {
                 classes(
                     "ru.pravbeseda.sleepnoise.media.*",
                     "ru.pravbeseda.sleepnoise.timer.SleepTimer*",
+                    "ru.pravbeseda.sleepnoise.playback.PlaybackState*",
                 )
             }
             excludes {
