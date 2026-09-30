@@ -23,10 +23,12 @@ class AndroidFreeSourcesTest {
     fun theAndroidFreeSourcesImportNothingFromAndroid() {
         val mediaFiles = kotlinFilesIn(root("src/main/java/ru/pravbeseda/sleepnoise/media"))
             .filter { it.fileName.toString() != excludedFromMedia }
-        val sleepTimer = root("src/main/java/ru/pravbeseda/sleepnoise/timer/SleepTimer.kt")
+        val singleFiles = listOf(
+            root("src/main/java/ru/pravbeseda/sleepnoise/timer/SleepTimer.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/playback/PlaybackState.kt"),
+        )
 
-        // listOf, not a bare path: a Path is Iterable over its own segments, so `list + path` appends those.
-        val violations = (mediaFiles + listOf(sleepTimer)).flatMap { file ->
+        val violations = (mediaFiles + singleFiles).flatMap { file ->
             Files.readAllLines(file)
                 .filter { androidBuildImport.containsMatchIn(it) }
                 .map { "${file.fileName}: $it" }

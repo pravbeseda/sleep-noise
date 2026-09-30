@@ -359,6 +359,7 @@ kover {
                 classes(
                     "ru.pravbeseda.sleepnoise.media.*",
                     "ru.pravbeseda.sleepnoise.timer.SleepTimer*",
+                    "ru.pravbeseda.sleepnoise.playback.PlaybackState*",
                 )
             }
             excludes {
