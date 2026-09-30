@@ -39,7 +39,7 @@ called untested.
 Three moves replace them:
 
 1. **Pure logic stays Android-free and is tested on the JVM** — `media/` minus `NoiseEngine`,
-   plus `timer/SleepTimer`, already is. `NoiseEngine` owns the `AudioTrack` and is Android
+   plus `timer/SleepTimer` and `playback/PlaybackState`, already is. `NoiseEngine` owns the `AudioTrack` and is Android
    plumbing by design; it is the one carve-out, and it is the same one everywhere below.
    SpendControl gets this as a compile-time guarantee: its logic lives in a separate
    `java-library` module that could not resolve an `android.*` import if it tried. This
@@ -497,7 +497,7 @@ change, except D5, which removes the flash.
       changes through a listener; its owner — the Activity until D5, the ViewModel from then on —
       reads and writes `TimerPreferences`. The reload hidden
       in `setPlayingState(false)` goes, since the owner already holds the value.
-- [ ] **D5 — `PlaybackState` and `PlaybackViewModel`.**
+- [x] **D5 — `PlaybackState` and `PlaybackViewModel`.**
   - `playback/PlaybackState` (`playing`, `paused`, `remainingMillis`, `timerMinutes`) and its
     transitions — start requested, bind snapshot, tick, pause, stop, timer change — as a pure
     function, written test-first. The service reports no start, so a start is the ViewModel's own
@@ -512,9 +512,12 @@ change, except D5, which removes the flash.
     unchanged. `onCleared` unbinds.
   - `lifecycle-viewmodel-ktx` becomes a direct dependency in `gradle/libs.versions.toml`. It is not
     on the classpath today: AppCompat brings the plain `lifecycle-viewmodel` 2.6, without the `-ktx`.
+    `lifecycle-runtime-ktx` and `kotlinx-coroutines-android` join it, since the Activity collects
+    the flow with `repeatOnLifecycle` and the rule is that an imported library is declared directly.
   - An instrumented test changes the theme mid-playback and asserts the pause icon and the
-    countdown after `recreate()`. The flash itself is a race no test pins reliably, and the PR
-    says so.
+    countdown after `recreate()`. It reads them as the new Activity resumes, which is before its
+    first frame and before a binding of its own could answer, so the flash is pinned rather than
+    raced: the test fails on the code before D5.
 
 ### Done when
 

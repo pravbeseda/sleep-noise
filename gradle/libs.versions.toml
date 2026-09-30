@@ -17,6 +17,8 @@ detekt = "1.23.8"
 spotless = "8.10.2"
 ktlint = "1.8.0"
 kover = "0.9.9"
+lifecycle = "2.11.0"
+coroutines = "1.9.0"
 # 3.13.0, not 4.x: Gradle Play Publisher 4.0.0 is built against Android Gradle
 # Plugin 9, and this project is on AGP 8.13.2 with Gradle 8.13. Move it with the
 # AGP major, not before.
@@ -34,6 +36,9 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
 [plugins]

@@ -92,12 +92,12 @@ sample generation, time formatting, state computation, settings migration. Order
 the smallest implementation that passes it, then refactoring. New pure logic without a test in the
 same commit is not finished work — do not describe it as done.
 
-The two roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
-walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, and fails naming the file and the
+The roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
+walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt` and `playback/PlaybackState.kt`, and fails naming the file and the
 import line when one of them imports `android.*`, `androidx.*` or the generated `R` — which is neither,
 yet exists only inside an Android build, so it is the import that would stop those roots moving into a
 `java-library` module (issue #57). The rest of the rule above is still
-discipline — pure logic outside those two roots is scanned by nothing, `models/Language` included. A
+discipline — pure logic outside those roots is scanned by nothing, `models/Language` included. A
 separate `java-library` module would grant the whole rule at compile time; single-module, this much
 of it is asserted instead (issue #32).
 
@@ -116,7 +116,8 @@ under "Testing strategy"; adding either dependency means changing that section f
 loosening an assertion. A test that seems wrong is a discussion in the PR, not a silent edit.
 
 **Coverage has a floor: 80 % of lines**, set in `app/build.gradle.kts` and measured on the debug
-variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`. The
+variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer` and
+`playback/PlaybackState`. The
 denominator is cut down on purpose: an Activity or a Service is a line no JVM test can execute, so
 counting them makes the figure report how much Android plumbing the app has rather than how well its
 logic is tested. It is the logic that is measured, not everything a JVM test could technically
@@ -415,7 +416,7 @@ three sliders again once is cheaper than a migration that would live in the code
 
 `playback/PlaybackService` owns the engine, the sleep timer and the ongoing notification, so a session outlives the Activity — backgrounding the app, or the `recreate()` a theme or language change triggers, no longer stops the noise. It is a plain `Service` with `foregroundServiceType="mediaPlayback"`, deliberately not a media3 `MediaSessionService`: media3 wants a `Player` implementation and this app plays a generated track, not a media item. There are no lock-screen or headset-button controls, and adding them is its own decision.
 
-It is driven two ways at once. `ACTION_START` (carrying `EXTRA_TIMER_MINUTES`) and `ACTION_STOP` drive playback; the `LocalBinder` lets a visible Activity read `isPlaying` and `remainingMillis`, push volume changes, and receive `onTick` / `onPlaybackStopped`. `MainActivity` binds in `onStart`, unbinds in `onStop`, and reflects the service's state rather than holding its own — the listener is cleared on both sides so a destroyed Activity cannot be reached from a service that outlives it.
+It is driven two ways at once. `ACTION_START` (carrying `EXTRA_TIMER_MINUTES`) and `ACTION_STOP` drive playback; the `LocalBinder` lets a visible Activity read `isPlaying` and `remainingMillis`, push volume changes, and receive `onTick` / `onPlaybackStopped`. `playback/PlaybackViewModel` holds that binding, through the application context, and the Activity renders its `StateFlow<PlaybackState>` rather than holding state of its own. It binds in the Activity's `onStart` and unbinds in its `onStop` — **unless `isChangingConfigurations`**: a `recreate()` for a theme or language change keeps the binding and the last state, so the new Activity shows the pause icon and the countdown from its first frame instead of a stopped screen until a fresh binding answers. An app in the background holds no binding, so the service's lifetime is what it was. The listener is cleared on both sides so nothing outside the service is reachable from a service that outlives it. `playback/PlaybackState` is the state and its transitions, pure and tested on the JVM; the service reports no start, so a start is the ViewModel's own transition, made as it sends `ACTION_START`. `PlaybackRecreateUiTest` reads the recreated screen as it resumes — before its first frame, and before any binding of its own could answer, since a service connection always arrives in a later main-thread message — so the flash fails it rather than racing it.
 
 Two rules are easy to break here. **Every `startForegroundService()` has to be answered by a `startForeground()`**, including one that arrives while playback is already running — an unanswered start crashes the app five seconds later, which is why the notification is posted before the "already playing" guard. And the **volumes are read from preferences at start**, not pushed by the Activity: the sliders persist on every move, so preferences are the single source and the binder setters carry only live changes.
 
@@ -427,7 +428,7 @@ None of the service is covered by tests yet. It is meant to be covered by instru
 
 Three pieces in `timer/`:
 - `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing. It stores nothing: its owner assigns `minutes` and hears the user's picks through `onMinutesChanged`, which a value assigned in code does not fire.
-- `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one. `MainActivity` reads it into the view and writes the user's picks back; phase 4's D5 hands that to the ViewModel.
+- `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one. `PlaybackViewModel` reads it into `PlaybackState.timerMinutes` and writes the user's picks back.
 - `SleepTimer` — the arithmetic only: a deadline on a clock the caller supplies, the milliseconds left on it, and the `mm:ss` / `hh:mm:ss` formatting. It imports nothing from `android.*` and is tested on the JVM. The service passes `SystemClock.elapsedRealtime()`; a `CountDownTimer` would have died with the Activity, which is what the deadline replaced.
 
 The countdown itself runs in `playback/PlaybackService`, once a second, into the notification and into whatever Activity is bound.
