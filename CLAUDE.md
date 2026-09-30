@@ -554,14 +554,15 @@ smaller circle would clip it; `scaleType="fitCenter"` scales the icon with the c
 
 `ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
 noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
-volume the mix should hear. No row is declared in `activity_main.xml` any more: the screen builds one per entry
-of `SHIPPING_NOISES` into `noiseContainer` and one per lab candidate into `noiseLabContainer`, and neither knows
-how the toggle is persisted or how a switched-off row is dimmed. A new noise that wires its own slider by hand is
-the mistake this replaced.
+volume the mix should hear. No row is declared in `activity_main.xml` any more: `ui/NoiseRows` builds one per
+entry of `SHIPPING_NOISES` into `noiseContainer` and one per lab candidate into `noiseLabContainer`, and neither
+it nor the Activity knows how the toggle is persisted or how a switched-off row is dimmed. A new noise that wires
+its own slider by hand is the mistake this replaced.
 
-Because the rows are built rather than declared they carry no ids, so `MainActivity` files them under each
-noise's own volume key and hands the map out as `noiseRows`. That is how a test reaches one particular row, and
-how `BottomPinningScrollView` finds a row to measure — any one of them will do for "is there room to read one".
+Because the rows are built rather than declared they carry no ids, so `NoiseRows` files them under each noise's
+own volume key and `MainActivity` hands the map out as `noiseRows`. That is how a test reaches one particular row.
+`BottomPinningScrollView` wants no particular one — any row will do for "is there room to read one" — so it takes
+the first child of `noiseContainer`.
 
 Every slider in the app — every noise row, shipping or lab, and the timer — wears
 `Widget.SleepNoise.Slider`: a 4dp groove with a 14dp round thumb, drawn white and coloured by the

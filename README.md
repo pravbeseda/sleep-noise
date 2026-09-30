@@ -100,7 +100,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── settings/                # ThemeController, LocaleController, the APP_PREFS keys
 ├── support/                 # FeedbackMail — the mail to the developer, with device and app version
 ├── timer/                   # TimerView, SleepTimer, TimerPreferences
-├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider
+├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider; NoiseRows builds one per noise
 ├── models/ · adapters/
 ```
 

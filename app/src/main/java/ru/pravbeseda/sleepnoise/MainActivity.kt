@@ -6,16 +6,13 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -24,38 +21,29 @@ import androidx.appcompat.view.menu.MenuBuilder
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
-import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
-import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
-import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
-import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
-import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
-import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.timer.TimerView
-import ru.pravbeseda.sleepnoise.ui.NoiseControl
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
-import java.util.Locale
+import ru.pravbeseda.sleepnoise.ui.NoiseRows
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: ImageButton
     private lateinit var timerView: TimerView
     private var isPlaying = false
-    private lateinit var preferences: SharedPreferences
     private lateinit var themeController: ThemeController
     private lateinit var localeController: LocaleController
     private var playbackBinder: PlaybackService.LocalBinder? = null
-    private val rowsByVolumeKey = LinkedHashMap<String, NoiseControlView>()
 
     /**
      * Every noise's row, by the key that noise stores its level under. The rows are built from the
      * registries instead of being declared in the layout, so this is what a test reaches for when it wants
      * the row belonging to one particular noise.
      */
-    val noiseRows: Map<String, NoiseControlView> get() = rowsByVolumeKey
+    lateinit var noiseRows: Map<String, NoiseControlView>
+        private set
 
     // The answer is not read: the foreground service plays either way, a denial only costs the
     // user the ongoing notification and its Stop action.
@@ -97,7 +85,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
         themeController = ThemeController(this)
         localeController = LocaleController(this)
         setTheme(themeController.style)
@@ -119,7 +106,9 @@ class MainActivity : AppCompatActivity() {
 
         timerView = findViewById(R.id.timerView)
 
-        addNoiseControls()
+        noiseRows = NoiseRows.build(findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer)) { volumeKey, volume ->
+            playbackBinder?.setVolume(volumeKey, volume)
+        }
 
         playButton.setOnClickListener {
             if (isPlaying) {
@@ -235,50 +224,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playbackIntent(action: String): Intent = Intent(this, PlaybackService::class.java).setAction(action)
-
-    /**
-     * One [NoiseControlView] per noise, built from the two registries rather than declared in the layout:
-     * the shipping ones from [SHIPPING_NOISES], then the lab's candidates when it is switched on. A new
-     * noise is an entry in a registry and nothing else — a row wired up by hand here is the mistake the
-     * component replaced.
-     *
-     * Both registries are read straight out of `catalog/` rather than through the service binder: this runs
-     * in onCreate and the binder does not arrive until after onStart, so a registry behind it would draw
-     * nothing.
-     */
-    private fun addNoiseControls() {
-        SHIPPING_NOISES.forEach { noise -> addNoiseControl(R.id.noiseContainer, shippingNoiseControl(noise)) }
-        if (!NOISE_LAB_ENABLED) return
-        findViewById<LinearLayout>(R.id.noiseLabContainer).visibility = View.VISIBLE
-        NOISE_LAB_CANDIDATES.forEach { candidate -> addNoiseControl(R.id.noiseLabContainer, labNoiseControl(candidate)) }
-    }
-
-    /**
-     * The engine hears the level only while the noise is switched on; the component decides which it is.
-     * The row is kept under the noise's own key, which is how anything outside this method finds it again.
-     */
-    private fun addNoiseControl(containerId: Int, noise: NoiseControl) {
-        // A vertical LinearLayout already gives a child MATCH_PARENT x WRAP_CONTENT, which is what a row wants.
-        val control = NoiseControlView(this)
-        findViewById<LinearLayout>(containerId).addView(control)
-        rowsByVolumeKey[noise.volumeKey] = control
-        control.bind(noise, preferences) { volume -> playbackBinder?.setVolume(noise.volumeKey, volume) }
-    }
-
-    private fun shippingNoiseControl(noise: ShippingNoise) = NoiseControl(
-        noise.volumeKey,
-        noise.enabledKey,
-        noise.defaultVolume,
-        getString(noise.nameRes),
-    ) { percent -> getString(noise.volumeLabelRes, percent) }
-
-    /** The name is developer-facing debug copy on the descriptor, so it is a literal rather than a string resource. */
-    private fun labNoiseControl(candidate: NoiseLabCandidate) = NoiseControl(
-        candidate.preferenceKey,
-        candidate.enabledPreferenceKey,
-        DEFAULT_LAB_NOISE_VOLUME,
-        candidate.label,
-    ) { percent -> String.format(Locale.getDefault(), "%s: %d%%", candidate.label, percent) }
 
     private fun languageSelection() {
         val builder = AlertDialog.Builder(this)
