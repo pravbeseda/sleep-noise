@@ -490,7 +490,7 @@ change, except D5, which removes the flash.
       `MainActivity.kt` for the same package, and `DEFAULT_NOISE_ENABLED` for `catalog/`, beside
       the other noise defaults; the service, `NoiseControlView` and four test files change only
       their imports.
-- [ ] **D3 — the noise rows leave `MainActivity`.** `ui/NoiseRows` builds one `NoiseControlView`
+- [x] **D3 — the noise rows leave `MainActivity`.** `ui/NoiseRows` builds one `NoiseControlView`
       per registry entry into the two containers and opens `APP_PREFS` itself. The Activity passes
       the volume callback and keeps `noiseRows` for the UI tests.
 - [ ] **D4 — `TimerView` stores nothing.** It is given the minutes to show and reports the user's
