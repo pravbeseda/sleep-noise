@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.timer.TimerPreferences
@@ -25,9 +26,15 @@ import java.util.Locale
 class TimerUiTest {
     private val timerPreferences = TimerPreferences(InstrumentationRegistry.getInstrumentation().targetContext)
 
-    /** The test writes the real timer preference on the device, so it takes it back out again. */
+    /**
+     * The timer preference is the device's own, so every test starts from none and leaves none behind: a
+     * user pick equal to a value already stored would move nothing and be refused.
+     */
+    @Before
+    fun startWithNoTimer() = timerPreferences.saveTimerValue(0)
+
     @After
-    fun forgetTheTimer() = timerPreferences.saveTimerValue(0)
+    fun leaveNoTimer() = timerPreferences.saveTimerValue(0)
 
     @Test
     fun theStoredMinutesAreShownAtLaunch() {
