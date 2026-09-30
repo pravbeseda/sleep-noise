@@ -426,8 +426,8 @@ None of the service is covered by tests yet. It is meant to be covered by instru
 ### Timer
 
 Three pieces in `timer/`:
-- `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing.
-- `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one.
+- `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing. It stores nothing: its owner assigns `minutes` and hears the user's picks through `onMinutesChanged`, which a value assigned in code does not fire.
+- `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one. `MainActivity` reads it into the view and writes the user's picks back; phase 4's D5 hands that to the ViewModel.
 - `SleepTimer` — the arithmetic only: a deadline on a clock the caller supplies, the milliseconds left on it, and the `mm:ss` / `hh:mm:ss` formatting. It imports nothing from `android.*` and is tested on the JVM. The service passes `SystemClock.elapsedRealtime()`; a `CountDownTimer` would have died with the Activity, which is what the deadline replaced.
 
 The countdown itself runs in `playback/PlaybackService`, once a second, into the notification and into whatever Activity is bound.
