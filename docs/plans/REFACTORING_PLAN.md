@@ -512,8 +512,10 @@ change, except D5, which removes the flash.
     unchanged. `onCleared` unbinds.
   - `lifecycle-viewmodel-ktx` becomes a direct dependency in `gradle/libs.versions.toml`. It is not
     on the classpath today: AppCompat brings the plain `lifecycle-viewmodel` 2.6, without the `-ktx`.
-    `lifecycle-runtime-ktx` and `kotlinx-coroutines-android` join it, since the Activity collects
-    the flow with `repeatOnLifecycle` and the rule is that an imported library is declared directly.
+    Landed as the base `lifecycle-viewmodel` instead: from 2.8 the `-ktx` artifacts are empty
+    shims and the classes live in the base ones. `lifecycle-runtime` and
+    `kotlinx-coroutines-android` join it, since the Activity collects the flow with
+    `repeatOnLifecycle` and the rule is that an imported library is declared directly.
   - An instrumented test changes the theme mid-playback and asserts the pause icon and the
     countdown after `recreate()`. It reads them as the new Activity resumes, which is before its
     first frame and before a binding of its own could answer, so the flash is pinned rather than
