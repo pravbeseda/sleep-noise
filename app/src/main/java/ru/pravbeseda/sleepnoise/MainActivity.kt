@@ -25,6 +25,7 @@ import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
+import ru.pravbeseda.sleepnoise.timer.TimerPreferences
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import ru.pravbeseda.sleepnoise.ui.NoiseRows
@@ -104,7 +105,10 @@ class MainActivity : AppCompatActivity() {
 
         playButton = findViewById(R.id.playButton)
 
+        val timerPreferences = TimerPreferences(this)
         timerView = findViewById(R.id.timerView)
+        timerView.minutes = timerPreferences.getTimerValue()
+        timerView.onMinutesChanged = timerPreferences::saveTimerValue
 
         noiseRows = NoiseRows.build(findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer)) { volumeKey, volume ->
             playbackBinder?.setVolume(volumeKey, volume)
@@ -185,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         showPlayingState(true)
 
         val startIntent = playbackIntent(PlaybackService.ACTION_START)
-            .putExtra(PlaybackService.EXTRA_TIMER_MINUTES, timerView.getTimerValueInMinutes())
+            .putExtra(PlaybackService.EXTRA_TIMER_MINUTES, timerView.minutes)
         ContextCompat.startForegroundService(this, startIntent)
     }
 

@@ -493,7 +493,7 @@ change, except D5, which removes the flash.
 - [x] **D3 — the noise rows leave `MainActivity`.** `ui/NoiseRows` builds one `NoiseControlView`
       per registry entry into the two containers and opens `APP_PREFS` itself. The Activity passes
       the volume callback and keeps `noiseRows` for the UI tests.
-- [ ] **D4 — `TimerView` stores nothing.** It is given the minutes to show and reports the user's
+- [x] **D4 — `TimerView` stores nothing.** It is given the minutes to show and reports the user's
       changes through a listener; its owner — the Activity until D5, the ViewModel from then on —
       reads and writes `TimerPreferences`. The reload hidden
       in `setPlayingState(false)` goes, since the owner already holds the value.
