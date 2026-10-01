@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents working in this repository. `CLAUDE.md` holds the single line `@AGENTS.md`, so Claude Code loads the same file.
 
 ## Project
 

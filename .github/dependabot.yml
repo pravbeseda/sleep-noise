@@ -17,7 +17,7 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # Each major is a migration of its own, recorded in CLAUDE.md: AGP 9 moves
+      # Each major is a migration of its own, recorded in AGENTS.md: AGP 9 moves
       # Gradle Play Publisher to 4.x with it, and detekt 2.0 wants Kotlin 2.4 / AGP 9.
       - dependency-name: "com.android.application"
         update-types: ["version-update:semver-major"]

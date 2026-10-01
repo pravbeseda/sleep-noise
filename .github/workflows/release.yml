@@ -56,7 +56,7 @@ permissions:
 #
 # No cancel-in-progress: cancelling a run midway through publishing is exactly
 # the partial state — an artifact on Play with no tag and no GitHub Release —
-# that the recovery notes in CLAUDE.md exist for. A second dispatch queues
+# that the recovery notes in AGENTS.md exist for. A second dispatch queues
 # instead, and by the time a second release reaches `guards` the tag exists, so
 # guard 1 turns a double click into a twenty-second refusal.
 concurrency:

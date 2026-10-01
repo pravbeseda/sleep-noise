@@ -107,7 +107,7 @@ The UI is XML layouts with AppCompat Views throughout; there is no Compose in th
 
 Architecture notes, including the parts that are non-obvious (how the active locale is detected,
 why the theme is applied before `super.onCreate`, how versioning works), live in
-[`CLAUDE.md`](CLAUDE.md).
+[`AGENTS.md`](AGENTS.md).
 
 ## Contributing
 
@@ -155,9 +155,9 @@ generated `R` included, for three roots only: `media/` minus `NoiseEngine.kt`, p
 `timer/SleepTimer.kt` and `playback/PlaybackState.kt`. Anywhere else the rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
 uncovered says which behaviour and why. Bug fixes start with a test that reproduces the bug. No test
 gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage floor under
-the noise and timer logic; `CLAUDE.md` says what it is and which classes it counts.
+the noise and timer logic; `AGENTS.md` says what it is and which classes it counts.
 
-The full rule, and the reasoning for drawing the line there, is in [`CLAUDE.md`](CLAUDE.md).
+The full rule, and the reasoning for drawing the line there, is in [`AGENTS.md`](AGENTS.md).
 
 ### Adding a language
 
@@ -182,7 +182,7 @@ user, and can be dispatched by hand in between. Locally the same run is
 `./gradlew connectedAndroidTest -PstoreScreenshots
 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`; without the first property an
 ordinary instrumented run leaves the errand out, and without the second the pictures go with the app
-when it is uninstalled. `CLAUDE.md` has the rest, under "The screenshots".
+when it is uninstalled. `AGENTS.md` has the rest, under "The screenshots".
 
 ## Versioning and releasing
 
@@ -210,7 +210,7 @@ ever rebuilt after `release.yml`. The moment a release reaches everyone — `com
 at `1` — also photographs that release's tag and publishes the store page from it. The plugin behind
 them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`, so an ordinary
 build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
-notes are in [`CLAUDE.md`](CLAUDE.md), under "The release path".
+notes are in [`AGENTS.md`](AGENTS.md), under "The release path".
 
 The store page goes out at that moment and not before, so that it never describes a build nobody
 can install yet. To publish it by hand in between there is a fourth workflow, `publish-listing.yml`:

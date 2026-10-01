@@ -127,5 +127,5 @@ for entry in "${dropped[@]}"; do
   echo "::error file=$file::$file went from $was @Test to $now. If the test moved or was renamed, the count elsewhere has to make up for it; if it was deleted, that is the thing this check exists to stop."
 done
 
-echo "::error::@Test count under ${roots[*]} fell from $before to $after. Never weaken a test to get a green build (CLAUDE.md, \"Tests are mandatory\"): a moved, renamed or split test keeps the count and passes here. There is no flag for a deliberate deletion — make the case in review."
+echo "::error::@Test count under ${roots[*]} fell from $before to $after. Never weaken a test to get a green build (AGENTS.md, \"Tests are mandatory\"): a moved, renamed or split test keeps the count and passes here. There is no flag for a deliberate deletion — make the case in review."
 exit 1
