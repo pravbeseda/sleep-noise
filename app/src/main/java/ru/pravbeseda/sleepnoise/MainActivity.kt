@@ -2,7 +2,6 @@ package ru.pravbeseda.sleepnoise
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
 import android.text.BidiFormatter
@@ -12,7 +11,6 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.core.view.WindowCompat
@@ -20,13 +18,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
-import ru.pravbeseda.sleepnoise.adapters.LanguagesArrayAdapter
 import ru.pravbeseda.sleepnoise.playback.PlaybackState
 import ru.pravbeseda.sleepnoise.playback.PlaybackViewModel
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.timer.TimerView
+import ru.pravbeseda.sleepnoise.ui.CreditsDialogFragment
+import ru.pravbeseda.sleepnoise.ui.LanguageDialog
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import ru.pravbeseda.sleepnoise.ui.NoiseRows
 
@@ -122,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         R.id.language_button -> {
-            languageSelection()
+            LanguageDialog.show(this, localeController)
             true
         }
 
@@ -132,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         R.id.credits -> {
-            showCreditsDialog()
+            CreditsDialogFragment().show(supportFragmentManager, "credits")
             true
         }
 
@@ -166,41 +165,5 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-    }
-
-    private fun languageSelection() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.select_language)
-        val languages = localeController.languages
-        var selected = languages.indexOfFirst { it.code == getString(R.string.lang) }
-        val listAdapter = LanguagesArrayAdapter(this, languages.toTypedArray())
-        builder.setSingleChoiceItems(listAdapter, selected) { _: DialogInterface, i: Int ->
-            selected = i
-        }
-        builder.setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
-            if (languages[selected].code != "") {
-                localeController.select(languages[selected].code)
-            } else {
-                showNewLanguageMessage()
-            }
-        }
-        builder.setNegativeButton(R.string.cancel, null)
-        builder.create().show()
-    }
-
-    private fun showNewLanguageMessage() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.title_language_need)
-        builder.setMessage(R.string.text_language_need)
-        builder.setPositiveButton(R.string.mail) { _, _ ->
-            startActivity(FeedbackMail.chooser(this))
-        }
-        builder.setNegativeButton(R.string.cancel, null)
-        builder.show()
-    }
-
-    private fun showCreditsDialog() {
-        val dialog = CreditsDialogFragment.newInstance()
-        dialog.show(supportFragmentManager, "credits")
     }
 }

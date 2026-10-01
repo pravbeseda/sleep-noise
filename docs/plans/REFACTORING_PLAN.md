@@ -520,6 +520,10 @@ change, except D5, which removes the flash.
     countdown after `recreate()`. It reads them as the new Activity resumes, which is before its
     first frame and before a binding of its own could answer, so the flash is pinned rather than
     raced: the test fails on the code before D5.
+- [x] **D6 — the dialogs leave `MainActivity`.** D5 left it at 206 lines, over the bar below. The
+      language picker and its "write in for a translation" follow-up become `ui/LanguageDialog`, still
+      plain `AlertDialog`s, so nothing about when they survive a `recreate()` changes; `CreditsDialogFragment`
+      moves into `ui/` beside it. `CreditsDialogUiTest` covers the credits, which no test opened before.
 
 ### Done when
 
