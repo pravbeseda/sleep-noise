@@ -43,7 +43,7 @@ Being honest about the current state. The roadmap lives in
 [`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
 in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
 
-- The playback service has no automated tests yet: CI runs the project's instrumented tests on an
+- The playback service has no automated tests yet: the project's instrumented tests run on an
   emulator, but none of them covers the service, so its lifecycle, notification and audio-focus
   handling are verified by hand on a device.
 - No lock-screen or headset-button controls — the ongoing notification's Stop action is the only
@@ -130,20 +130,24 @@ derived from the commit count, so `main` has to stay append-only.
 
 ### Tests
 
-Unit tests, lint, detekt, formatting, Guardrails and the instrumented tests are required checks: a
-red run blocks the merge, and the branch has to be current with `main` before it can go in. The
-first four run locally; Guardrails compares the PR against its base commit — baselines, disabled or
-deleted tests, secrets or key files added to the history — and lints the workflows and shell
-scripts, so it exists only on CI,
-and the instrumented tests run on emulators at API 26 and API 36 — one required context per level. A
-pull request that changes only Markdown skips the five Gradle jobs — they still report green, they
+Unit tests, lint, detekt, formatting and Guardrails are required checks: a red run blocks the
+merge, and the branch has to be current with `main` before it can go in. The first four run locally;
+Guardrails compares the PR against its base commit — baselines, disabled or deleted tests, secrets or
+key files added to the history — and lints the workflows and shell scripts, so it exists only on CI.
+The instrumented tests are not run on pull requests: the `Instrumented tests` workflow runs them on
+emulators at API 26 and API 36 when dispatched by hand, and a release refuses a commit they have not
+passed on. A pull request that changes only Markdown skips the four Gradle jobs — they still report green, they
 just do no work. A new lint or detekt finding shows up as an annotation on its line in the pull
 request diff; a pull request from a fork reads it from the job's report artifact instead.
 Before opening a PR:
 
 ```bash
 ./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint
+./gradlew connectedDebugAndroidTest   # when the PR changes app/ — on an emulator
 ```
+
+With no device at hand, dispatch the `Instrumented tests` workflow on your branch instead of the
+second line.
 
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
 its test in the same commit. `AndroidFreeSourcesTest` checks that boundary, `androidx.*` and the
@@ -196,7 +200,8 @@ repository, so it runs on CI only — a contribution never has to sign anything.
 
 A Play release is a tag, `v<versionName>+<versionCode>`, created by three manual workflows under
 `.github/workflows/`: `release.yml` checks the commit — the tag must be new, the version code higher
-than the last release's, CI green, the release notes changed — then builds a signed App Bundle,
+than the last release's, CI green, the `Instrumented tests` workflow green on that very commit (dispatch
+it first), the release notes changed — then builds a signed App Bundle,
 uploads it to Play's open-testing track and creates a GitHub prerelease with the bundle attached;
 `promote.yml` moves that exact build to production at a rollout fraction — at `1`, to everyone,
 marking the GitHub Release as latest; `rollout.yml` raises the

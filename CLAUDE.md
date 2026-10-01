@@ -145,16 +145,24 @@ a step could not be run at all, say which one and why rather than reporting arou
 `koverVerifyDebug` runs `testDebugUnitTest` itself, so the tests execute once however you reach
 them; both are named so that a reader can see the tests run at all.
 
-Five tasks, four of the seven required checks: coverage has no job of its own and rides in `Unit
-tests`. The other three are deliberately not on that line. Guardrails compares the PR against its
-base commit, so nothing about it belongs on a pre-push line — its scripts do run here, two of them
-against `BASE_SHA=origin/main`, but only against a `main` a fetch has just moved.
-`Instrumented tests (API 26)` and
-`(API 36)` are the remaining two, and unlike Guardrails they *can* be run here —
-`connectedAndroidTest`, in the Commands section — but they need a device or an emulator, and a
-pre-push line that does not run without one is a line that gets skipped. So a green local run
-means the work is done as far as a machine with no device can tell; it does not mean the PR is
-mergeable. See the CI section.
+Five tasks, four of the five required checks: coverage has no job of its own and rides in `Unit
+tests`. Guardrails is deliberately not on that line: it compares the PR against its base commit, so
+nothing about it belongs on a pre-push line — its scripts do run here, two of them against
+`BASE_SHA=origin/main`, but only against a `main` a fetch has just moved. So a green local run does
+not mean the PR is mergeable. See the CI section.
+
+**A pull request that changes anything under `app/` also runs the instrumented suite before it is
+pushed**, on an emulator, and says so in its description:
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
+CI no longer runs it on pull requests — the two emulators were the most expensive jobs there, spent
+on every one — so this run is what stands between a change to the app and `main`. With no device at
+hand, dispatch `.github/workflows/instrumented.yml` on the branch instead; it runs the same suite at
+API 26 and API 36. A pull request that touches only CI, scripts or prose has nothing an emulator can
+see, and is exempt.
 
 New Gradle tooling joins this line as it lands; Kover was the most recent. A step added to
 Guardrails does not, for the reason above, and that holds for its linters too: actionlint and
@@ -162,9 +170,11 @@ shellcheck run on CI only, and the CI section gives the commands to run them by 
 
 ## CI
 
-`.github/workflows/ci.yml` runs seven jobs. Six of them report the **seven required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. Six jobs and seven checks because **instrumented tests** is a matrix over API 26 and API 36 and reports one context per leg. None can be bypassed from the UI; `enforce_admins` is on. The seventh job, **alpha**, delivers and is deliberately not required — see the delivery section below.
+`.github/workflows/ci.yml` runs six jobs. Five of them report the **five required status checks**: a red run blocks the merge button, and the branch has to be up to date with `main` first. None can be bypassed from the UI; `enforce_admins` is on. The sixth job, **alpha**, delivers and is deliberately not required — see the delivery section below.
 
-Five of the six — unit tests, instrumented tests, lint, detekt and format — are triggered on every PR and push to `main`, but each one first asks `.github/actions/decide-work` whether it has anything to do. The sixth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo. The two instrumented contexts were added the same way and for the same reason: by hand, on PR #33, once both had been seen green on it.
+Four of the five — unit tests, lint, detekt and format — are triggered on every PR and push to `main`, but each one first asks `.github/actions/decide-work` whether it has anything to do. The fifth, **Guardrails**, runs on pull requests only, because it compares the PR against `github.event.pull_request.base.sha` and a push to `main` has nothing to compare against. That is why it became required by hand and only after it had been seen passing on a PR: a required check that has never reported blocks every merge in the repository, so making it required before the first green run would have locked the repo.
+
+**The instrumented tests run on demand only**, in `.github/workflows/instrumented.yml` (`workflow_dispatch`), as SpendControl's do: a matrix over API 26 and API 36 reporting `Instrumented tests (API 26)` and `Instrumented tests (API 36)`, one context per leg. They were a job of `ci.yml` and required on `main` from PR #33 until the two emulators were judged too dear to boot on every pull request; the local run on the Definition of done is what replaces them before a merge, and guard 3 of `release.yml` before a release. The job runs no `decide-work` step: whoever dispatches it has already decided.
 
 It enforces three rules this file states in prose. Two of them read what a diff makes visible: that neither baseline grows (entry counts compared against the base commit), and that no `@Ignore` or `@Disabled` line is *added* under `app/src/test/` or `app/src/androidTest/` — removing one passes, since that direction is a test coming back. The third catches what a diff does not show at all: deleting a test method, or the whole file, adds no line for either of the others to match. `.github/scripts/no-deleted-tests.sh` counts `@Test` annotations across both test source sets at the merge base and at the branch head, and fails when the total drops. **The merge base, not `base.sha`** — which costs nothing on CI and is what makes the script usable off it. The job checks out with no `ref:`, so on a `pull_request` event `HEAD` is `refs/pull/N/merge` and its first parent is `base.sha`, which makes the merge base `base.sha` itself. Run by hand on the branch with `BASE_SHA=origin/main` the two part company: `main` has moved on, and every test it gained since would otherwise read as one the branch deleted. It counts the whole tree rather than each file, so a rename, a move between files or source sets and a split class all remove and add the same annotations and pass. Comments are cut out before anything is counted, in both the forms an editor writes them — `//` per line and a `/* */` block, whose lines carry no leading star when the IDE produces it. Switching a test off that way adds no `@Ignore` for the step above to see, and would be invisible here too if the count took the line at its word. A block comment counts as opening only where one starts a line, which is where an editor puts it: anywhere else a `/*` is far likelier to sit inside a string, and `val marker = "/*"` once opened a comment that never closed, so every annotation after it went uncounted on both sides at once and a real deletion read as no change. What the scanner still cannot see is a `@Test` inside a string literal, and chasing that means lexing Kotlin — raw strings and escapes included — which is not what a floor is for: it is against the ways a test is actually switched off, not a proof against a forgery. The price of that is stated rather than hidden: a pull request that deletes one test and adds another passes, because the net is what is measured, and that much stays a matter for review. There is no escape hatch, on the same terms as the baselines — a deletion that is genuinely right is a conversation, not a flag (issue #14). It costs nothing so far: run against all 38 merged pull requests in this repository, the rule blocks none. Three commits do drop a test, `ExampleUnitTest` among them, and each sits in a pull request that added more elsewhere — so the `@Test` count the quality plan feared would have failed that removal does not, at the granularity the check actually runs. `.github/scripts/no-deleted-tests.test.sh` holds the cases, and the job runs it before the check for the reason the `decide-work` action runs its own: a wrong count is the failure that reports green.
 
@@ -172,23 +182,23 @@ Two more steps keep secrets out of a history that is public and keeps whatever r
 
 The last two steps lint what no Gradle task reads. **actionlint** checks every workflow under `.github/workflows/` and hands each `run:` script to shellcheck; **shellcheck** covers the scripts kept in files — `.github/scripts/*.sh`, `.github/actions/*/*.sh` and `.githooks/*`, so a script added anywhere else is not scanned until that list names it. Both stop at `--severity=warning`, set once as `SHELLCHECK_OPTS` on the job — shellcheck reads it directly, and actionlint passes it on: below it this repository holds only style and deliberate choices — `$ARGS` in `promote.yml` and `rollout.yml` is unquoted on purpose, and says so — and a floor that fails on those gets muted rather than read. actionlint is pinned to a version and its tarball's SHA-256 the way gitleaks is. shellcheck is the runner's own, 0.9.0 on `ubuntu-24.04`, and not pinned, so a newer local copy can report a finding CI does not. actionlint does not read composite actions, so `.github/actions/*/action.yml` stays unchecked apart from its shell script. Neither is on the Definition of done line, since a line that needs `actionlint` installed is a line that gets skipped; to run them by hand, `SHELLCHECK_OPTS=--severity=warning actionlint` and `SHELLCHECK_OPTS=--severity=warning shellcheck .github/scripts/*.sh .github/actions/*/*.sh .githooks/*`.
 
-**Version updates come from `.github/dependabot.yml`**, weekly, for the version catalog and the workflow actions. Every minor and patch bump of the Gradle build — catalog, plugins and wrapper alike — arrives as one pull request, and every action bump as one more, because bumps landing one pull request at a time are a queue, each rebased behind the last under strict protection. A major that is not ignored arrives on its own, so one migration cannot hold back the rest. Majors of AGP, Gradle Play Publisher and detekt are ignored there: each is the migration the versioning pins in `gradle/libs.versions.toml` and the detekt section already describe, and a pull request that cannot go green is noise. `androidx.core` 1.19 and later is ignored for the same reason: it requires `compileSdk` 37 and AGP 9.1, so it moves with the AGP major. So does the Gradle wrapper's major: Gradle 9.6 removed an internal API every AGP 8.x release relies on. Lift a pin in both places at once. A Dependabot pull request runs the same seven checks with Dependabot's own secrets, which hold none of this repository's, so it builds against the stub `google-services.json` the way a fork does. What Dependabot does not read stays pinned by hand: gitleaks and actionlint, whose versions and checksums live inside `run:` scripts in `ci.yml`, and ktlint, whose version sits in the catalog's `[versions]` but reaches Spotless as a bare string, with no library or plugin coordinate for Dependabot to look up.
+**Version updates come from `.github/dependabot.yml`**, weekly, for the version catalog and the workflow actions. Every minor and patch bump of the Gradle build — catalog, plugins and wrapper alike — arrives as one pull request, and every action bump as one more, because bumps landing one pull request at a time are a queue, each rebased behind the last under strict protection. A major that is not ignored arrives on its own, so one migration cannot hold back the rest. Majors of AGP, Gradle Play Publisher and detekt are ignored there: each is the migration the versioning pins in `gradle/libs.versions.toml` and the detekt section already describe, and a pull request that cannot go green is noise. `androidx.core` 1.19 and later is ignored for the same reason: it requires `compileSdk` 37 and AGP 9.1, so it moves with the AGP major. So does the Gradle wrapper's major: Gradle 9.6 removed an internal API every AGP 8.x release relies on. Lift a pin in both places at once. A Dependabot pull request runs the same five checks with Dependabot's own secrets, which hold none of this repository's, so it builds against the stub `google-services.json` the way a fork does. What Dependabot does not read stays pinned by hand: gitleaks and actionlint, whose versions and checksums live inside `run:` scripts in `ci.yml`, and ktlint, whose version sits in the catalog's `[versions]` but reaches Spotless as a bare string, with no library or plugin coordinate for Dependabot to look up.
 
-The context names (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`, `Instrumented tests (API 26)`, `Instrumented tests (API 36)`) are the job names, and they are written out in **three** places, not two: the job's own `name:` in `ci.yml`, the branch protection rule, and guard 3 of `.github/workflows/release.yml`, which insists on all seven before it publishes. The last two contexts carry the matrix value the job's `name:` interpolates. Renaming a job, or changing an API level in the matrix, without renaming the context turns the check into a missing one — it blocks every merge at the first two places and refuses every release at the third. Change all three together.
+The context names (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, and they are written out in **three** places, not two: the job's own `name:` in `ci.yml`, the branch protection rule, and guard 3 of `.github/workflows/release.yml`, which insists on all five before it publishes. Renaming a job without renaming the context turns the check into a missing one — it blocks every merge at the first two places and refuses every release at the third. Change all three together. The two instrumented contexts are written in two places, the job's `name:` in `instrumented.yml`, which interpolates the matrix value, and guard 3; renaming the job or changing an API level without the other refuses every release.
 
-The five Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules. `.github/actions/emulator-host` exists for the same reason and holds the other pair of steps a job needs before it boots an emulator — the disk space the emulator insists on and the KVM device it would otherwise fall back from — because the screenshots workflow boots one too.
+The Gradle jobs put `app/google-services.json` in place before anything else, because the Firebase plugins are applied unconditionally and every Gradle task needs the file. Guardrails does not: it reads the diff and counts lines, so it needs no JDK, no Android SDK and no Gradle at all. The step lives in one place, `.github/actions/google-services`, since two copies of a fallback rule drift into two different rules. `.github/actions/emulator-host` exists for the same reason and holds the other pair of steps a job needs before it boots an emulator — the disk space the emulator insists on and the KVM device it would otherwise fall back from — because the instrumented and screenshots workflows both boot one.
 
-Every `android-actions/setup-android` step passes `packages: platform-tools`. The action's default is `tools platform-tools`, and `tools` is a package the `sdkmanager` of the cmdline-tools on the runner no longer finds: from 2026-09-15 that default failed the step, and with it every Gradle job before a line was built (issue #80). The input is on all eleven steps, in `ci.yml` and in the release, store and screenshot workflows alike, so a new step copies it too.
+Every `android-actions/setup-android` step passes `packages: platform-tools`. The action's default is `tools platform-tools`, and `tools` is a package the `sdkmanager` of the cmdline-tools on the runner no longer finds: from 2026-09-15 that default failed the step, and with it every Gradle job before a line was built (issue #80). The input is on all eleven steps, in `ci.yml` and in the instrumented, release, store and screenshot workflows alike, so a new step copies it too.
 
 ### Which jobs have work: `.github/actions/decide-work`
 
-A pull request that only edits prose does not need five Gradle jobs, one of which boots an emulator on each of its two matrix legs, so the composite action answers `run=true` / `run=false` and every subsequent step in the five carries `if: steps.decide.outputs.run == 'true'`. **The condition never moves to job level**: all seven required contexts are matched by job name, and a job skipped at job level reports nothing at all, which blocks the merge button permanently instead of freeing it. A skipped job here still reports green in seconds.
+A pull request that only edits prose does not need four Gradle jobs, so the composite action answers `run=true` / `run=false` and every subsequent step in the four carries `if: steps.decide.outputs.run == 'true'`. **The condition never moves to job level**: all five required contexts are matched by job name, and a job skipped at job level reports nothing at all, which blocks the merge button permanently instead of freeing it. A skipped job here still reports green in seconds.
 
-The rule lives in exactly one place, the `ignored_globs` array at the top of `decide.sh`, and it is one glob: `*.md`. `docs/**` is not beside it because every file under `docs/` is Markdown — a second glob no test could tell from the first. `.github/**` is not there either, unlike SpendControl: a workflow is build configuration, not prose, and a PR that rewrites `ci.yml` has to run `ci.yml` or a broken step lands behind seven green checks that executed none of it.
+The rule lives in exactly one place, the `ignored_globs` array at the top of `decide.sh`, and it is one glob: `*.md`. `docs/**` is not beside it because every file under `docs/` is Markdown — a second glob no test could tell from the first. `.github/**` is not there either, unlike SpendControl: a workflow is build configuration, not prose, and a PR that rewrites `ci.yml` has to run `ci.yml` or a broken step lands behind five green checks that executed none of it.
 
 A push to `main` answers `false` on its own, whatever changed: branch protection is `strict: true`, so the pull request already ran against the very tree being merged. `workflow_dispatch` answers `true` and is how a full run is forced on demand.
 
-The decision needs the merge base, so **every calling job checks out with `fetch-depth: 0`** — that, and not the Spotless ratchet, is now why four of the five do. `decide.sh` has its own tests in `test.sh`, and the action runs them before it decides: nothing else on CI exercises them, and a wrong decision is the one failure that reports green.
+The decision needs the merge base, so **every calling job checks out with `fetch-depth: 0`** — that, and not the Spotless ratchet, is now why three of the four do. `decide.sh` has its own tests in `test.sh`, and the action runs them before it decides: nothing else on CI exercises them, and a wrong decision is the one failure that reports green.
 
 ### Alpha delivery to Firebase App Distribution
 
@@ -410,7 +420,7 @@ three sliders again once is cheaper than a migration that would live in the code
 
 `start()`, `stop()`, `stopNow()` and `release()` are expected on the main thread, the first three are each a no-op when the engine is already in the state they ask for, and **none of the four waits for the writer thread**. The writer is created by the first `start()`, parks between sessions and ends on `release()`, which `PlaybackService.onDestroy()` calls; every one of the four takes a lock the writer holds only to read the intent out of it. A stop the writer has not noticed yet leaves it draining one last `write()`, and a start arriving meanwhile is served by that same thread once the old session is torn down, so two tracks never overlap and nothing blocks on a `join()` to arrange it. That replaced a `stop()` that did join — 176-208 ms on the main thread per stop, and one thread and stack per flap of audio focus had the join simply been dropped (issue #26).
 
-`app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; CI runs it on an emulator at API 26 and API 36 on every pull request, and `connectedAndroidTest` runs it against whatever device is attached. Its stops alternate between `stop()` and `stopNow()`, so a fade turned around by the next start and a session ended and rebuilt are both hammered. It asserts that one writer thread serves all 100 cycles and survives every stop, that each stop and `release()` return inside 50 ms, and that the thread is gone within 2 s of the `release()`. `NoiseEngineFadeTest` beside it checks the callback the service ends a faded session on: a `stop()` is reported once, and a `stopNow()` or a fade-out turned around by a `start()` is not. That last bound is what still ties the test to a real audio sink, which is why the emulator is deliberately not started with `-noaudio`: without one the guest accepts the writes far more slowly, and the writer's exit waits out the write in flight.
+`app/src/androidTest/.../NoiseEngineHammerTest` hammers 100 start/stop cycles against a real `AudioTrack`; `instrumented.yml` runs it on an emulator at API 26 and API 36 when dispatched, and `connectedAndroidTest` runs it against whatever device is attached. Its stops alternate between `stop()` and `stopNow()`, so a fade turned around by the next start and a session ended and rebuilt are both hammered. It asserts that one writer thread serves all 100 cycles and survives every stop, that each stop and `release()` return inside 50 ms, and that the thread is gone within 2 s of the `release()`. `NoiseEngineFadeTest` beside it checks the callback the service ends a faded session on: a `stop()` is reported once, and a `stopNow()` or a fade-out turned around by a `start()` is not. That last bound is what still ties the test to a real audio sink, which is why the emulator is deliberately not started with `-noaudio`: without one the guest accepts the writes far more slowly, and the writer's exit waits out the write in flight.
 
 ### Playback: a foreground service, not the Activity
 
@@ -422,7 +432,7 @@ Two rules are easy to break here. **Every `startForegroundService()` has to be a
 
 `playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
 
-None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and CI now runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
+None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and `instrumented.yml` runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
 
 ### Timer
 
@@ -616,8 +626,9 @@ flavors:
 - **`release.yml`** — "this commit is version X". Dispatched from the branch being released; the
   "Use workflow from" dropdown GitHub always renders *is* that choice, so there is no branch input.
   It refuses before it builds. Four guards, in order: the tag must not exist; the version code must
-  exceed the newest tag's; the seven contexts `main` requires must be green on this commit; and the
-  release notes must not repeat the previous tag's, with `versionName` moved. Then it builds the
+  exceed the newest tag's; the five contexts `main` requires and the two of `instrumented.yml` must be
+  green on this commit; and the release notes must not repeat the previous tag's, with `versionName`
+  moved. Then it builds the
   signed **App Bundle** — not an APK; the listing postdates August 2021 and Play accepts nothing
   else — uploads it with `:app:publishReleaseBundle --track <track> --commit --rerun`, tags the
   commit and creates a GitHub Release with `--prerelease` and the bundle attached, notes from
@@ -637,7 +648,8 @@ flavors:
   `halt`, all `promoteReleaseArtifact --update production --version-code <code>`. `complete` also
   clears `prerelease` and marks the release `Latest`.
 
-So the whole path is: bump `versionName` and write the notes on `main` → `release.yml` from `main`,
+So the whole path is: bump `versionName` and write the notes on `main` → `instrumented.yml` from
+`main`, until both levels are green → `release.yml` from `main`,
 which uploads to `beta`, tags and creates the prerelease → `promote.yml` to `production` at a
 fraction → `rollout.yml` to raise it and `complete`, which also refreshes the store page. Play holds one binary throughout: promotion
 rather than a second build, so production gets the bundle testers had — and Play rejects a re-upload
@@ -683,10 +695,13 @@ Two guards deserve their reasons written down. **Guard 3 cannot read `Guardrails
 `main`**: that job compares a pull request against its base and carries a job-level `if:`, so on the
 merge commit it reports `completed/skipped` — measured, not assumed. Where it did run is the pull
 request's head, which is the merge commit's second parent, and branch protection is strict, so the
-two carry the same tree. **All seven contexts are read off that parent, not just the skipped one** —
-because the release commit's own greens are vacuous: a push to `main` answers `decide-work` with
-false, so every Gradle job succeeds in seconds having executed nothing. Measured on c4e9072:
-`Instrumented tests (API 36)` succeeded in nine seconds without booting an emulator. A squash merge
+two carry the same tree. **All five contexts of `ci.yml` are read off that parent, not just the
+skipped one** — because the release commit's own greens are vacuous: a push to `main` answers
+`decide-work` with false, so every Gradle job succeeds in seconds having executed nothing. Measured on
+c4e9072: the instrumented job, then still in `ci.yml`, succeeded in nine seconds without booting an
+emulator. **The two instrumented contexts are read off the release commit itself**, because
+`instrumented.yml` runs only when dispatched and reports against the commit it was started from: so
+the release path starts by dispatching it from `main` and waiting for it to go green. A squash merge
 has no second parent and would be refused on `Guardrails`: this repository merges with merge
 commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
 It had a released commit to seed a tag on; here a guessed tag would guard nothing, and the first
@@ -830,7 +845,7 @@ since the release is already out. Dispatched by hand it photographs the dispatch
 nothing.
 
 **The workflow pushes a branch and prints the link that opens the pull request.** It does not open one
-itself — a pull request created with `GITHUB_TOKEN` triggers no workflow, so all seven required checks
+itself — a pull request created with `GITHUB_TOKEN` triggers no workflow, so all five required checks
 would go unreported and the merge button would stay blocked. `main` is protected, so a push straight
 to it is not on the table either. The locale table in `StoreScreenshotTest` is a second copy of
 `PlayMetadataTest`'s, and the workflow refuses in both directions: a photographed locale with no
