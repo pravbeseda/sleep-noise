@@ -271,8 +271,8 @@ tools with two opinions about one line is how a project ends up unable to satisf
 nothing about one. Anything else that is silenced belongs in that file with its reason, not in an
 inline `@Suppress`.
 
-`config/detekt/baseline.xml` holds the debt this landed on: **6 entries covering 9 findings** —
-`MagicNumber` 6, `EmptyFunctionBlock` 2, `TooManyFunctions` 1.
+`config/detekt/baseline.xml` holds the debt this landed on: **5 entries covering 8 findings** —
+`MagicNumber` 6, `EmptyFunctionBlock` 2.
 The two counts differ because a baseline entry is a signature, not a location,
 so one entry absorbs every identical finding. That cuts both ways: a *new* magic number written into
 an already-baselined expression is suppressed silently. Detekt is a floor, not a proof.
@@ -282,7 +282,8 @@ longer baselined — its three call sites in `timer/` name their `Locale`, so a 
 the build. `PrintStackTrace` went the same way when its two call sites were fixed. `media/` is clear of `MagicNumber` too: phase 1 of the refactoring plan
 moved the sample math into named constants and both of its entries went with it. `MainActivity` is
 clear of both rules since its noise sliders moved into `ui/NoiseControlView`, which took their
-percentage literals and their empty seekbar callbacks with them. The 6 `MagicNumber` findings that
+percentage literals and their empty seekbar callbacks with them, and of `TooManyFunctions` since its
+dialogs, rows and service binding moved out in phase 4. The 6 `MagicNumber` findings that
 remain sit in `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1), and the 2
 `EmptyFunctionBlock` ones in `timer/TimerView`.
 
