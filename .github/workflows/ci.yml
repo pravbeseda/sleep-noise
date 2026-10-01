@@ -346,11 +346,11 @@ jobs:
           # Counts an entry, not a line: one signature per entry in both files.
           #
           # The lint pattern is deliberately '<issue( |$)' and not '<issue'. The
-          # latter also matches the root <issues> element, so it reports 26 where
-          # the file holds 25 — and the first entry a PR adds would slip through
+          # latter also matches the root <issues> element, so it reports 19 where
+          # the file holds 18 — and the first entry a PR adds would slip through
           # unnoticed. Both counts are stated in AGENTS.md; verify with
-          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 25
-          #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 14
+          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 18
+          #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 5
           count_at() { # <ref-or-empty-for-worktree> <path> <pattern>
             if [ -n "$1" ]; then
               git cat-file -e "$1:$2" 2>/dev/null || { echo 0; return; }
