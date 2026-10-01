@@ -28,7 +28,7 @@ on:
 permissions:
   # The run commits what it took. main is protected, so it pushes a branch and prints the link that
   # opens the pull request — a pull request opened here by GITHUB_TOKEN would trigger no workflow at
-  # all, leaving all seven required checks unreported and the merge button blocked for good.
+  # all, leaving all five required checks unreported and the merge button blocked for good.
   contents: write
 
 concurrency:

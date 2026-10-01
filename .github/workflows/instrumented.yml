@@ -1,0 +1,119 @@
+name: Instrumented tests
+
+# Manual only, as in SpendControl: the two emulators were the most expensive jobs
+# in ci.yml, spent on every pull request. A pull request that changes app/ runs
+# the suite locally before it is pushed (CLAUDE.md, Definition of done), or
+# dispatches this workflow on its branch when no device is at hand. Guard 3 of
+# release.yml still requires both check names on the commit it releases, so
+# dispatch this workflow from main before releasing: a dispatched run reports
+# its check-runs against the commit it was started from.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  instrumented-tests:
+    # The name is what guard 3 of release.yml reads; keep the two in step.
+    name: Instrumented tests (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Both legs report. A flake on one level must not cancel the other, or the
+      # run says nothing about the level that was still working.
+      fail-fast: false
+      matrix:
+        include:
+          # The floor and the ceiling of the range the app claims: minSdk 26 and
+          # targetSdk/compileSdk 36 in app/build.gradle.kts. They are the two
+          # ends a failure can be acted on — below the floor the app is not
+          # installed at all, above the ceiling it is not compiled against yet —
+          # and the levels between them differ from one end or the other, never
+          # from both.
+          - api-level: 26
+            # No ATD system image exists below API 30, so the floor runs the
+            # plain one. The ceiling takes aosp_atd instead: a stripped image
+            # without the Play services boots faster and flakes less, and
+            # nothing in app/src/androidTest asks for them.
+            target: default
+          - api-level: 36
+            target: aosp_atd
+    # An emulator that never boots has to fail this job rather than sit there
+    # until the six-hour default gives up on it.
+    timeout-minutes: 45
+    steps:
+      # No fetch-depth: the debug variant falls back to the versionCode floor on
+      # a shallow clone, and the release versioning gate in app/build.gradle.kts
+      # only guards the tasks that package a release.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Provide google-services.json
+        uses: ./.github/actions/google-services
+        with:
+          secret-b64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      # Both halves of it — the disk the emulator insists on and the KVM device —
+      # live in the action because the screenshots workflow boots an emulator
+      # too, and two copies of one runner rule drift into two different rules.
+      - name: Prepare the runner for an emulator
+        uses: ./.github/actions/emulator-host
+
+      - name: Run instrumented tests
+        # Pinned to the tag, not to a commit. This repository SHA-pins exactly
+        # one action — wzieba/Firebase-Distribution-Github-Action in ci.yml's
+        # alpha job — and the reason is written beside it: that step is handed a
+        # service account, so whoever could move the tag would get the
+        # credential. This one is handed no secret, so it is pinned to its tag.
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
+          arch: x86_64
+          profile: pixel_2
+          # -no-snapshot-save keeps every run a cold boot: a snapshot would be
+          # written into a runner discarded minutes later, and a stale snapshot
+          # is the classic way an emulator job starts failing for reasons no
+          # diff explains. No window and no boot animation because nobody is
+          # watching this one.
+          #
+          # -noaudio is deliberately absent, and it is the one option this job
+          # does not take from SpendControl. SpendControl's instrumented tests
+          # touch Room and a file store; this project's NoiseEngineHammerTest
+          # writes to a real AudioTrack, and what it still times is how long
+          # the writer thread takes to exit after release() — one write in
+          # flight, bounded at 2 s. Without an audio sink the guest accepts the
+          # writes far more slowly: measured on a local API 36 emulator, a
+          # single write ran to 1158 ms with -noaudio against 321 ms without
+          # it, which leaves that bound too little room.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -no-boot-anim -camera-back none
+          disable-animations: true
+          # The debug variant only: a release build needs the SN_* signing
+          # credentials, which this job is not given and has no use for.
+          script: ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Upload instrumented test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          # The API level is part of the name because upload-artifact@v4 fails
+          # on a duplicate one and both matrix legs reach this step.
+          name: instrumented-test-report-api-${{ matrix.api-level }}
+          path: |
+            app/build/reports/androidTests/connected
+            app/build/outputs/androidTest-results/connected
+          if-no-files-found: ignore

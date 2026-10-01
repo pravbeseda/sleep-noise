@@ -46,7 +46,9 @@ Three moves replace them:
    project is single-module, so the same rule has to be checked rather than granted.
 2. **Android plumbing is tested on a real emulator**, in `androidTest` — the way SpendControl
    tests Room, its migrations and its file storage. `NoiseEngineHammerTest` is already written
-   this way, and CI runs it on an emulator at API 26 and API 36 on every pull request.
+   this way, and `instrumented.yml` runs it on an emulator at API 26 and API 36 when dispatched
+   — on demand since the emulators left the per-PR checks, with a local run before every pull
+   request that changes `app/` or the build.
 3. **Coverage is measured on the Android-free packages only.** SpendControl puts its 80 % Kover
    bound on `:domain` alone, and its build script says why: a denominator full of Activities
    makes the figure answer no question however good the tests get. Single-module, this project
@@ -72,7 +74,9 @@ Reopening it means changing this section first, with the case for it.
       `connectedDebugAndroidTest` on `reactivecircus/android-emulator-runner` over API 26 and
       API 36, on every pull request and guarded by `decide-work` like the Gradle jobs. Both of its
       contexts are required status checks, added once they had been seen green on that pull
-      request. The design is in [`CI_INSTRUMENTED_TESTS.md`](CI_INSTRUMENTED_TESTS.md).
+      request. The design is in [`CI_INSTRUMENTED_TESTS.md`](CI_INSTRUMENTED_TESTS.md). Moved
+      since to the dispatch-only `.github/workflows/instrumented.yml` and off the required checks,
+      to stop booting two emulators on every pull request.
 - [x] An architecture test that reads the sources and fails if anything in `media/` other than
       `NoiseEngine`, or `timer/SleepTimer`, imports `android.*` — the single-module stand-in for
       SpendControl's module boundary. The exclusion is the Kover filter's, named once in both.

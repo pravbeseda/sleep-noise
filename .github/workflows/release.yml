@@ -167,28 +167,29 @@ jobs:
       - name: Guard 3 — the commit's required checks must be green
         env:
           GH_TOKEN: ${{ github.token }}
-        # The seven contexts branch protection requires on main, by name. They
-        # are hardcoded on both sides — here and in the protection rule — so
-        # renaming a CI job means changing this list too, or a release goes out
-        # past a gate main insists on.
+        # The five contexts branch protection requires on main, plus the two of
+        # instrumented.yml, by name. They are hardcoded on both sides — here and
+        # in the protection rule or the workflow — so renaming a CI job means
+        # changing this list too, or a release goes out past a gate main
+        # insists on.
         #
-        # WHERE those checks are read from is the whole of this step, and it is
-        # not the release commit. A push to main answers decide-work with false
-        # — the pull request already ran against this very tree, since branch
-        # protection is strict — so every Gradle job reports success in seconds
-        # having executed nothing, and Guardrails, which runs on pull requests
-        # only, reports completed/skipped. Measured on c4e9072, the merge that
-        # landed #58: "Instrumented tests (API 36)" succeeded in nine seconds
-        # without booting an emulator. Reading those runs would gate a release
-        # on six vacuous greens and one skip.
+        # WHERE those checks are read from is the whole of this step.
+        #
+        # The five of ci.yml are not read off the release commit. A push to main
+        # answers decide-work with false — the pull request already ran against
+        # this very tree, since branch protection is strict — so every Gradle job
+        # reports success in seconds having executed nothing, and Guardrails,
+        # which runs on pull requests only, reports completed/skipped. Measured
+        # on c4e9072, the merge that landed #58: the instrumented job, then still
+        # in ci.yml, succeeded in nine seconds without booting an emulator.
+        # Reading those runs would gate a release on vacuous greens and a skip.
         #
         # The runs that mean something are on the merged pull request's head,
         # which is the merge commit's second parent, and strict protection is
         # what makes it answer for this commit: the two carry the same tree, so
         # a check that passed there passed on what is being released. So when
         # the release commit is a merge whose tree equals its second parent's,
-        # all seven are read off that parent — one rule, pointing at the runs
-        # that did the work — and otherwise off the commit itself.
+        # the five are read off that parent, and otherwise off the commit itself.
         #
         # The contract that creates: a release from main travels on a merge
         # commit. A squash or a rebase merge has no second parent, so its
@@ -197,48 +198,55 @@ jobs:
         # method; the day that changes, the pull request head is the
         # `commits/<sha>/pulls` endpoint away.
         #
+        # The two instrumented contexts are read off the release commit itself,
+        # always. instrumented.yml runs only when dispatched, and a dispatched run
+        # reports against the commit it was started from — so dispatch it from
+        # the branch being released, wait for it, then release.
+        #
         # --paginate because the default page holds 30 check-runs and a commit
         # accumulates more: every dry run and re-run of this workflow adds its
         # own jobs, and a truncated listing would judge a check by a stale run.
         run: |
           set -euo pipefail
-          SUBJECT=$GITHUB_SHA
+          CI_SUBJECT=$GITHUB_SHA
           WHY="the release commit"
           PARENT=$(git rev-parse -q --verify "$GITHUB_SHA^2" 2>/dev/null || true)
           if [ -n "$PARENT" ] && [ "$(git rev-parse "$GITHUB_SHA^{tree}")" = "$(git rev-parse "$PARENT^{tree}")" ]; then
-            SUBJECT=$PARENT
+            CI_SUBJECT=$PARENT
             WHY="the merged pull request's head, which carries the same tree"
           fi
-          echo "reading the required checks off $SUBJECT — $WHY"
-
-          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SUBJECT/check-runs" \
-            --jq '.check_runs[] | [.name, .started_at, .status, .conclusion] | @tsv' > check-runs.tsv
 
           failed=0
-          while IFS= read -r name; do
-            # Newest attempt wins: a re-run must not be judged by its first one.
-            # started_at is an ISO timestamp, so awk compares it as a string and
-            # the order is the chronological one.
-            verdict=$(awk -F'\t' -v n="$name" \
-              '$1 == n && $2 >= t { t = $2; line = $3"/"$4 } END { print line }' check-runs.tsv)
-            if [ -z "$verdict" ]; then
-              echo "::error::no check-run named '$name' on $SUBJECT."
-              failed=1
-            elif [ "${verdict#*/}" != success ]; then
-              echo "::error::'$name' is $verdict (status/conclusion) on $SUBJECT, not completed/success."
-              failed=1
-            else
-              echo "'$name': success"
-            fi
-          done <<'CHECKS'
-          Unit tests
-          Lint
-          Format
-          Detekt
-          Guardrails
-          Instrumented tests (API 26)
-          Instrumented tests (API 36)
-          CHECKS
+          # check <commit> <hint> <name>...
+          check() {
+            local subject=$1 hint=$2 name verdict
+            shift 2
+            gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$subject/check-runs" \
+              --jq '.check_runs[] | [.name, .started_at, .status, .conclusion] | @tsv' > check-runs.tsv
+            for name in "$@"; do
+              # Newest attempt wins: a re-run must not be judged by its first one.
+              # started_at is an ISO timestamp, so awk compares it as a string and
+              # the order is the chronological one.
+              verdict=$(awk -F'\t' -v n="$name" \
+                '$1 == n && $2 >= t { t = $2; line = $3"/"$4 } END { print line }' check-runs.tsv)
+              if [ -z "$verdict" ]; then
+                echo "::error::no check-run named '$name' on $subject.$hint"
+                failed=1
+              elif [ "${verdict#*/}" != success ]; then
+                echo "::error::'$name' is $verdict (status/conclusion) on $subject, not completed/success."
+                failed=1
+              else
+                echo "'$name': success"
+              fi
+            done
+          }
+
+          echo "reading the ci.yml checks off $CI_SUBJECT — $WHY"
+          check "$CI_SUBJECT" "" "Unit tests" "Lint" "Format" "Detekt" "Guardrails"
+
+          echo "reading the instrumented checks off $GITHUB_SHA — the release commit"
+          check "$GITHUB_SHA" " Dispatch the Instrumented tests workflow from $GITHUB_REF_NAME and release once it is green." \
+            "Instrumented tests (API 26)" "Instrumented tests (API 36)"
 
           exit "$failed"
 
