@@ -476,7 +476,7 @@ what `colorOnAccent` is for: `colorOnPrimary` is the cats and the text, and thos
 Supported: en (default), ar, de, es, ru, uk. The mechanism is non-obvious:
 
 - Each `values-XX/strings.xml` defines `<string name="lang">XX</string>`. `getString(R.string.lang)` is how the code asks "which locale is actually active" — used to preselect the language dialog and to decide whether to append "(Language)" to the menu title.
-- The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`, both by `settings/LocaleController`; the picker dialog stays in `MainActivity` and calls into it.
+- The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`, both by `settings/LocaleController`; the picker dialog is `ui/LanguageDialog` and calls into it.
 
 To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, add a `Language(...)` entry to `LocaleController.languages`, and add a listing and a release note under `app/src/main/play/` — `PlayMetadataTest` derives the store's locales from these `values*` directories, so it fails until the store texts exist too.
 The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is handled via `BidiFormatter` and `android:supportsRtl`/`layoutDirection="locale"` in the manifest.
