@@ -7,7 +7,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
- * The test-first rule in CLAUDE.md and the Kover denominator both assume these sources import
+ * The test-first rule in AGENTS.md and the Kover denominator both assume these sources import
  * nothing from `android.*`. Nothing checked it before, so the assumption failed silently.
  */
 class AndroidFreeSourcesTest {

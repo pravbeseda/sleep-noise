@@ -1,7 +1,7 @@
 #!/bin/sh
 # Block commits made directly on a protected branch, so the mistake surfaces
 # at commit time rather than at push time. See .githooks/pre-push for the
-# push-side guard and CLAUDE.md for the workflow.
+# push-side guard and AGENTS.md for the workflow.
 #
 # Intentional bypass: git commit --no-verify
 

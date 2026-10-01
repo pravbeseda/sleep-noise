@@ -2,7 +2,7 @@ name: Instrumented tests
 
 # Manual only, as in SpendControl: the two emulators were the most expensive jobs
 # in ci.yml, spent on every pull request. A pull request that changes app/ runs
-# the suite locally before it is pushed (CLAUDE.md, Definition of done), or
+# the suite locally before it is pushed (AGENTS.md, Definition of done), or
 # dispatches this workflow on its branch when no device is at hand. Guard 3 of
 # release.yml still requires both check names on the commit it releases, so
 # dispatch this workflow from main before releasing: a dispatched run reports

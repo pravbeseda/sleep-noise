@@ -79,7 +79,7 @@ symlinks:
   - .claude
 
 # The project rules are already written and already maintained. No second copy.
-agentRulesFile: CLAUDE.md
+agentRulesFile: AGENTS.md
 
 agentRules: |
   When the task names a GitHub issue — by number, by URL, or by both — run
@@ -90,7 +90,7 @@ agentRules: |
   AO created the branch. Work in it: do not create your own, do not switch to
   main, do not rebase onto main or release.
 
-  Work is finished when the command under "Definition of done" in CLAUDE.md is
+  Work is finished when the command under "Definition of done" in AGENTS.md is
   green. It is named there rather than repeated here: a second copy of it goes
   stale the first time a check is added, and this file already says it keeps no
   second copy of the project rules.
@@ -102,7 +102,7 @@ agentRules: |
 
   Documentation that the change makes false is part of the change, not a
   widening of scope. Update it in the same PR and say so in the description.
-  CLAUDE.md and README.md describe the same project and go stale silently:
+  AGENTS.md and README.md describe the same project and go stale silently:
   when one of them stops being true, check the other.
 
 # NOT SUPPORTED BY THE INSTALLED BUILD, kept as the record of what was intended.
