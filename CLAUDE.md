@@ -151,8 +151,8 @@ nothing about it belongs on a pre-push line — its scripts do run here, two of 
 `BASE_SHA=origin/main`, but only against a `main` a fetch has just moved. So a green local run does
 not mean the PR is mergeable. See the CI section.
 
-**A pull request that changes anything under `app/` also runs the instrumented suite before it is
-pushed**, on an emulator, and says so in its description:
+**A pull request that changes anything under `app/` or the build — `gradle/`, a `*.gradle.kts` — also
+runs the instrumented suite before it is pushed**, on an emulator, and says so in its description:
 
 ```bash
 ./gradlew connectedDebugAndroidTest
@@ -161,8 +161,9 @@ pushed**, on an emulator, and says so in its description:
 CI no longer runs it on pull requests — the two emulators were the most expensive jobs there, spent
 on every one — so this run is what stands between a change to the app and `main`. With no device at
 hand, dispatch `.github/workflows/instrumented.yml` on the branch instead; it runs the same suite at
-API 26 and API 36. A pull request that touches only CI, scripts or prose has nothing an emulator can
-see, and is exempt.
+API 26 and API 36. A Dependabot pull request that bumps the Gradle build is the case that never has a
+device: dispatch the workflow on its branch, and merge it once both levels are green. A pull request
+that touches only CI, scripts or prose has nothing an emulator can see, and is exempt.
 
 New Gradle tooling joins this line as it lands; Kover was the most recent. A step added to
 Guardrails does not, for the reason above, and that holds for its linters too: actionlint and

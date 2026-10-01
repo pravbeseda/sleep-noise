@@ -48,7 +48,7 @@ Three moves replace them:
    tests Room, its migrations and its file storage. `NoiseEngineHammerTest` is already written
    this way, and `instrumented.yml` runs it on an emulator at API 26 and API 36 when dispatched
    — on demand since the emulators left the per-PR checks, with a local run before every pull
-   request that changes `app/`.
+   request that changes `app/` or the build.
 3. **Coverage is measured on the Android-free packages only.** SpendControl puts its 80 % Kover
    bound on `:domain` alone, and its build script says why: a denominator full of Activities
    makes the figure answer no question however good the tests get. Single-module, this project

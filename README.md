@@ -143,7 +143,7 @@ Before opening a PR:
 
 ```bash
 ./gradlew spotlessCheck detekt testDebugUnitTest koverVerifyDebug lint
-./gradlew connectedDebugAndroidTest   # when the PR changes app/ — on an emulator
+./gradlew connectedDebugAndroidTest   # when the PR changes app/ or the build — on an emulator
 ```
 
 With no device at hand, dispatch the `Instrumented tests` workflow on your branch instead of the
