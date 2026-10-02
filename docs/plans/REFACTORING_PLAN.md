@@ -548,9 +548,10 @@ Rewritten on 2 October 2026 against the code after phase 4. Where it stands:
   timer lives in a file of its own, `timer_prefs`, behind `TimerPreferences`.
 - The rule that a switched-off noise is heard at 0 while keeping its level is written twice: in
   `NoiseControlView` for live changes and in `PlaybackService.noiseVolume` at start.
-- The language is stored twice. `LocaleController.applyStored()` applies `selectedLanguage` on every
-  `onCreate`, defaulting to `"en"`, so a fresh install ignores the system language; what is active
-  is then read back from `R.string.lang`.
+- The language is stored twice: in `selectedLanguage`, and by AppCompat — through the framework
+  from API 33 — once `setApplicationLocales` has been called. `LocaleController.applyStored()`
+  copies the first onto the second on every `onCreate`, defaulting to `"en"`, so a fresh install
+  ignores the system language.
 
 Three decisions were taken before starting, on 2 October 2026:
 
@@ -591,7 +592,9 @@ Three decisions were taken before starting, on 2 October 2026:
       `timer_value` is copied when the new key is absent, and `timer_prefs` is deleted.
 - [ ] **D3 — AppCompat holds the language.** `autoStoreLocales` in the manifest; `selectedLanguage`
       applied once when AppCompat holds nothing, then removed; `applyStored()` and its `"en"`
-      default go, and the `"en"` in `MainActivity`'s menu becomes a constant. The tests that write
+      default go, and the `"en"` in `MainActivity`'s menu becomes a constant. `R.string.lang` stays
+      what the menu and the picker read: it is the language actually on screen, which
+      `getApplicationLocales()` cannot say on a fresh install, where it is empty. The tests that write
       `selectedLanguage` today — `LanguageSelectionUiTest`, `StoreScreenshotTest` — set the locale
       through AppCompat instead.
 - [ ] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
@@ -600,7 +603,8 @@ Three decisions were taken before starting, on 2 October 2026:
 ### Done when
 
 No `SharedPreferences` in the main sources outside the adapter, no string literal for a language
-outside a constant, and upgrading from 1.0.3 or 1.0.4 preserves volumes, theme, language and timer.
+outside a constant, and upgrading from any released version preserves volumes, theme, language and
+timer — every one from 1.0.3 to 2.0.1 stores them under the same keys.
 
 ---
 
