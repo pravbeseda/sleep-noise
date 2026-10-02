@@ -23,4 +23,6 @@ interface KeyValueStore {
     fun getBoolean(key: String, default: Boolean): Boolean
 
     fun putBoolean(key: String, value: Boolean)
+
+    fun remove(key: String)
 }

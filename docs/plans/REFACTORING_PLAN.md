@@ -590,13 +590,18 @@ Three decisions were taken before starting, on 2 October 2026:
       filter in the same PR.
 - [x] **D2 — the timer moves into `AppPreferences`**, under `timerMinutes`. On first read the old
       `timer_value` is copied when the new key is absent, and `timer_prefs` is deleted.
-- [ ] **D3 — AppCompat holds the language.** `autoStoreLocales` in the manifest; `selectedLanguage`
+- [x] **D3 — AppCompat holds the language.** `autoStoreLocales` in the manifest; `selectedLanguage`
       applied once when AppCompat holds nothing, then removed; `applyStored()` and its `"en"`
       default go, and the `"en"` in `MainActivity`'s menu becomes a constant. `R.string.lang` stays
       what the menu and the picker read: it is the language actually on screen, which
       `getApplicationLocales()` cannot say on a fresh install, where it is empty. The tests that write
       `selectedLanguage` today — `LanguageSelectionUiTest`, `StoreScreenshotTest` — set the locale
       through AppCompat instead.
+      The key is removed only on an `onCreate` that finds AppCompat holding a language, never in the
+      launch that hands it over: below API 33 AppCompat writes its file only when the recreated screen
+      attaches, and from API 33 the first launch of an install starts AppCompat's one-time copy of its
+      own storage onto the framework, which writes an empty list and can undo the hand-over. Either
+      way the key is still there, and the next launch hands it over again.
 - [ ] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
       `unqualifiedResLocale=en`, checked by hand on an API 36 emulator.
 

@@ -2,6 +2,7 @@ package ru.pravbeseda.sleepnoise.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.models.AppTheme
@@ -70,6 +71,29 @@ class SettingsRepositoryTest {
         assertFalse(moveLegacyTimer(appStore, legacyTimerStore))
 
         assertFalse(appStore.values.containsKey(TIMER_MINUTES))
+    }
+
+    /** Every released version stored the language itself; an upgrade hands it to AppCompat once. */
+    @Test
+    fun theLegacyLanguageIsReadFromItsKey() {
+        appStore.putString(LEGACY_LANGUAGE, "de")
+
+        assertEquals("de", settings.legacyLanguage)
+    }
+
+    @Test
+    fun anInstallThatNeverPickedALanguageHasNoLegacyOne() {
+        assertNull(settings.legacyLanguage)
+    }
+
+    @Test
+    fun aForgottenLegacyLanguageLeavesTheStore() {
+        appStore.putString(LEGACY_LANGUAGE, "de")
+
+        settings.forgetLegacyLanguage()
+
+        assertFalse(appStore.contains(LEGACY_LANGUAGE))
+        assertNull(settings.legacyLanguage)
     }
 
     @Test

@@ -23,6 +23,8 @@ class SharedPreferencesStore(private val preferences: SharedPreferences, private
     override fun getBoolean(key: String, default: Boolean): Boolean = preferences.getBoolean(key, default)
 
     override fun putBoolean(key: String, value: Boolean) = preferences.edit(commit) { putBoolean(key, value) }
+
+    override fun remove(key: String) = preferences.edit(commit) { remove(key) }
 }
 
 /** The repository over the app's real preferences, with the timer's old file moved into them and deleted. */

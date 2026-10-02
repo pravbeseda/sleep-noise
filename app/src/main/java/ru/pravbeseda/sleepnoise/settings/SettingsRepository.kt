@@ -34,6 +34,12 @@ class SettingsRepository(private val app: KeyValueStore) {
         get() = app.getInt(TIMER_MINUTES, 0)
         set(value) = app.putInt(TIMER_MINUTES, value)
 
+    /** The language an older release stored, until it is handed to AppCompat and forgotten. */
+    val legacyLanguage: String?
+        get() = app.getString(LEGACY_LANGUAGE, null)
+
+    fun forgetLegacyLanguage() = app.remove(LEGACY_LANGUAGE)
+
     fun volume(noise: NoiseSetting): Float = app.getFloat(noise.volumeKey, noise.defaultVolume)
 
     fun setVolume(noise: NoiseSetting, volume: Float) = app.putFloat(noise.volumeKey, volume)
