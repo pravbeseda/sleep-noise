@@ -588,7 +588,7 @@ Three decisions were taken before starting, on 2 October 2026:
       function with two callers. The timer stays in `timer_prefs` for now, so nothing a user can see
       or store changes. The pure files join the roots of `AndroidFreeSourcesTest` and the Kover
       filter in the same PR.
-- [ ] **D2 — the timer moves into `AppPreferences`**, under `timerMinutes`. On first read the old
+- [x] **D2 — the timer moves into `AppPreferences`**, under `timerMinutes`. On first read the old
       `timer_value` is copied when the new key is absent, and `timer_prefs` is deleted.
 - [ ] **D3 — AppCompat holds the language.** `autoStoreLocales` in the manifest; `selectedLanguage`
       applied once when AppCompat holds nothing, then removed; `applyStored()` and its `"en"`

@@ -8,8 +8,8 @@ import ru.pravbeseda.sleepnoise.models.AppTheme
 
 class SettingsRepositoryTest {
     private val appStore = InMemoryStore()
-    private val timerStore = InMemoryStore()
-    private val settings = SettingsRepository(appStore, timerStore)
+    private val legacyTimerStore = InMemoryStore()
+    private val settings = SettingsRepository(appStore)
 
     private val noise = NoiseSetting("pinkNoiseVolume", "pinkNoiseEnabled", DEFAULT_VOLUME)
 
@@ -35,14 +35,41 @@ class SettingsRepositoryTest {
         assertEquals(AppTheme.DEFAULT, settings.theme)
     }
 
-    /** The timer keeps the file and the key every released version wrote it under. */
     @Test
-    fun theTimerIsStoredInItsOwnFile() {
+    fun theTimerIsStoredInTheAppWideStore() {
         settings.timerMinutes = 90
 
-        assertEquals(90, timerStore.values[TIMER_MINUTES])
-        assertFalse(appStore.values.containsKey(TIMER_MINUTES))
+        assertEquals(90, appStore.values[TIMER_MINUTES])
         assertEquals(90, settings.timerMinutes)
+    }
+
+    /** Every released version kept the minutes in a file of their own; an upgrade carries them across. */
+    @Test
+    fun theLegacyTimerIsCopiedWhenTheAppWideStoreHasNone() {
+        legacyTimerStore.putInt(LEGACY_TIMER_MINUTES, 90)
+
+        assertTrue(moveLegacyTimer(appStore, legacyTimerStore))
+
+        assertEquals(90, settings.timerMinutes)
+    }
+
+    /** A value already in the app-wide store is newer than anything the old file can hold. */
+    @Test
+    fun theLegacyTimerNeverOverwritesTheAppWideOne() {
+        appStore.putInt(TIMER_MINUTES, 30)
+        legacyTimerStore.putInt(LEGACY_TIMER_MINUTES, 90)
+
+        assertTrue(moveLegacyTimer(appStore, legacyTimerStore))
+
+        assertEquals(30, settings.timerMinutes)
+    }
+
+    /** With no old file there is nothing to copy and nothing to delete. */
+    @Test
+    fun anInstallWithNoLegacyTimerHasNothingToMove() {
+        assertFalse(moveLegacyTimer(appStore, legacyTimerStore))
+
+        assertFalse(appStore.values.containsKey(TIMER_MINUTES))
     }
 
     @Test
