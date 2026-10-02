@@ -26,6 +26,10 @@ class AndroidFreeSourcesTest {
         val singleFiles = listOf(
             root("src/main/java/ru/pravbeseda/sleepnoise/timer/SleepTimer.kt"),
             root("src/main/java/ru/pravbeseda/sleepnoise/playback/PlaybackState.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/settings/SettingsRepository.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/settings/KeyValueStore.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/settings/AppPreferences.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/models/AppTheme.kt"),
         )
 
         val violations = (mediaFiles + singleFiles).flatMap { file ->

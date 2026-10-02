@@ -363,6 +363,9 @@ kover {
                     "ru.pravbeseda.sleepnoise.media.*",
                     "ru.pravbeseda.sleepnoise.timer.SleepTimer*",
                     "ru.pravbeseda.sleepnoise.playback.PlaybackState*",
+                    "ru.pravbeseda.sleepnoise.settings.SettingsRepository*",
+                    "ru.pravbeseda.sleepnoise.settings.NoiseSetting",
+                    "ru.pravbeseda.sleepnoise.models.AppTheme*",
                 )
             }
             excludes {

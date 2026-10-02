@@ -582,7 +582,7 @@ Three decisions were taken before starting, on 2 October 2026:
 
 ### Deliverables — one PR each, in this order
 
-- [ ] **D1 — `SettingsRepository`.** The repository and its store interface in `settings/`, written
+- [x] **D1 — `SettingsRepository`.** The repository and its store interface in `settings/`, written
       test-first, plus the `SharedPreferences` adapter. `ThemeController`, `TimerPreferences`,
       `NoiseRows`/`NoiseControlView` and `PlaybackService` go through it, and the gate becomes one
       function with two callers. The timer stays in `timer_prefs` for now, so nothing a user can see
@@ -611,11 +611,12 @@ timer — every one from 1.0.3 to 2.0.1 stores them under the same keys.
 ## Phase 6 — Cleanup
 
 Lint's real findings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 18 of them
+`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 17 of them
 now; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
 measured by emptying the baseline. It started at 29 real findings; the four `DefaultLocale`
 entries were the first to go, and in phase 4 the two `Uri.parse` ones left with the feedback mail
-and the two `SharedPreferences.edit` ones with the theme and language controllers.
+and the two `SharedPreferences.edit` ones with the theme and language controllers. The last
+`UseKtx` one left with `TimerPreferences` in phase 5.
 
 ### Deadline: targetSdk
 
@@ -643,7 +644,8 @@ present requirement; the lint finding is about the cycle after it.
       reads `34:12`. `BidiFormatter` is already applied to language names in `MainActivity` but
       not here. Independent of the digit question above — it goes wrong the same way with
       Western digits in an RTL layout.
-- [ ] `UseKtx` (8 hits): replace `preferences.edit().apply()` with `edit { }` and friends.
+- [x] `UseKtx` (8 hits): replace `preferences.edit().apply()` with `edit { }` and friends. The
+      last one went with `TimerPreferences` in phase 5.
 - [ ] `Untranslatable` (5), `IconDuplicates` (5), `MonochromeLauncherIcon` (2),
       `AlwaysShowAction`, `Overdraw`, `UnusedResources`.
 - [ ] `ContentDescription` on the cats `ImageView` in `activity_main.xml`.

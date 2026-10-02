@@ -28,7 +28,7 @@ class ThemeControllerTest {
 
     @Test
     fun anUntouchedInstallOpensInTheDefaultTheme() {
-        val controller = ThemeController(context)
+        val controller = ThemeController(settingsRepository(context))
 
         assertEquals(AppTheme.DEFAULT, controller.theme)
         assertEquals(R.style.Theme_SleepNoise_Purple, controller.style)
@@ -37,7 +37,7 @@ class ThemeControllerTest {
 
     @Test
     fun switchingStoresTheNextThemeAndComesBackRound() {
-        val controller = ThemeController(context)
+        val controller = ThemeController(settingsRepository(context))
 
         controller.switchToNext()
 

@@ -49,8 +49,8 @@ class NoiseLabUiTest {
     /** The test writes real preferences on the device, so it takes them back out again. */
     private fun forgetLabVolumes() = preferences.edit(commit = true) {
         NOISE_LAB_CANDIDATES.forEach {
-            remove(it.preferenceKey)
-            remove(it.enabledPreferenceKey)
+            remove(it.setting.volumeKey)
+            remove(it.setting.enabledKey)
         }
     }
 
@@ -75,7 +75,7 @@ class NoiseLabUiTest {
                     val row = container.getChildAt(index)
                     assertTrue("the view at $index is not a NoiseControlView", row is NoiseControlView)
                     val text = (row as NoiseControlView).findViewById<TextView>(R.id.noiseLabel).text.toString()
-                    assertTrue("the label of ${candidate.preferenceKey} reads \"$text\"", text.startsWith(candidate.label))
+                    assertTrue("the label of ${candidate.setting.volumeKey} reads \"$text\"", text.startsWith(candidate.label))
                 }
             }
         }
@@ -87,8 +87,8 @@ class NoiseLabUiTest {
             if (!NOISE_LAB_ENABLED) {
                 NOISE_LAB_CANDIDATES.forEach { candidate ->
                     assertFalse(
-                        "${candidate.preferenceKey} was stored with the lab off",
-                        preferences.contains(candidate.preferenceKey),
+                        "${candidate.setting.volumeKey} was stored with the lab off",
+                        preferences.contains(candidate.setting.volumeKey),
                     )
                 }
                 return@use
@@ -100,13 +100,13 @@ class NoiseLabUiTest {
             // came back as 100.
             val step = (LAST_PROGRESS - FIRST_PROGRESS) / NOISE_LAB_CANDIDATES.size
             val progressByKey = NOISE_LAB_CANDIDATES
-                .mapIndexed { index, candidate -> candidate.preferenceKey to FIRST_PROGRESS + index * step }
+                .mapIndexed { index, candidate -> candidate.setting.volumeKey to FIRST_PROGRESS + index * step }
                 .toMap()
 
             scenario.onActivity { activity ->
                 val container = activity.labContainer()
                 NOISE_LAB_CANDIDATES.forEachIndexed { index, candidate ->
-                    container.sliderAt(index).progress = progressByKey.getValue(candidate.preferenceKey)
+                    container.sliderAt(index).progress = progressByKey.getValue(candidate.setting.volumeKey)
                 }
             }
 

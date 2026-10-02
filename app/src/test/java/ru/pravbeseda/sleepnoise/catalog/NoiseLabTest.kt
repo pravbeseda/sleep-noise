@@ -10,7 +10,7 @@ import kotlin.random.Random
 class NoiseLabTest {
     @Test
     fun everyCandidateCarriesItsOwnPreferenceKey() {
-        val keys = NOISE_LAB_CANDIDATES.map { it.preferenceKey }
+        val keys = NOISE_LAB_CANDIDATES.map { it.setting.volumeKey }
 
         assertEquals("two candidates persist under one key, so one slider would move the other", keys.size, keys.toSet().size)
     }

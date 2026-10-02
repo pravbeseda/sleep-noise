@@ -1,7 +1,6 @@
 package ru.pravbeseda.sleepnoise.ui
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.SparseArray
@@ -12,10 +11,11 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatCheckBox
-import androidx.core.content.edit
 import androidx.core.content.res.use
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.catalog.DEFAULT_NOISE_ENABLED
+import ru.pravbeseda.sleepnoise.settings.NoiseSetting
+import ru.pravbeseda.sleepnoise.settings.SettingsRepository
+import ru.pravbeseda.sleepnoise.settings.heardVolume
 
 /** A seekbar's range as a volume. */
 private const val PERCENT_SCALE = 100f
@@ -28,9 +28,7 @@ private const val MIN_AUDIBLE_PROGRESS = 1
  * the toggle announces, and how the level reads above the slider.
  */
 class NoiseControl(
-    val volumeKey: String,
-    val enabledKey: String,
-    val defaultVolume: Float,
+    val setting: NoiseSetting,
     /** The noise's name, which is what the toggle announces to a screen reader. */
     val name: CharSequence,
     /** The text over the slider, given the level as a percentage. */
@@ -97,23 +95,23 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
      * audible level. [onVolumeChanged] is called once from here as well, with the stored state, so a
      * caller has nothing left to push afterwards.
      */
-    fun bind(noise: NoiseControl, preferences: SharedPreferences, onVolumeChanged: (Float) -> Unit) {
+    fun bind(noise: NoiseControl, settings: SettingsRepository, onVolumeChanged: (Float) -> Unit) {
         noiseToggle.contentDescription = noise.name
         // Both before their listeners, so restoring the stored state does not count as a change to save.
-        slider.progress = (preferences.getFloat(noise.volumeKey, noise.defaultVolume) * PERCENT_SCALE).toInt()
+        slider.progress = (settings.volume(noise.setting) * PERCENT_SCALE).toInt()
         // A noise at zero is silent whatever its stored flag says, and the speaker says only what is
         // true: on an untouched install every noise but brown sits at 0 %.
-        noiseToggle.isChecked = preferences.getBoolean(noise.enabledKey, DEFAULT_NOISE_ENABLED) && slider.progress > 0
+        noiseToggle.isChecked = settings.isEnabled(noise.setting) && slider.progress > 0
 
         val show = {
             label.text = noise.label(slider.progress)
             controls.alpha = if (noiseToggle.isChecked) 1f else disabledControlsAlpha
-            onVolumeChanged(if (noiseToggle.isChecked) slider.progress / PERCENT_SCALE else 0f)
+            onVolumeChanged(heardVolume(slider.progress / PERCENT_SCALE, noiseToggle.isChecked))
         }
 
         slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                preferences.edit { putFloat(noise.volumeKey, progress / PERCENT_SCALE) }
+                settings.setVolume(noise.setting, progress / PERCENT_SCALE)
                 // A level the user just set says what they want to hear, so the toggle follows the
                 // slider: off zero switches the noise on, down to zero switches it off. Only for a
                 // change the user made — restoring a stored level must switch nothing on by itself.
@@ -137,7 +135,7 @@ class NoiseControlView @JvmOverloads constructor(context: Context, attrs: Attrib
             if (checked && slider.progress == 0) {
                 slider.progress = MIN_AUDIBLE_PROGRESS
             }
-            preferences.edit { putBoolean(noise.enabledKey, checked) }
+            settings.setEnabled(noise.setting, checked)
             show()
         }
         show()

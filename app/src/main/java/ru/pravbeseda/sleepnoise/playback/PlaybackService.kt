@@ -9,7 +9,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Binder
@@ -23,25 +22,15 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import ru.pravbeseda.sleepnoise.MainActivity
 import ru.pravbeseda.sleepnoise.R
-import ru.pravbeseda.sleepnoise.catalog.DEFAULT_LAB_NOISE_VOLUME
-import ru.pravbeseda.sleepnoise.catalog.DEFAULT_NOISE_ENABLED
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_CANDIDATES
 import ru.pravbeseda.sleepnoise.catalog.NOISE_LAB_ENABLED
 import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
-import ru.pravbeseda.sleepnoise.settings.APP_PREFS
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import kotlin.random.Random
-
-/**
- * A noise's level as the mix should hear it: a switched-off noise keeps the level its slider shows
- * and contributes nothing. The gate lives here as well as in the Activity because a session started
- * from the notification, or after the Activity is gone, reads the preferences and nothing else.
- */
-private fun SharedPreferences.noiseVolume(volumeKey: String, enabledKey: String, defaultVolume: Float): Float =
-    if (getBoolean(enabledKey, DEFAULT_NOISE_ENABLED)) getFloat(volumeKey, defaultVolume) else 0f
 
 /**
  * Owns the noise engine and the sleep timer so that both outlive the Activity.
@@ -65,8 +54,8 @@ class PlaybackService : Service() {
      * Activity's row carries, which is what lets a volume change name its channel instead of naming a setter.
      */
     private val channels: Map<String, NoiseChannel> = buildMap {
-        SHIPPING_NOISES.forEach { put(it.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
-        labCandidates.forEach { put(it.preferenceKey, NoiseChannel(it.createSource(Random.Default))) }
+        SHIPPING_NOISES.forEach { put(it.setting.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
+        labCandidates.forEach { put(it.setting.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
     }
 
     // Called on the engine's writer thread; the teardown belongs on the main thread with everything else here.
@@ -274,14 +263,11 @@ class PlaybackService : Service() {
             stopPlayback(fade = false)
             return
         }
-        val preferences = getSharedPreferences(APP_PREFS, MODE_PRIVATE)
-        SHIPPING_NOISES.forEach { noise ->
-            channels.getValue(noise.volumeKey).volume =
-                preferences.noiseVolume(noise.volumeKey, noise.enabledKey, noise.defaultVolume)
-        }
-        labCandidates.forEach { candidate ->
-            channels.getValue(candidate.preferenceKey).volume =
-                preferences.noiseVolume(candidate.preferenceKey, candidate.enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+        // Read here and not pushed by the Activity: a session started from the notification, or after the
+        // Activity is gone, has nothing but the store to read.
+        val settings = settingsRepository(this)
+        (SHIPPING_NOISES.map { it.setting } + labCandidates.map { it.setting }).forEach { setting ->
+            channels.getValue(setting.volumeKey).volume = settings.heardVolume(setting)
         }
         pausedByFocusLoss = false
         // Reached only when playback was stopped, and a stop or a turned-around fade unregisters, so this is never a double.

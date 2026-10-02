@@ -71,9 +71,9 @@ class LanguageSelectionUiTest {
                         activity.findViewById<TextView>(R.id.timerLabel).text.toString(),
                     )
                     SHIPPING_NOISES.forEach { noise ->
-                        val row = activity.noiseRows.getValue(noise.volumeKey)
+                        val row = activity.noiseRows.getValue(noise.setting.volumeKey)
                         assertEquals(
-                            "the ${noise.volumeKey} row after picking $language",
+                            "the ${noise.setting.volumeKey} row after picking $language",
                             activity.getString(noise.volumeLabelRes, row.findViewById<SeekBar>(R.id.noiseSlider).progress),
                             row.findViewById<TextView>(R.id.noiseLabel).text.toString(),
                         )

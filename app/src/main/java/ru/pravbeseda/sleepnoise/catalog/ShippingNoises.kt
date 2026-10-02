@@ -8,6 +8,7 @@ import ru.pravbeseda.sleepnoise.media.NoiseSource
 import ru.pravbeseda.sleepnoise.media.PinkNoise
 import ru.pravbeseda.sleepnoise.media.SurfNoise
 import ru.pravbeseda.sleepnoise.media.WhiteNoise
+import ru.pravbeseda.sleepnoise.settings.NoiseSetting
 import kotlin.random.Random
 
 /**
@@ -31,9 +32,6 @@ const val DEFAULT_SILENT_NOISE_VOLUME = 0.0f
  */
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
 
-/** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
-const val DEFAULT_NOISE_ENABLED = true
-
 /**
  * One noise the app ships: where its level and its switch are stored, what it starts at, what it is called,
  * and how to build it.
@@ -45,9 +43,7 @@ const val DEFAULT_NOISE_ENABLED = true
  * build, and `media/` is the part `AndroidFreeSourcesTest` keeps free of one.
  */
 class ShippingNoise(
-    val volumeKey: String,
-    val enabledKey: String,
-    val defaultVolume: Float,
+    val setting: NoiseSetting,
     /** The noise's name, which is what its toggle announces to a screen reader. */
     val nameRes: Int,
     /** The text over its slider, which takes the level as a percentage. */
@@ -64,7 +60,7 @@ class ShippingNoise(
  * loses every level saved under the old spelling.
  */
 private fun shipping(name: String, defaultVolume: Float, nameRes: Int, volumeLabelRes: Int, createSource: (Random) -> NoiseSource) =
-    ShippingNoise("${name}NoiseVolume", "${name}NoiseEnabled", defaultVolume, nameRes, volumeLabelRes, createSource)
+    ShippingNoise(NoiseSetting("${name}NoiseVolume", "${name}NoiseEnabled", defaultVolume), nameRes, volumeLabelRes, createSource)
 
 val BROWN_NOISE = shipping("brown", DEFAULT_BROWN_NOISE_VOLUME, R.string.brown_noise_name, R.string.brown_noise_volume) {
     LeakyBrownNoise(BROWN_NOISE_CUTOFF_HZ, it)

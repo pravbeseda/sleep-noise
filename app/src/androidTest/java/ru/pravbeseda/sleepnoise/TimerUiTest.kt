@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.pravbeseda.sleepnoise.timer.TimerPreferences
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import java.util.Locale
 
@@ -24,21 +24,25 @@ import java.util.Locale
  */
 @RunWith(AndroidJUnit4::class)
 class TimerUiTest {
-    private val timerPreferences = TimerPreferences(InstrumentationRegistry.getInstrumentation().targetContext)
+    private val settings = settingsRepository(InstrumentationRegistry.getInstrumentation().targetContext)
 
     /**
      * The timer preference is the device's own, so every test starts from none and leaves none behind: a
      * user pick equal to a value already stored would move nothing and be refused.
      */
     @Before
-    fun startWithNoTimer() = timerPreferences.saveTimerValue(0)
+    fun startWithNoTimer() {
+        settings.timerMinutes = 0
+    }
 
     @After
-    fun leaveNoTimer() = timerPreferences.saveTimerValue(0)
+    fun leaveNoTimer() {
+        settings.timerMinutes = 0
+    }
 
     @Test
     fun theStoredMinutesAreShownAtLaunch() {
-        timerPreferences.saveTimerValue(STORED_MINUTES)
+        settings.timerMinutes = STORED_MINUTES
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
@@ -55,7 +59,7 @@ class TimerUiTest {
             scenario.onActivity { activity ->
                 activity.timer().setSeekBarByUser(PICKED_STEPS)
 
-                assertEquals("the stored minutes", PICKED_STEPS * MINUTES_PER_STEP, timerPreferences.getTimerValue())
+                assertEquals("the stored minutes", PICKED_STEPS * MINUTES_PER_STEP, settings.timerMinutes)
             }
         }
     }
@@ -63,7 +67,7 @@ class TimerUiTest {
     /** The label used to come back by rereading the preference; now it comes from the seekbar it sits over. */
     @Test
     fun aStopTradesTheCountdownForThePickedMinutes() {
-        timerPreferences.saveTimerValue(STORED_MINUTES)
+        settings.timerMinutes = STORED_MINUTES
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->

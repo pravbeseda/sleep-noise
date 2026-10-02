@@ -93,7 +93,8 @@ the smallest implementation that passes it, then refactoring. New pure logic wit
 same commit is not finished work — do not describe it as done.
 
 The roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
-walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt` and `playback/PlaybackState.kt`, and fails naming the file and the
+walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt` and the
+three pure files of `settings/` — `SettingsRepository.kt`, `KeyValueStore.kt` and `AppPreferences.kt` — and fails naming the file and the
 import line when one of them imports `android.*`, `androidx.*` or the generated `R` — which is neither,
 yet exists only inside an Android build, so it is the import that would stop those roots moving into a
 `java-library` module (issue #57). The rest of the rule above is still
@@ -116,8 +117,8 @@ under "Testing strategy"; adding either dependency means changing that section f
 loosening an assertion. A test that seems wrong is a discussion in the PR, not a silent edit.
 
 **Coverage has a floor: 80 % of lines**, set in `app/build.gradle.kts` and measured on the debug
-variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer` and
-`playback/PlaybackState`. The
+variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`,
+`playback/PlaybackState`, `models/AppTheme` and `settings/SettingsRepository` with its `NoiseSetting`. The
 denominator is cut down on purpose: an Activity or a Service is a line no JVM test can execute, so
 counting them makes the figure report how much Android plumbing the app has rather than how well its
 logic is tested. It is the logic that is measured, not everything a JVM test could technically
@@ -209,7 +210,7 @@ It checks out with `fetch-depth: 0` because `versionCode` is the commit count an
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 18 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 17 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **A finding that turns `Lint` or `Detekt` red is read on its line in the pull request diff**, not in an artifact: both jobs upload their SARIF report to GitHub code scanning, under the categories `lint` and `detekt`, and hold `security-events: write` for it — the only two jobs that do. Both baselines are applied before a report is written, so only new findings travel. Lint's report is filtered with `jq` first: every `note` in it is a version-currency hint or the baseline summary, and a hint whose message embeds a version number would come back as a new alert with every release, so code scanning gets what fails the job and the HTML/XML artifact keeps the rest. The upload is skipped for a pull request from a fork — its token cannot be granted that permission, and a refused upload would redden a required check for a reason unrelated to the code — so a fork reads the artifact. Nothing uploads on a push to `main`: `decide-work` answers false there, and a code scanning run on every merge would buy a report that is almost always empty.
 
@@ -438,14 +439,21 @@ None of the service is covered by tests yet. It is meant to be covered by instru
 
 ### Timer
 
-Three pieces in `timer/`:
+Two pieces in `timer/`, and the stored value outside it:
 - `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing. It stores nothing: its owner assigns `minutes` and hears the user's picks through `onMinutesChanged`, which a value assigned in code does not fire.
-- `TimerPreferences` — its own `SharedPreferences` file (`timer_prefs`), separate from the app-wide one. `PlaybackViewModel` reads it into `PlaybackState.timerMinutes` and writes the user's picks back.
 - `SleepTimer` — the arithmetic only: a deadline on a clock the caller supplies, the milliseconds left on it, and the `mm:ss` / `hh:mm:ss` formatting. It imports nothing from `android.*` and is tested on the JVM. The service passes `SystemClock.elapsedRealtime()`; a `CountDownTimer` would have died with the Activity, which is what the deadline replaced.
+
+The minutes are `SettingsRepository.timerMinutes`, still in a file of their own (`timer_prefs`); `PlaybackViewModel` reads them into `PlaybackState.timerMinutes` and writes the user's picks back.
 
 The countdown itself runs in `playback/PlaybackService`, once a second, into the notification and into whatever Activity is bound.
 
 ### Preferences
+
+Every setting is read and written through `settings/SettingsRepository`: the theme, the timer, and each noise's
+level and switch, keyed by the `NoiseSetting` its registry entry carries. It is written over `KeyValueStore`, an
+interface of its own, so it is tested on the JVM; `SharedPreferencesStore` is the one adapter onto
+`SharedPreferences`, and `settingsRepository(context)` opens both files behind it. The language is the exception
+until phase 5 moves it to AppCompat: `LocaleController` still reads and writes `selectedLanguage` itself.
 
 Two distinct stores. `APP_PREFS` ("AppPreferences") holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`, the two that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
 
@@ -456,9 +464,10 @@ after some install did, and a key that did not exist yet must not make a running
 Brown's own default is 0.3, which is low because the level every source shares came down when six of them
 started sharing the mixer's headroom.
 A switched-off noise **keeps its stored level**: the gate is applied where the volume is handed to the engine,
-never by writing 0 over the level. That gate is written twice on purpose — `ui/NoiseControlView` applies it to the
-live changes it pushes over the binder, and `PlaybackService` applies it again when it reads the preferences at
-start, because a session begun with no Activity in sight reads nothing else.
+never by writing 0 over the level. That gate is one function, `heardVolume` in `SettingsRepository.kt`, with two
+callers on purpose — `ui/NoiseControlView` applies it to the live changes it pushes over the binder, and
+`PlaybackService` applies it again through the repository when it reads the levels at start, because a session
+begun with no Activity in sight reads nothing else.
 
 Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / `lab<name>NoiseEnabled` pair for each of the four candidates on trial — `Violet`, `Blue`, `Rain` and `WheelClatter` — derived from the candidate's name in `catalog/NoiseLab.kt` exactly as the shipping ones are, so a new experiment stays one entry in one file. The volumes default to 0, which is why an untouched install is unchanged by the lab, and with `NOISE_LAB_ENABLED` set to `false` — which is how it stands — none of the eight is read at all. A retired candidate leaves its pair behind in the store — the three leaky-brown ones did — and nothing reads a key the registry no longer names.
 
@@ -473,8 +482,8 @@ Both themes are dark ones, so both are built on plain `Theme.AppCompat` — the 
 variant for a `uiMode` to select — and **night mode is not touched at all**: a `DayNight` parent held
 in the dark by a forced `MODE_NIGHT_YES` is the same appearance reached the long way round. For the
 same reason **there is no `values-night/`**: that qualifier would answer for both themes at once, so
-every colour that separates them is named in the style instead. `settings/ThemeController` holds the
-stored theme and maps it to its style and its action-bar icon; `MainActivity` still sets that style
+every colour that separates them is named in the style instead. `settings/ThemeController` reads the
+stored theme through the repository and maps it to its style and its action-bar icon; `MainActivity` still sets that style
 **before** `super.onCreate`, and changing the theme still calls `recreate()`. The status bar is told to use light
 icons unconditionally — neither theme has a light background left for dark ones to sit on.
 
@@ -566,7 +575,7 @@ because a compound drawable is painted at the icon's own 48dp whatever the butto
 smaller circle would clip it; `scaleType="fitCenter"` scales the icon with the circle instead.
 
 `ui/NoiseControlView` is the one row every noise gets: a speaker toggle, a label and a slider, bound to that
-noise's own preference keys by `bind(NoiseControl, SharedPreferences) { volume -> ... }` and reporting only the
+noise's own setting by `bind(NoiseControl, SettingsRepository) { volume -> ... }` and reporting only the
 volume the mix should hear. No row is declared in `activity_main.xml` any more: `ui/NoiseRows` builds one per
 entry of `SHIPPING_NOISES` into `noiseContainer` and one per lab candidate into `noiseLabContainer`, and neither
 it nor the Activity knows how the toggle is persisted or how a switched-off row is dimmed. A new noise that wires
