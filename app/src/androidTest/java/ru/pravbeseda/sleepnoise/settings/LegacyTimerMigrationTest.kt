@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith
 class LegacyTimerMigrationTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val legacyFile = context.dataDir.resolve("shared_prefs/$LEGACY_TIMER_PREFS.xml")
+    private val appFile = context.dataDir.resolve("shared_prefs/$APP_PREFS.xml")
 
     @Before
     fun startFromAReleasedInstall() {
@@ -40,6 +42,14 @@ class LegacyTimerMigrationTest {
         assertEquals(STORED_MINUTES, settings.timerMinutes)
         assertEquals(STORED_MINUTES, context.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE).getInt(TIMER_MINUTES, 0))
         assertFalse("the old file at $legacyFile", legacyFile.exists())
+    }
+
+    /** The old file is gone once the repository is open, so the minutes have to be on disk by then, not queued. */
+    @Test
+    fun theMovedMinutesAreOnDiskBeforeTheOldFileIsDeleted() {
+        settingsRepository(context)
+
+        assertTrue("timerMinutes in $appFile", appFile.readText().contains("name=\"$TIMER_MINUTES\" value=\"$STORED_MINUTES\""))
     }
 
     private companion object {

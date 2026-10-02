@@ -457,7 +457,7 @@ until phase 5 moves it to AppCompat: `LocaleController` still reads and writes `
 
 One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme`, `selectedLanguage` and `timerMinutes`, the three that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
 
-Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, and the old file is deleted once it has been read, so the move happens once per install.
+Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, through a store that commits rather than applies, and the old file is deleted once the copy is on disk, so the move happens once per install and a process killed in between loses nothing.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
