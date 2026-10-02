@@ -38,7 +38,6 @@ import ru.pravbeseda.sleepnoise.catalog.ShippingNoise
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.read
 import ru.pravbeseda.sleepnoise.settings.APP_PREFS
-import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import java.io.File
@@ -102,12 +101,11 @@ class StoreScreenshotTest {
                 remove(noise.setting.volumeKey)
                 remove(noise.setting.enabledKey)
             }
-            remove(CURRENT_LANGUAGE)
             remove(CURRENT_THEME)
         }
         settings.timerMinutes = 0
-        // The per-app locale belongs to the framework rather than to these preferences, so removing the
-        // key leaves the device in whichever language was photographed last.
+        // The per-app locale is not in these preferences, so the device would stay in whichever language
+        // was photographed last.
         applyAppLocale(SYSTEM_LOCALE)
     }
 
@@ -152,15 +150,11 @@ class StoreScreenshotTest {
     }
 
     /**
-     * Opens the app the way a user of that language and theme opens it: both are preferences the Activity
-     * reads in `onCreate`, so they are written before the launch rather than switched afterwards through the
-     * menu, which would photograph the dialog that switched them.
+     * Opens the app the way a user of that language and theme opens it: both are set before the launch
+     * rather than switched afterwards through the menu, which would photograph the dialog that switched them.
      */
     private fun useTheApp(language: String, theme: AppTheme, body: (ActivityScenario<MainActivity>) -> Unit) {
-        preferences.edit(commit = true) {
-            putString(CURRENT_LANGUAGE, language)
-            putString(CURRENT_THEME, theme.key)
-        }
+        preferences.edit(commit = true) { putString(CURRENT_THEME, theme.key) }
         // Before the launch, so that the Activity comes up in the language rather than being recreated into
         // it from inside its own onCreate.
         applyAppLocale(language)

@@ -20,6 +20,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import ru.pravbeseda.sleepnoise.playback.PlaybackState
 import ru.pravbeseda.sleepnoise.playback.PlaybackViewModel
+import ru.pravbeseda.sleepnoise.settings.DEFAULT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
@@ -52,11 +53,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val settings = settingsRepository(this)
         themeController = ThemeController(settings)
-        localeController = LocaleController(this)
+        localeController = LocaleController(settings)
         setTheme(themeController.style)
-        localeController.applyStored()
 
         super.onCreate(savedInstanceState)
+        localeController.adoptLegacyLanguage()
         setContentView(R.layout.activity_main)
 
         WindowCompat.enableEdgeToEdge(window)
@@ -104,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         val languageItem = menu.findItem(R.id.language_button)
         val currentLangCode = getString(R.string.lang)
         val baseTitle = getString(R.string.language)
-        if (currentLangCode != "en") {
+        if (currentLangCode != DEFAULT_LANGUAGE) {
             val bidi = BidiFormatter.getInstance()
             val langSuffix = bidi.unicodeWrap("(Language)")
             languageItem.title = "$baseTitle $langSuffix"

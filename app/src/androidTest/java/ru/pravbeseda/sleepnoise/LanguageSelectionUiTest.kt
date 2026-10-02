@@ -1,9 +1,8 @@
 package ru.pravbeseda.sleepnoise
 
-import android.content.Context
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.core.content.edit
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
@@ -22,29 +21,20 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
-import ru.pravbeseda.sleepnoise.settings.APP_PREFS
-import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.LocaleController
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 
 /** A language picked in the dialog is the one the screen comes back in, and stays in. */
 @RunWith(AndroidJUnit4::class)
 class LanguageSelectionUiTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
-    private val preferences = context.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
 
     @Before
-    fun startInRussian() {
-        preferences.edit(commit = true) { putString(CURRENT_LANGUAGE, STARTING_LANGUAGE) }
-        applyAppLocale(STARTING_LANGUAGE)
-    }
+    fun startInRussian() = applyAppLocale(STARTING_LANGUAGE)
 
-    /** The per-app locale belongs to the framework rather than to the preferences, so both are handed back. */
     @After
-    fun leaveAnUntouchedInstall() {
-        preferences.edit(commit = true) { remove(CURRENT_LANGUAGE) }
-        applyAppLocale(SYSTEM_LOCALE)
-    }
+    fun leaveAnUntouchedInstall() = applyAppLocale(SYSTEM_LOCALE)
 
     @Test
     fun theLanguagePickedInTheDialogIsTheOneTheScreenShows() {
@@ -57,8 +47,8 @@ class LanguageSelectionUiTest {
                 // Long enough for every recreation the switch sets off to have landed.
                 Thread.sleep(SETTLE_MILLIS)
                 instrumentation.waitForIdleSync()
-                assertEquals(language, preferences.getString(CURRENT_LANGUAGE, null))
                 screen.onActivity { activity ->
+                    assertEquals("the locale AppCompat holds", language, AppCompatDelegate.getApplicationLocales().toLanguageTags())
                     assertEquals("the screen after picking $language", language, activity.getString(R.string.lang))
                     assertEquals(
                         "the version line after picking $language",
@@ -86,7 +76,7 @@ class LanguageSelectionUiTest {
     private fun ActivityScenario<MainActivity>.pickInTheDialog(language: String) {
         openActionBarOverflowOrOptionsMenu(context)
         onView(withText(startsWith(read { it.getString(R.string.language) }))).perform(click())
-        val position = LocaleController(context).languages.indexOfFirst { it.code == language }
+        val position = LocaleController(settingsRepository(context)).languages.indexOfFirst { it.code == language }
         onData(anything()).inRoot(isDialog()).atPosition(position).perform(click())
         onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
     }

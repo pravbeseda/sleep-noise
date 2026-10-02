@@ -310,9 +310,9 @@ Six rules, each of them a mistake this codebase has already made or is one edit 
 - **No `!!`.** There is currently not one in the project, which is worth keeping. `?.let`,
   `requireNotNull(x) { "why" }`, or an early return say the same thing without the crash.
 - **Preference keys and theme/language values are constants, not literals at the call site.** The
-  theme is `models/AppTheme` and its `key` is the only place `"dark"` is spelled out; the language is
-  still a literal in several places, and phase 5 of the plan is where that ends. Do not add the
-  twentieth occurrence in the meantime.
+  theme is `models/AppTheme` and its `key` is the only place `"dark"` is spelled out; a language code
+  is spelled once, in `LocaleController.languages`, and the default bucket's `"en"` is
+  `DEFAULT_LANGUAGE` beside it.
 - **New dependencies go through `gradle/libs.versions.toml`,** with a line in the PR description
   saying why. The Compose stack is the cautionary tale: nine artifacts on the classpath, none used, until
   they were removed. A library the code imports is declared directly, not left to arrive transitively.
@@ -452,12 +452,16 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 Every setting is read and written through `settings/SettingsRepository`: the theme, the timer, and each noise's
 level and switch, keyed by the `NoiseSetting` its registry entry carries. It is written over `KeyValueStore`, an
 interface of its own, so it is tested on the JVM; `SharedPreferencesStore` is the one adapter onto
-`SharedPreferences`, and `settingsRepository(context)` opens `APP_PREFS` behind it. The language is the exception
-until phase 5 moves it to AppCompat: `LocaleController` still reads and writes `selectedLanguage` itself.
+`SharedPreferences`, and `settingsRepository(context)` opens `APP_PREFS` behind it. The language is not a setting
+of the app's at all: AppCompat holds it, see Localization.
 
-One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme`, `selectedLanguage` and `timerMinutes`, the three that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
+One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `timerMinutes`, the two that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
 
 Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, through a store that commits rather than applies, and the old file is deleted once the copy is on disk, so the move happens once per install and a process killed in between loses nothing.
+
+Every released version also stored the language, under `selectedLanguage`, which is `LEGACY_LANGUAGE` now.
+`LocaleController.adoptLegacyLanguage()` hands it to AppCompat on the first launch that finds it, unless AppCompat
+already holds a language, and removes the key either way.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.
@@ -499,7 +503,8 @@ what `colorOnAccent` is for: `colorOnPrimary` is the cats and the text, and thos
 Supported: en (default), ar, de, es, ru, uk. The mechanism is non-obvious:
 
 - Each `values-XX/strings.xml` defines `<string name="lang">XX</string>`. `getString(R.string.lang)` is how the code asks "which locale is actually active" — used to preselect the language dialog and to decide whether to append "(Language)" to the menu title.
-- The chosen code is stored in `APP_PREFS`/`selectedLanguage` and applied with `AppCompatDelegate.setApplicationLocales`, both by `settings/LocaleController`; the picker dialog is `ui/LanguageDialog` and calls into it.
+- **AppCompat holds the chosen code**: `settings/LocaleController` hands it to `AppCompatDelegate.setApplicationLocales`, and the app stores no copy of its own. From API 33 the framework keeps it; below that AppCompat does, because the manifest declares `AppLocalesMetadataHolderService` with `autoStoreLocales` — without it a choice below API 33 lasts until the process dies, and `ContextCompat.getContextForLanguage`, which `PlaybackService` reads its notification texts through, reads AppCompat's file and finds nothing. An install that never picked one has none, and follows the system language when the app ships it, English otherwise. The picker dialog is `ui/LanguageDialog` and calls into the controller.
+- **`AppCompatDelegate.getApplicationLocales()` answers nothing before `super.onCreate`** from API 33: it reaches the framework through a created Activity, so before one exists it reads an empty list and `setApplicationLocales` writes nowhere. `adoptLegacyLanguage()` runs after `super.onCreate` for that reason.
 
 To add a language: create `values-XX/strings.xml` including the `lang` key, add a flag drawable, add a `Language(...)` entry to `LocaleController.languages`, and add a listing and a release note under `app/src/main/play/` — `PlayMetadataTest` derives the store's locales from these `values*` directories, so it fails until the store texts exist too.
 The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is handled via `BidiFormatter` and `android:supportsRtl`/`layoutDirection="locale"` in the manifest.

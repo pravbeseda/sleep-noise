@@ -29,4 +29,8 @@ class InMemoryStore : KeyValueStore {
     override fun putBoolean(key: String, value: Boolean) {
         values[key] = value
     }
+
+    override fun remove(key: String) {
+        values.remove(key)
+    }
 }

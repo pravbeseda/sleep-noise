@@ -5,8 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.media.SAMPLE_RATE_HZ
-import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
+import ru.pravbeseda.sleepnoise.settings.LEGACY_LANGUAGE
 import kotlin.random.Random
 
 /**
@@ -27,7 +27,7 @@ class ShippingNoisesTest {
     fun everyKeyTheAppStoresBelongsToOneThing() {
         val keys = SHIPPING_NOISES.flatMap { listOf(it.setting.volumeKey, it.setting.enabledKey) } +
             NOISE_LAB_CANDIDATES.flatMap { listOf(it.setting.volumeKey, it.setting.enabledKey) } +
-            listOf(CURRENT_THEME, CURRENT_LANGUAGE)
+            listOf(CURRENT_THEME, LEGACY_LANGUAGE)
 
         val shared = keys.groupBy { it }.filterValues { it.size > 1 }.keys
 
