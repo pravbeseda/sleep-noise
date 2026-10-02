@@ -143,6 +143,7 @@
                 android:maxHeight="@dimen/cats_max_height"
                 android:scaleType="fitCenter"
                 android:src="@drawable/cats"
+                android:importantForAccessibility="no"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

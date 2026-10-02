@@ -618,12 +618,13 @@ timer — every one from 1.0.3 to 2.0.1 stores them under the same keys.
 ## Phase 6 — Cleanup
 
 Lint's real findings (`./gradlew lint`, report at
-`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 17 of them
+`app/build/reports/lint-results-debug.html`) are parked in `app/lint-baseline.xml`, 16 of them
 now; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
 measured by emptying the baseline. It started at 29 real findings; the four `DefaultLocale`
 entries were the first to go, and in phase 4 the two `Uri.parse` ones left with the feedback mail
 and the two `SharedPreferences.edit` ones with the theme and language controllers. The last
-`UseKtx` one left with `TimerPreferences` in phase 5.
+`UseKtx` one left with `TimerPreferences` in phase 5, and `ContentDescription` when the cats
+picture was marked decorative.
 
 ### Deadline: targetSdk
 
@@ -655,7 +656,8 @@ present requirement; the lint finding is about the cycle after it.
       last one went with `TimerPreferences` in phase 5.
 - [ ] `Untranslatable` (5), `IconDuplicates` (5), `MonochromeLauncherIcon` (2),
       `AlwaysShowAction`, `Overdraw`, `UnusedResources`.
-- [ ] `ContentDescription` on the cats `ImageView` in `activity_main.xml`.
+- [x] `ContentDescription` on the cats `ImageView` in `activity_main.xml`: the picture is
+      decoration, so it is `importantForAccessibility="no"` rather than described.
 - [ ] Replace `android:fitsSystemWindows="true"` with
       `ViewCompat.setOnApplyWindowInsetsListener`, which is the supported approach under the
       mandatory edge-to-edge of targetSdk 35+.
