@@ -32,7 +32,7 @@ import org.junit.runner.RunWith
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
 import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
-import ru.pravbeseda.sleepnoise.timer.TimerPreferences
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -47,7 +47,7 @@ class PlaybackRecreateUiTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val preferences = context.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
-    private val timerPreferences = TimerPreferences(context)
+    private val settings = settingsRepository(context)
 
     /** Granted rather than dismissed: the Activity asks for it on the first play, and the dialog would cover the screen. */
     @Before
@@ -55,13 +55,13 @@ class PlaybackRecreateUiTest {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
         }
-        timerPreferences.saveTimerValue(TIMER_MINUTES)
+        settings.timerMinutes = TIMER_MINUTES
     }
 
     @After
     fun leaveAnUntouchedInstall() {
         preferences.edit(commit = true) { remove(CURRENT_THEME) }
-        timerPreferences.saveTimerValue(0)
+        settings.timerMinutes = 0
     }
 
     @Test

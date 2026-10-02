@@ -5,6 +5,7 @@ import ru.pravbeseda.sleepnoise.media.NoiseSource
 import ru.pravbeseda.sleepnoise.media.RainNoise
 import ru.pravbeseda.sleepnoise.media.VioletNoise
 import ru.pravbeseda.sleepnoise.media.WheelClatterNoise
+import ru.pravbeseda.sleepnoise.settings.NoiseSetting
 import kotlin.random.Random
 
 /**
@@ -36,7 +37,9 @@ class NoiseLabCandidate(
     /** Developer-facing debug copy. The lab never reaches a user, so this is deliberately never translated. */
     val label: String,
     val createSource: (Random) -> NoiseSource,
-)
+) {
+    val setting = NoiseSetting(preferenceKey, enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
+}
 
 /**
  * One candidate, with both of its preference keys derived from [name] so that a new experiment cannot be

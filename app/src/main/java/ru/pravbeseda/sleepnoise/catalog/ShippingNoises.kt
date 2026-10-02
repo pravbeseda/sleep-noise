@@ -8,6 +8,7 @@ import ru.pravbeseda.sleepnoise.media.NoiseSource
 import ru.pravbeseda.sleepnoise.media.PinkNoise
 import ru.pravbeseda.sleepnoise.media.SurfNoise
 import ru.pravbeseda.sleepnoise.media.WhiteNoise
+import ru.pravbeseda.sleepnoise.settings.NoiseSetting
 import kotlin.random.Random
 
 /**
@@ -31,9 +32,6 @@ const val DEFAULT_SILENT_NOISE_VOLUME = 0.0f
  */
 const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
 
-/** A noise ships switched on, so an install made before the checkboxes existed sounds exactly as it did. */
-const val DEFAULT_NOISE_ENABLED = true
-
 /**
  * One noise the app ships: where its level and its switch are stored, what it starts at, what it is called,
  * and how to build it.
@@ -53,7 +51,9 @@ class ShippingNoise(
     /** The text over its slider, which takes the level as a percentage. */
     val volumeLabelRes: Int,
     val createSource: (Random) -> NoiseSource,
-)
+) {
+    val setting = NoiseSetting(volumeKey, enabledKey, defaultVolume)
+}
 
 /**
  * One noise, with both of its preference keys derived from [name] so that a noise cannot be given a key that

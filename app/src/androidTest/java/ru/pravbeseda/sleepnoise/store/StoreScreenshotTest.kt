@@ -40,7 +40,7 @@ import ru.pravbeseda.sleepnoise.read
 import ru.pravbeseda.sleepnoise.settings.APP_PREFS
 import ru.pravbeseda.sleepnoise.settings.CURRENT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.CURRENT_THEME
-import ru.pravbeseda.sleepnoise.timer.TimerPreferences
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -72,7 +72,7 @@ class StoreScreenshotTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.targetContext
     private val preferences = context.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
-    private val timerPreferences = TimerPreferences(context)
+    private val settings = settingsRepository(context)
 
     /**
      * A store screenshot is staged, and this is the staging: an untouched install has one noise at 30 % and
@@ -91,7 +91,7 @@ class StoreScreenshotTest {
                 putBoolean(noise.enabledKey, true)
             }
         }
-        timerPreferences.saveTimerValue(TIMER_MINUTES)
+        settings.timerMinutes = TIMER_MINUTES
     }
 
     /** The device is a shared machine often enough — the levels this test writes are its own to take back. */
@@ -105,7 +105,7 @@ class StoreScreenshotTest {
             remove(CURRENT_LANGUAGE)
             remove(CURRENT_THEME)
         }
-        timerPreferences.saveTimerValue(0)
+        settings.timerMinutes = 0
         // The per-app locale belongs to the framework rather than to these preferences, so removing the
         // key leaves the device in whichever language was photographed last.
         applyAppLocale(SYSTEM_LOCALE)

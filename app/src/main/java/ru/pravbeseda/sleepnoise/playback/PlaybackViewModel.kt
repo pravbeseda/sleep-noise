@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import ru.pravbeseda.sleepnoise.timer.TimerPreferences
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 
 /**
  * The session as the screen shows it, and the screen's one binding to [PlaybackService].
@@ -25,9 +25,9 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
     private val context: Context
         get() = getApplication()
 
-    private val timerPreferences = TimerPreferences(application)
+    private val settings = settingsRepository(application)
 
-    private val mutableState = MutableStateFlow(PlaybackState(timerMinutes = timerPreferences.getTimerValue()))
+    private val mutableState = MutableStateFlow(PlaybackState(timerMinutes = settings.timerMinutes))
     val state: StateFlow<PlaybackState> = mutableState.asStateFlow()
 
     private var binder: PlaybackService.LocalBinder? = null
@@ -90,7 +90,7 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
 
     fun setTimerMinutes(minutes: Int) {
         mutableState.update { it.afterTimerChange(minutes) }
-        timerPreferences.saveTimerValue(minutes)
+        settings.timerMinutes = minutes
     }
 
     override fun onCleared() = disconnect()

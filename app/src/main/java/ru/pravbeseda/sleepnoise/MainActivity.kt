@@ -22,6 +22,7 @@ import ru.pravbeseda.sleepnoise.playback.PlaybackState
 import ru.pravbeseda.sleepnoise.playback.PlaybackViewModel
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
+import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.CreditsDialogFragment
@@ -49,7 +50,8 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        themeController = ThemeController(this)
+        val settings = settingsRepository(this)
+        themeController = ThemeController(settings)
         localeController = LocaleController(this)
         setTheme(themeController.style)
         localeController.applyStored()
@@ -71,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         timerView = findViewById(R.id.timerView)
         timerView.onMinutesChanged = playback::setTimerMinutes
 
-        noiseRows = NoiseRows.build(findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer), playback::setVolume)
+        noiseRows = NoiseRows.build(settings, findViewById(R.id.noiseContainer), findViewById(R.id.noiseLabContainer), playback::setVolume)
 
         playButton.setOnClickListener {
             if (playback.state.value.audible) {

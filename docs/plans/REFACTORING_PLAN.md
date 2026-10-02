@@ -582,7 +582,7 @@ Three decisions were taken before starting, on 2 October 2026:
 
 ### Deliverables — one PR each, in this order
 
-- [ ] **D1 — `SettingsRepository`.** The repository and its store interface in `settings/`, written
+- [x] **D1 — `SettingsRepository`.** The repository and its store interface in `settings/`, written
       test-first, plus the `SharedPreferences` adapter. `ThemeController`, `TimerPreferences`,
       `NoiseRows`/`NoiseControlView` and `PlaybackService` go through it, and the gate becomes one
       function with two callers. The timer stays in `timer_prefs` for now, so nothing a user can see
