@@ -151,6 +151,13 @@ android {
         buildConfig = true
     }
 
+    // Android 13+ lists the app's languages in the system settings, derived from the values-XX
+    // directories; with AppCompat holding the choice, that list is also the only way back to the
+    // system language once one has been picked. res/resources.properties names the default bucket.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     defaultConfig {
         applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 26
