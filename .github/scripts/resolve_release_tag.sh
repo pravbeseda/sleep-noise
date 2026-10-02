@@ -23,7 +23,7 @@ TAG="${1:-}"
 # Ordered by version code, which is monotonic, so this is the correct order — and
 # it avoids --sort=version:refname, which has no defined behaviour for '+'. The
 # 'v*+*' glob is what fences the scheme off from any other tag the repository may
-# carry: this one has no tag at all until release.yml creates the first, but a
+# carry: release.yml created the first, v2.0.0+303, and 1.0.x stayed untagged, but a
 # hand-made `v1.0.4` would otherwise be read as a release with no code.
 #
 # Resolved once, and read twice below: it is both the answer to an empty argument
