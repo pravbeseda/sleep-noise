@@ -2,8 +2,8 @@ package ru.pravbeseda.sleepnoise.settings
 
 /**
  * The few things [SettingsRepository] asks of a preferences file. Its own interface rather than
- * `SharedPreferences`, so the repository and the migrations it will carry are tested on the JVM; one
- * adapter, [SharedPreferencesStore], is the only code that touches the real thing.
+ * `SharedPreferences`, so the repository and the migrations it will carry are tested on the JVM; the
+ * repository reaches the real thing through one adapter, [SharedPreferencesStore].
  */
 interface KeyValueStore {
     fun getString(key: String, default: String?): String?
