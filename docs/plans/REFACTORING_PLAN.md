@@ -597,11 +597,11 @@ Three decisions were taken before starting, on 2 October 2026:
       `getApplicationLocales()` cannot say on a fresh install, where it is empty. The tests that write
       `selectedLanguage` today — `LanguageSelectionUiTest`, `StoreScreenshotTest` — set the locale
       through AppCompat instead.
-      Left as it is: from API 33 the first launch of an install starts AppCompat's one-time copy of
-      its own storage onto the framework on a thread of its own, and that copy writes an empty list,
-      so it can undo a migration made in the same launch. It takes a framework holding nothing beside
-      a stored `selectedLanguage` — a device upgraded past API 33 after the pick, or a restored
-      backup — and the release before this one dropped the language in that case on every launch.
+      The key is removed only on an `onCreate` that finds AppCompat holding a language, never in the
+      launch that hands it over: below API 33 AppCompat writes its file only when the recreated screen
+      attaches, and from API 33 the first launch of an install starts AppCompat's one-time copy of its
+      own storage onto the framework, which writes an empty list and can undo the hand-over. Either
+      way the key is still there, and the next launch hands it over again.
 - [ ] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
       `unqualifiedResLocale=en`, checked by hand on an API 36 emulator.
 

@@ -460,8 +460,9 @@ One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<na
 Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, through a store that commits rather than applies, and the old file is deleted once the copy is on disk, so the move happens once per install and a process killed in between loses nothing.
 
 Every released version also stored the language, under `selectedLanguage`, which is `LEGACY_LANGUAGE` now.
-`LocaleController.adoptLegacyLanguage()` hands it to AppCompat on the first launch that finds it, unless AppCompat
-already holds a language, and removes the key either way.
+`LocaleController.adoptLegacyLanguage()` hands it to AppCompat while AppCompat holds no language, and removes the key
+only on an `onCreate` that finds AppCompat holding one — by then AppCompat has it on disk, so a process killed during
+the hand-over loses neither copy.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.

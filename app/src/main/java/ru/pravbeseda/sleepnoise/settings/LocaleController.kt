@@ -22,14 +22,15 @@ class LocaleController(private val settings: SettingsRepository) {
     )
 
     /**
-     * Hands the language an older release stored to AppCompat unless AppCompat already holds one, and forgets
-     * it either way. Called after `super.onCreate`: from API 33 AppCompat reaches the framework through a
-     * created Activity only, and before one exists it reads nothing and writes nothing.
+     * Hands the language an older release stored to AppCompat while AppCompat holds none, and forgets it only
+     * once AppCompat does: the hand-over recreates the screen, and by the next `onCreate` AppCompat has the
+     * language on disk, so a process killed in between loses neither copy. Called after `super.onCreate`: from
+     * API 33 AppCompat reaches the framework through a created Activity only, and before one exists it reads
+     * nothing and writes nothing.
      */
     fun adoptLegacyLanguage() {
         val legacy = settings.legacyLanguage ?: return
-        if (AppCompatDelegate.getApplicationLocales().isEmpty()) select(legacy)
-        settings.forgetLegacyLanguage()
+        if (AppCompatDelegate.getApplicationLocales().isEmpty()) select(legacy) else settings.forgetLegacyLanguage()
     }
 
     /**
