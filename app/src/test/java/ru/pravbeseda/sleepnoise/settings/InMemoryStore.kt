@@ -4,6 +4,8 @@ package ru.pravbeseda.sleepnoise.settings
 class InMemoryStore : KeyValueStore {
     val values = mutableMapOf<String, Any>()
 
+    override fun contains(key: String): Boolean = key in values
+
     override fun getString(key: String, default: String?): String? = values[key] as String? ?: default
 
     override fun putString(key: String, value: String) {

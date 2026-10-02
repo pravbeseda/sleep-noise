@@ -443,7 +443,7 @@ Two pieces in `timer/`, and the stored value outside it:
 - `TimerView` — custom `LinearLayout` inflating `timer_view.xml`; owns the seekbar and the time label, and formats both the idle value and the countdown. Seekbar progress is in 30-minute units (`progress * 30` minutes), and the view hides the seekbar while playing. It stores nothing: its owner assigns `minutes` and hears the user's picks through `onMinutesChanged`, which a value assigned in code does not fire.
 - `SleepTimer` — the arithmetic only: a deadline on a clock the caller supplies, the milliseconds left on it, and the `mm:ss` / `hh:mm:ss` formatting. It imports nothing from `android.*` and is tested on the JVM. The service passes `SystemClock.elapsedRealtime()`; a `CountDownTimer` would have died with the Activity, which is what the deadline replaced.
 
-The minutes are `SettingsRepository.timerMinutes`, still in a file of their own (`timer_prefs`); `PlaybackViewModel` reads them into `PlaybackState.timerMinutes` and writes the user's picks back.
+The minutes are `SettingsRepository.timerMinutes`, stored in `APP_PREFS`; `PlaybackViewModel` reads them into `PlaybackState.timerMinutes` and writes the user's picks back.
 
 The countdown itself runs in `playback/PlaybackService`, once a second, into the notification and into whatever Activity is bound.
 
@@ -452,10 +452,12 @@ The countdown itself runs in `playback/PlaybackService`, once a second, into the
 Every setting is read and written through `settings/SettingsRepository`: the theme, the timer, and each noise's
 level and switch, keyed by the `NoiseSetting` its registry entry carries. It is written over `KeyValueStore`, an
 interface of its own, so it is tested on the JVM; `SharedPreferencesStore` is the one adapter onto
-`SharedPreferences`, and `settingsRepository(context)` opens both files behind it. The language is the exception
+`SharedPreferences`, and `settingsRepository(context)` opens `APP_PREFS` behind it. The language is the exception
 until phase 5 moves it to AppCompat: `LocaleController` still reads and writes `selectedLanguage` itself.
 
-Two distinct stores. `APP_PREFS` ("AppPreferences") holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme` and `selectedLanguage`, the two that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling. `timer_prefs` holds only the timer value. Don't consolidate one into the other without checking both readers.
+One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme`, `selectedLanguage` and `timerMinutes`, the three that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
+
+Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, and the old file is deleted once it has been read, so the move happens once per install.
 
 Every noise has a `*Enabled` key beside its volume — the six shipping ones here, each lab candidate on its own
 descriptor — and they default to `true`, so an install made before the toggles existed sounds exactly as it did.

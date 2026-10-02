@@ -6,6 +6,8 @@ import androidx.core.content.edit
 
 /** The one place [SettingsRepository] meets `SharedPreferences`. */
 class SharedPreferencesStore(private val preferences: SharedPreferences) : KeyValueStore {
+    override fun contains(key: String): Boolean = preferences.contains(key)
+
     override fun getString(key: String, default: String?): String? = preferences.getString(key, default)
 
     override fun putString(key: String, value: String) = preferences.edit { putString(key, value) }
@@ -23,8 +25,10 @@ class SharedPreferencesStore(private val preferences: SharedPreferences) : KeyVa
     override fun putBoolean(key: String, value: Boolean) = preferences.edit { putBoolean(key, value) }
 }
 
-/** The repository over the app's real preference files. */
+/** The repository over the app's real preferences, with the timer's old file moved into them and deleted. */
 fun settingsRepository(context: Context): SettingsRepository {
     fun store(name: String) = SharedPreferencesStore(context.getSharedPreferences(name, Context.MODE_PRIVATE))
-    return SettingsRepository(store(APP_PREFS), store(TIMER_PREFS))
+    val app = store(APP_PREFS)
+    if (moveLegacyTimer(app, store(LEGACY_TIMER_PREFS))) context.deleteSharedPreferences(LEGACY_TIMER_PREFS)
+    return SettingsRepository(app)
 }

@@ -14,15 +14,25 @@ class NoiseSetting(val volumeKey: String, val enabledKey: String, val defaultVol
  */
 fun heardVolume(volume: Float, enabled: Boolean): Float = if (enabled) volume else 0f
 
-/** Every setting the app keeps, over the app-wide store and the timer's own file. */
-class SettingsRepository(private val app: KeyValueStore, private val timer: KeyValueStore) {
+/**
+ * Copies the minutes from the timer's old file into [app] unless [app] already holds some, and answers whether
+ * the old file held any — that is, whether it is left to be deleted.
+ */
+fun moveLegacyTimer(app: KeyValueStore, legacy: KeyValueStore): Boolean {
+    if (!legacy.contains(LEGACY_TIMER_MINUTES)) return false
+    if (!app.contains(TIMER_MINUTES)) app.putInt(TIMER_MINUTES, legacy.getInt(LEGACY_TIMER_MINUTES, 0))
+    return true
+}
+
+/** Every setting the app keeps, over the app-wide store. */
+class SettingsRepository(private val app: KeyValueStore) {
     var theme: AppTheme
         get() = AppTheme.fromKey(app.getString(CURRENT_THEME, null))
         set(value) = app.putString(CURRENT_THEME, value.key)
 
     var timerMinutes: Int
-        get() = timer.getInt(TIMER_MINUTES, 0)
-        set(value) = timer.putInt(TIMER_MINUTES, value)
+        get() = app.getInt(TIMER_MINUTES, 0)
+        set(value) = app.putInt(TIMER_MINUTES, value)
 
     fun volume(noise: NoiseSetting): Float = app.getFloat(noise.volumeKey, noise.defaultVolume)
 
