@@ -43,17 +43,13 @@ const val DEFAULT_BROWN_NOISE_VOLUME = 0.3f
  * build, and `media/` is the part `AndroidFreeSourcesTest` keeps free of one.
  */
 class ShippingNoise(
-    val volumeKey: String,
-    val enabledKey: String,
-    val defaultVolume: Float,
+    val setting: NoiseSetting,
     /** The noise's name, which is what its toggle announces to a screen reader. */
     val nameRes: Int,
     /** The text over its slider, which takes the level as a percentage. */
     val volumeLabelRes: Int,
     val createSource: (Random) -> NoiseSource,
-) {
-    val setting = NoiseSetting(volumeKey, enabledKey, defaultVolume)
-}
+)
 
 /**
  * One noise, with both of its preference keys derived from [name] so that a noise cannot be given a key that
@@ -64,7 +60,7 @@ class ShippingNoise(
  * loses every level saved under the old spelling.
  */
 private fun shipping(name: String, defaultVolume: Float, nameRes: Int, volumeLabelRes: Int, createSource: (Random) -> NoiseSource) =
-    ShippingNoise("${name}NoiseVolume", "${name}NoiseEnabled", defaultVolume, nameRes, volumeLabelRes, createSource)
+    ShippingNoise(NoiseSetting("${name}NoiseVolume", "${name}NoiseEnabled", defaultVolume), nameRes, volumeLabelRes, createSource)
 
 val BROWN_NOISE = shipping("brown", DEFAULT_BROWN_NOISE_VOLUME, R.string.brown_noise_name, R.string.brown_noise_volume) {
     LeakyBrownNoise(BROWN_NOISE_CUTOFF_HZ, it)

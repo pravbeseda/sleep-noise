@@ -25,8 +25,8 @@ class ShippingNoisesTest {
      */
     @Test
     fun everyKeyTheAppStoresBelongsToOneThing() {
-        val keys = SHIPPING_NOISES.flatMap { listOf(it.volumeKey, it.enabledKey) } +
-            NOISE_LAB_CANDIDATES.flatMap { listOf(it.preferenceKey, it.enabledPreferenceKey) } +
+        val keys = SHIPPING_NOISES.flatMap { listOf(it.setting.volumeKey, it.setting.enabledKey) } +
+            NOISE_LAB_CANDIDATES.flatMap { listOf(it.setting.volumeKey, it.setting.enabledKey) } +
             listOf(CURRENT_THEME, CURRENT_LANGUAGE)
 
         val shared = keys.groupBy { it }.filterValues { it.size > 1 }.keys
@@ -40,16 +40,16 @@ class ShippingNoisesTest {
      */
     @Test
     fun onlyOneNoiseOpensAboveSilence() {
-        val audible = SHIPPING_NOISES.filter { it.defaultVolume > 0f }
+        val audible = SHIPPING_NOISES.filter { it.setting.defaultVolume > 0f }
 
-        assertEquals("noises that open above silence: ${audible.map { it.volumeKey }}", 1, audible.size)
+        assertEquals("noises that open above silence: ${audible.map { it.setting.volumeKey }}", 1, audible.size)
     }
 
     @Test
     fun everyCallToTheFactoryBuildsAnotherSource() {
         SHIPPING_NOISES.forEach { noise ->
             assertNotSame(
-                "${noise.volumeKey} hands out one shared source, so two channels would drive one filter",
+                "${noise.setting.volumeKey} hands out one shared source, so two channels would drive one filter",
                 noise.createSource(Random(SEED)),
                 noise.createSource(Random(SEED)),
             )
@@ -73,7 +73,7 @@ class ShippingNoisesTest {
             noise.createSource(Random(SEED)).fill(afterTheDecoy)
 
             assertArrayEquals(
-                "${noise.volumeKey} came out differently after another of its own sources had run: its state outlives it",
+                "${noise.setting.volumeKey} came out differently after another of its own sources had run: its state outlives it",
                 first,
                 afterTheDecoy,
                 0.0f,

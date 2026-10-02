@@ -87,8 +87,8 @@ class StoreScreenshotTest {
         grantNotificationPermission()
         preferences.edit(commit = true) {
             SHIPPING_NOISES.forEach { noise ->
-                putFloat(noise.volumeKey, STAGED_MIX[noise] ?: SILENT)
-                putBoolean(noise.enabledKey, true)
+                putFloat(noise.setting.volumeKey, STAGED_MIX[noise] ?: SILENT)
+                putBoolean(noise.setting.enabledKey, true)
             }
         }
         settings.timerMinutes = TIMER_MINUTES
@@ -99,8 +99,8 @@ class StoreScreenshotTest {
     fun forgetTheStaging() {
         preferences.edit(commit = true) {
             SHIPPING_NOISES.forEach { noise ->
-                remove(noise.volumeKey)
-                remove(noise.enabledKey)
+                remove(noise.setting.volumeKey)
+                remove(noise.setting.enabledKey)
             }
             remove(CURRENT_LANGUAGE)
             remove(CURRENT_THEME)

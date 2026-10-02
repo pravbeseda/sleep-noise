@@ -23,7 +23,8 @@ const val NOISE_LAB_ENABLED = false
 const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
 
 /**
- * One experimental source on trial, with the key its slider persists under and the label that slider carries.
+ * One experimental source on trial, with the keys its slider and its toggle persist under and the label that slider
+ * carries.
  *
  * [createSource] is a factory rather than a shared instance on purpose: a filter carries state, so one cached
  * source handed to two channels would have them drive one filter, and this package would grow the hidden
@@ -31,22 +32,19 @@ const val DEFAULT_LAB_NOISE_VOLUME = 0.0f
  * seeded one turns "this source depends on nothing but itself" into something a test can compare exactly.
  */
 class NoiseLabCandidate(
-    val preferenceKey: String,
-    /** Where this candidate's checkbox is stored. Its own key, so switching one experiment off leaves the rest alone. */
-    val enabledPreferenceKey: String,
+    /** Its own keys, so moving or switching off one experiment leaves the rest alone. */
+    val setting: NoiseSetting,
     /** Developer-facing debug copy. The lab never reaches a user, so this is deliberately never translated. */
     val label: String,
     val createSource: (Random) -> NoiseSource,
-) {
-    val setting = NoiseSetting(preferenceKey, enabledPreferenceKey, DEFAULT_LAB_NOISE_VOLUME)
-}
+)
 
 /**
  * One candidate, with both of its preference keys derived from [name] so that a new experiment cannot be
  * given a key that belongs to another one by mistyping it.
  */
 private fun candidate(name: String, label: String, createSource: (Random) -> NoiseSource) =
-    NoiseLabCandidate("lab${name}NoiseVolume", "lab${name}NoiseEnabled", label, createSource)
+    NoiseLabCandidate(NoiseSetting("lab${name}NoiseVolume", "lab${name}NoiseEnabled", DEFAULT_LAB_NOISE_VOLUME), label, createSource)
 
 /**
  * Every candidate under test, in the order their sliders appear. Adding another experiment is one entry

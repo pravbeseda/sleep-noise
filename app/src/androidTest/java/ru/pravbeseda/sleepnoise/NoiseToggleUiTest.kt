@@ -49,12 +49,12 @@ class NoiseToggleUiTest {
     /** The test writes real preferences on the device, so it takes them back out again. */
     private fun forgetNoiseSettings() = preferences.edit(commit = true) {
         SHIPPING_NOISES.forEach {
-            remove(it.volumeKey)
-            remove(it.enabledKey)
+            remove(it.setting.volumeKey)
+            remove(it.setting.enabledKey)
         }
         NOISE_LAB_CANDIDATES.forEach {
-            remove(it.preferenceKey)
-            remove(it.enabledPreferenceKey)
+            remove(it.setting.volumeKey)
+            remove(it.setting.enabledKey)
         }
     }
 
@@ -86,13 +86,13 @@ class NoiseToggleUiTest {
     fun settingALevelSwitchesTheNoiseOn() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val pink = activity.noiseControl(PINK_NOISE.volumeKey)
+                val pink = activity.noiseControl(PINK_NOISE.setting.volumeKey)
                 assertFalse("pink starts silent on an untouched install", pink.noiseToggle().isChecked)
 
                 pink.setSliderByUser(CHOSEN_PROGRESS)
 
                 assertTrue("the toggle after a level was set", pink.noiseToggle().isChecked)
-                assertTrue("the toggle stored as on", preferences.getBoolean(PINK_NOISE.enabledKey, false))
+                assertTrue("the toggle stored as on", preferences.getBoolean(PINK_NOISE.setting.enabledKey, false))
                 assertEquals("the controls' alpha", 1f, pink.controls().alpha, 0f)
             }
         }
@@ -107,12 +107,12 @@ class NoiseToggleUiTest {
     fun draggingTheLevelToZeroSwitchesTheNoiseOff() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val brown = activity.noiseControl(BROWN_NOISE.volumeKey)
+                val brown = activity.noiseControl(BROWN_NOISE.setting.volumeKey)
 
                 brown.setSliderByUser(0)
 
                 assertFalse("the toggle after the level reached zero", brown.noiseToggle().isChecked)
-                assertFalse("the toggle stored as off", preferences.getBoolean(BROWN_NOISE.enabledKey, true))
+                assertFalse("the toggle stored as off", preferences.getBoolean(BROWN_NOISE.setting.enabledKey, true))
                 assertTrue("the controls of a switched-off noise are dimmed", brown.controls().alpha < 1f)
             }
         }
@@ -126,7 +126,7 @@ class NoiseToggleUiTest {
     fun switchingASilentNoiseOnGivesItTheQuietestAudibleLevel() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val pink = activity.noiseControl(PINK_NOISE.volumeKey)
+                val pink = activity.noiseControl(PINK_NOISE.setting.volumeKey)
                 assertFalse("pink starts silent on an untouched install", pink.noiseToggle().isChecked)
 
                 pink.noiseToggle().isChecked = true
@@ -135,7 +135,7 @@ class NoiseToggleUiTest {
                 assertEquals(
                     "pink's stored level after it was switched on",
                     MIN_AUDIBLE_PROGRESS / PERCENT_SCALE,
-                    preferences.getFloat(PINK_NOISE.volumeKey, Float.NaN),
+                    preferences.getFloat(PINK_NOISE.setting.volumeKey, Float.NaN),
                     0f,
                 )
                 assertEquals("the controls' alpha", 1f, pink.controls().alpha, 0f)
@@ -148,18 +148,18 @@ class NoiseToggleUiTest {
     fun switchingANoiseOffKeepsItsLevelAndDimsItsControls() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val brown = activity.noiseControl(BROWN_NOISE.volumeKey)
+                val brown = activity.noiseControl(BROWN_NOISE.setting.volumeKey)
                 brown.slider().progress = CHOSEN_PROGRESS
                 brown.noiseToggle().isChecked = false
 
                 assertEquals(
                     "the level stored while the noise is off",
                     CHOSEN_PROGRESS / PERCENT_SCALE,
-                    preferences.getFloat(BROWN_NOISE.volumeKey, Float.NaN),
+                    preferences.getFloat(BROWN_NOISE.setting.volumeKey, Float.NaN),
                     0f,
                 )
                 assertEquals("the slider left where the user put it", CHOSEN_PROGRESS, brown.slider().progress)
-                assertFalse("the toggle stored as off", preferences.getBoolean(BROWN_NOISE.enabledKey, true))
+                assertFalse("the toggle stored as off", preferences.getBoolean(BROWN_NOISE.setting.enabledKey, true))
                 assertTrue("the controls of a switched-off noise are dimmed", brown.controls().alpha < 1f)
             }
         }
@@ -176,7 +176,7 @@ class NoiseToggleUiTest {
     fun recreatingTheScreenLeavesEveryNoiseWithItsOwnSettings() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                val pink = activity.noiseControl(PINK_NOISE.volumeKey)
+                val pink = activity.noiseControl(PINK_NOISE.setting.volumeKey)
                 // The level first, as the user would set it, so that switching the noise off after
                 // it is a state the row actually stores rather than the one it already had.
                 pink.setSliderByUser(CHOSEN_PROGRESS)
@@ -186,18 +186,18 @@ class NoiseToggleUiTest {
             scenario.recreate()
 
             scenario.onActivity { activity ->
-                val pink = activity.noiseControl(PINK_NOISE.volumeKey)
+                val pink = activity.noiseControl(PINK_NOISE.setting.volumeKey)
                 assertEquals("pink's slider after a recreate", CHOSEN_PROGRESS, pink.slider().progress)
                 assertFalse("pink's toggle after a recreate", pink.noiseToggle().isChecked)
                 assertEquals(
                     "pink's stored level after a recreate",
                     CHOSEN_PROGRESS / PERCENT_SCALE,
-                    preferences.getFloat(PINK_NOISE.volumeKey, Float.NaN),
+                    preferences.getFloat(PINK_NOISE.setting.volumeKey, Float.NaN),
                     0f,
                 )
 
-                val brown = activity.noiseControl(BROWN_NOISE.volumeKey)
-                val brownProgress = (BROWN_NOISE.defaultVolume * PERCENT_SCALE).toInt()
+                val brown = activity.noiseControl(BROWN_NOISE.setting.volumeKey)
+                val brownProgress = (BROWN_NOISE.setting.defaultVolume * PERCENT_SCALE).toInt()
                 assertEquals("brown's slider after a recreate", brownProgress, brown.slider().progress)
                 assertTrue("brown's toggle after a recreate", brown.noiseToggle().isChecked)
             }
@@ -209,12 +209,12 @@ class NoiseToggleUiTest {
     fun switchingOneNoiseOffLeavesTheOtherAlone() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                activity.noiseControl(BROWN_NOISE.volumeKey).noiseToggle().isChecked = false
+                activity.noiseControl(BROWN_NOISE.setting.volumeKey).noiseToggle().isChecked = false
 
-                val pink = activity.noiseControl(PINK_NOISE.volumeKey)
+                val pink = activity.noiseControl(PINK_NOISE.setting.volumeKey)
                 assertEquals("pink's level", 0, pink.slider().progress)
-                assertFalse("pink's own preference was written", preferences.contains(PINK_NOISE.enabledKey))
-                assertFalse("pink's level was written", preferences.contains(PINK_NOISE.volumeKey))
+                assertFalse("pink's own preference was written", preferences.contains(PINK_NOISE.setting.enabledKey))
+                assertFalse("pink's level was written", preferences.contains(PINK_NOISE.setting.volumeKey))
             }
         }
     }

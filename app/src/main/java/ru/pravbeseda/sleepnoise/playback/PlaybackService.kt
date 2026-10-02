@@ -54,8 +54,8 @@ class PlaybackService : Service() {
      * Activity's row carries, which is what lets a volume change name its channel instead of naming a setter.
      */
     private val channels: Map<String, NoiseChannel> = buildMap {
-        SHIPPING_NOISES.forEach { put(it.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
-        labCandidates.forEach { put(it.preferenceKey, NoiseChannel(it.createSource(Random.Default))) }
+        SHIPPING_NOISES.forEach { put(it.setting.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
+        labCandidates.forEach { put(it.setting.volumeKey, NoiseChannel(it.createSource(Random.Default))) }
     }
 
     // Called on the engine's writer thread; the teardown belongs on the main thread with everything else here.
