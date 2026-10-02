@@ -602,8 +602,10 @@ Three decisions were taken before starting, on 2 October 2026:
       attaches, and from API 33 the first launch of an install starts AppCompat's one-time copy of its
       own storage onto the framework, which writes an empty list and can undo the hand-over. Either
       way the key is still there, and the next launch hands it over again.
-- [ ] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
-      `unqualifiedResLocale=en`, checked by hand on an API 36 emulator.
+- [x] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
+      `unqualifiedResLocale=en`, checked by hand on an API 36 emulator: a language picked in the
+      system settings reaches the app, and "System default" takes it back. `LocaleConfigTest` holds
+      the generated list equal to the picker's.
 
 ### Done when
 

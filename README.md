@@ -166,7 +166,9 @@ Translations are the most welcome contribution — the app even asks users for t
 1. Create `app/src/main/res/values-XX/strings.xml`, including
    `<string name="lang">XX</string>` (the code reads this back to detect the active locale).
 2. Add a flag drawable.
-3. Add a `Language(...)` entry to `LocaleController.languages` in `settings/`.
+3. Add a `Language(...)` entry to `LocaleController.languages` in `settings/`. The Android 13+
+   system settings list the new directory on their own, and `LocaleConfigTest` fails until the
+   picker offers it too.
 4. Add a listing and a release note under `app/src/main/play/` — the store texts are version
    controlled per locale, and `PlayMetadataTest` fails until the new locale has both.
 5. Add the locale to `PLAY_LOCALES` in `StoreScreenshotTest` and ask a maintainer to dispatch the
