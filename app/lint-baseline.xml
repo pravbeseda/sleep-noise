@@ -170,15 +170,5 @@
 
 
 
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main.xml"
-            line="85"
-            column="6"/>
-    </issue>
 
 </issues>

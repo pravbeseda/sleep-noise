@@ -135,12 +135,12 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           PREV: ${{ steps.version.outputs.prev_tag }}
         # No previous tag passes, where SpendControl refuses. It had a release to
-        # seed a tag on; this repository has no tag of any scheme, and the 1.0.4
-        # on Play was uploaded by hand from a commit nobody tagged. Refusing
-        # here would block the first release until someone guessed which commit
-        # that was, and a guessed tag guards nothing. So the first run through
-        # this workflow has no code to be below — and creates, in `finalize`,
-        # the tag every later run is measured against. From then on a code that
+        # seed a tag on; this repository had no tag of any scheme, and 1.0.x
+        # went to Play by hand from commits nobody tagged. Refusing would have
+        # blocked the first release until someone guessed which commit that
+        # was, and a guessed tag guards nothing. So the first run through this
+        # workflow had no code to be below — and created, in `finalize`,
+        # v2.0.0+303, the tag every later run is measured against. From then on a code that
         # does not exceed the newest tag's is refused, which is the property
         # that matters: a branch cut before the newest release counts lower by
         # construction, so only the newest released version can be hotfixed.

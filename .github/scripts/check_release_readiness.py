@@ -3,9 +3,9 @@
 
 Run as `check_release_readiness.py <base-rev> [head-rev]`; the base is the
 previous release's tag. An empty base means there is no previous release —
-this repository has no tag of the `v<name>+<code>` scheme until release.yml
-creates the first — and the check passes with a notice: nothing to repeat, no
-previous name to differ from. No base at all is a workflow that lost its
+the case of the first run of release.yml, which created v2.0.0+303 — and the
+check passes with a notice: nothing to repeat, no previous name to differ
+from. No base at all is a workflow that lost its
 variable, and is refused rather than read as a first release.
 
 Every locale is checked, by text, against every note the base holds for that

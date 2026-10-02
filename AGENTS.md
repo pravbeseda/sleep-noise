@@ -210,7 +210,7 @@ It checks out with `fetch-depth: 0` because `versionCode` is the commit count an
 
 Six secrets beyond `GOOGLE_SERVICES_JSON_B64`: `ANDROID_KEYSTORE_B64` (base64 of `.key/Drevo.Keystore`, decoded into `$RUNNER_TEMP`), `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD`, `FIREBASE_APP_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with App Distribution Admin). An upload naming a tester group that does not exist succeeds and reaches nobody, so the `qa` group has to exist in the Firebase console.
 
-Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 17 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
+Lint runs with `warningsAsErrors`, so **a new warning fails the build**. The 16 pre-existing findings are parked in `app/lint-baseline.xml`; clearing them is phase 6 of the plan. After fixing one, regenerate with `./gradlew updateLintBaseline` — and strip the informational entries it adds back in, or later runs complain about baseline entries that no longer match.
 
 **A finding that turns `Lint` or `Detekt` red is read on its line in the pull request diff**, not in an artifact: both jobs upload their SARIF report to GitHub code scanning, under the categories `lint` and `detekt`, and hold `security-events: write` for it — the only two jobs that do. Both baselines are applied before a report is written, so only new findings travel. Lint's report is filtered with `jq` first: every `note` in it is a version-currency hint or the baseline summary, and a hint whose message embeds a version number would come back as a new alert with every release, so code scanning gets what fails the job and the HTML/XML artifact keeps the rest. The upload is skipped for a pull request from a fork — its token cannot be granted that permission, and a refused upload would redden a required check for a reason unrelated to the code — so a fork reads the artifact. Nothing uploads on a push to `main`: `decide-work` answers false there, and a code scanning run on every merge would buy a report that is almost always empty.
 
@@ -415,7 +415,8 @@ release ships developer-facing sliders whose English labels are not translated i
 is `false` as the project stands, with four candidates parked behind it — violet and blue, and rain and the
 wheel clatter. Grey, green and surf came out from behind it and ship; their `lab*` keys stay in the store,
 read by nothing, the way the leaky-brown ones did. Nothing carries a level across from one to the other, and
-nothing needs to: no Play release ever contained the lab — 1.0.4 predates it — so the only installs that can
+nothing needs to: no Play release ever turned the lab on — 1.0.x predates it, and every tagged release ships
+`NOISE_LAB_ENABLED = false` — so the only installs that can
 hold a `lab*` level above zero are the alpha builds the `qa` group gets on every push to `main`, and setting
 three sliders again once is cheaper than a migration that would live in the code for good. Bringing the lab back is that one edit either way.
 
@@ -637,8 +638,8 @@ newest release is the one with the highest code after the `+`, sorted numericall
 `--sort=version:refname`, which has no defined behaviour for `+`, and never lexically, where `+99`
 sorts after `+286`. `.github/scripts/resolve_release_tag.sh` is the one copy of that ordering the
 promote and rollout workflows share, so the two cannot disagree about which release they are touching.
-There is no tag of this scheme yet: 1.0.4 on Play was uploaded by hand from a commit nobody tagged,
-and the first run of `release.yml` creates the first one.
+The scheme starts at `v2.0.0+303`, the first run of `release.yml`; 1.0.x was uploaded to Play by hand
+from commits nobody tagged, and stays untagged.
 
 Three `workflow_dispatch` workflows, one per decision, modelled on SpendControl's and stripped of its
 flavors:
@@ -726,9 +727,9 @@ has no second parent and would be refused on `Guardrails`: this repository merge
 commits. **Guards 2 and 4 pass when no `v*+*` tag exists**, where SpendControl refuses.
 It had a released commit to seed a tag on; here a guessed tag would guard nothing, and the first
 release would otherwise be blocked until somebody guessed. The moment `finalize` creates the first
-tag, both guards compare against it, and a code that does not exceed it is refused. The price is
-stated: the first release is not checked for a bumped `versionName` or new notes, and the release
-PR that precedes it does that by hand.
+tag, both guards compare against it, and a code that does not exceed it is refused. The price was
+the first release, `v2.0.0+303`, which neither guard could check for a bumped `versionName` or new
+notes; every release since is compared against the tag before it.
 
 `.github/scripts/check_release_readiness.py` is guard 4, and its docstring records the two weaker
 forms that were tried against real revisions and passed the release they were meant to stop:
@@ -760,7 +761,7 @@ than a choice. Recovery from that state is by hand: the bundle is a run
 artifact named `release-bundle`, and `gh release create <tag> --target <sha> --prerelease` with it
 attached is the whole of `finalize`.
 
-Two Play Console steps stand between this and the first release, and neither is in the repository:
+Two Play Console steps the release path depends on are not in the repository:
 the service account behind `PLAY_SERVICE_ACCOUNT_JSON` needs **release manager** for the tracks and
 **manage store presence** for the listing — two different permissions, and the second fails as a
 `403` on `edits:validate` rather than as anything that names a permission — and the open-testing
