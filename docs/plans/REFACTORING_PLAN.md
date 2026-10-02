@@ -541,32 +541,70 @@ countdown with no play-icon frame in between.
 
 **Goal:** one source of truth per setting.
 
-Two stores exist without a real reason: `AppPreferences` (volumes, theme, language) and
-`timer_prefs` (timer value). The active language has two sources that can
-disagree — `preferences.getString(CURRENT_LANGUAGE)` and the per-locale
-`getString(R.string.lang)` — which drift apart when the user changes the system language.
+Rewritten on 2 October 2026 against the code after phase 4. Where it stands:
+
+- `AppPreferences` is opened in four places: `ThemeController`, `LocaleController`, `NoiseRows`
+  (which hands the raw `SharedPreferences` to `NoiseControlView.bind`) and `PlaybackService`. The
+  timer lives in a file of its own, `timer_prefs`, behind `TimerPreferences`.
+- The rule that a switched-off noise is heard at 0 while keeping its level is written twice: in
+  `NoiseControlView` for live changes and in `PlaybackService.noiseVolume` at start.
+- The language is stored twice: in `selectedLanguage`, and by AppCompat — through the framework
+  from API 33 — once `setApplicationLocales` has been called. `LocaleController.applyStored()`
+  copies the first onto the second on every `onCreate`, defaulting to `"en"`, so a fresh install
+  ignores the system language.
+
+Three decisions were taken before starting, on 2 October 2026:
+
+- **AppCompat is the authority for the language.** `AppCompatDelegate.getApplicationLocales()` is
+  read, `selectedLanguage` is migrated once and removed, and `autoStoreLocales` is declared so that
+  AppCompat persists the choice below API 33, where the framework does not. A fresh install follows
+  the system language when the app ships it and falls back to English otherwise — a behaviour
+  change, and the reason it is a deliverable of its own. The picker is unchanged.
+- **`SettingsRepository` covers every setting**: the theme, the timer, each noise's volume and
+  switch, the switched-off-means-silent rule as one function, and both migrations. It is written
+  over a small key-value interface of its own rather than `SharedPreferences`, because the
+  migrations are pure logic and `AGENTS.md` asks for that to be written test-first on the JVM; one
+  thin adapter is the only code that touches `SharedPreferences`.
+- **The language is exposed in the Android 13+ system settings** through `generateLocaleConfig`,
+  which derives the list from the `values-XX` directories. With AppCompat as the authority this is
+  also the only way back to the system language once one has been picked.
 
 ### Tasks
 
 - [x] `enum class AppTheme(val key: String)` — done ahead of this phase by the purple-theme
       change, with `PURPLE("purple")` and `DARK("dark")`. `SYSTEM` and `LIGHT` are gone rather
       than kept: both themes were removed, and `fromKey` maps their stored keys onto the default.
-- [ ] `SettingsRepository` as the single facade over preferences.
-- [ ] Migrate `timer_prefs` into the main store on first launch, reading the old value if
-      present so existing users keep their timer.
-- [ ] Pick one source of truth for the locale. Recommended: keep
-      `AppCompatDelegate.getApplicationLocales()` as the authority and drop the stored
-      language key, using `R.string.lang` only as the fallback for a fresh install.
 - [x] `AppCompatDelegate.setApplicationLocales` without `recreate()` — it already restarts the
       Activity itself. The second restart was not just waste: from API 33 it raced the framework's
       locale change, and the Activity it created came up in the previous language, with only the
       menu updated when the change arrived. `LanguageSelectionUiTest` switches the language through
       the dialog several times and checks the texts on the screen.
 
+### Deliverables — one PR each, in this order
+
+- [ ] **D1 — `SettingsRepository`.** The repository and its store interface in `settings/`, written
+      test-first, plus the `SharedPreferences` adapter. `ThemeController`, `TimerPreferences`,
+      `NoiseRows`/`NoiseControlView` and `PlaybackService` go through it, and the gate becomes one
+      function with two callers. The timer stays in `timer_prefs` for now, so nothing a user can see
+      or store changes. The pure files join the roots of `AndroidFreeSourcesTest` and the Kover
+      filter in the same PR.
+- [ ] **D2 — the timer moves into `AppPreferences`**, under `timerMinutes`. On first read the old
+      `timer_value` is copied when the new key is absent, and `timer_prefs` is deleted.
+- [ ] **D3 — AppCompat holds the language.** `autoStoreLocales` in the manifest; `selectedLanguage`
+      applied once when AppCompat holds nothing, then removed; `applyStored()` and its `"en"`
+      default go, and the `"en"` in `MainActivity`'s menu becomes a constant. `R.string.lang` stays
+      what the menu and the picker read: it is the language actually on screen, which
+      `getApplicationLocales()` cannot say on a fresh install, where it is empty. The tests that write
+      `selectedLanguage` today — `LanguageSelectionUiTest`, `StoreScreenshotTest` — set the locale
+      through AppCompat instead.
+- [ ] **D4 — `generateLocaleConfig`** in `app/build.gradle.kts` and `res/resources.properties` with
+      `unqualifiedResLocale=en`, checked by hand on an API 36 emulator.
+
 ### Done when
 
-No string literal for a language remains outside a constant, and upgrading from 1.0.3 preserves
-volumes, theme, language, and timer.
+No `SharedPreferences` in the main sources outside the adapter, no string literal for a language
+outside a constant, and upgrading from any released version preserves volumes, theme, language and
+timer — every one from 1.0.3 to 2.0.1 stores them under the same keys.
 
 ---
 
