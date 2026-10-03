@@ -75,11 +75,13 @@ Single unit test:
 
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
+The API key inside it ships in every APK anyway, so it is restricted in the Google Cloud console instead: to the Firebase APIs Firebase assigned it, and to `ru.pravbeseda.sleepnoise` signed by one of two certificates — `Drevo.Keystore` and the maintainer's debug key. A build signed by any other key, such as a CI emulator's or another developer's debug key, runs normally and reaches no Firebase service: its crashes and events go nowhere. The project has no billing account, so the key can reach no paid API either.
+
 Gradle names the outputs as AGP does, `app-release.apk` and `app-release.aab`: AGP 9 hides the variant API that renamed them and offers nothing in its place. Where a name has to say which release it is, CI gives it one — `release.yml` renames the bundle it attaches to the GitHub Release `SleepNoise-<versionName>-<versionCode>-release.aab`.
 
 The `release` build type is signed by a `signingConfig` reading four project properties — `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD` and `SN_STORE_FILE` — so `assembleRelease` **fails without them** rather than producing an unsigned APK, which is the point: a release that quietly comes out unsigned is worse than one that stops. `SN_STORE_FILE` defaults to `../.key/Drevo.Keystore`, the maintainer's gitignored copy; the default exists because `file(null)` throws at configuration time and would take down every Gradle task in the project, tests included. The other three have no default. CI passes all four as `ORG_GRADLE_PROJECT_SN_*` environment variables, which Gradle maps onto properties of the same name.
 
-`Drevo.Keystore` is the *upload* key — `.key/create_sign.sh` wraps `pepk.jar`, which exists only to hand a key to Play App Signing, and Google re-signs what it distributes.
+`Drevo.Keystore` is both the upload key and the app signing key: `.key/create_sign.sh` wraps `pepk.jar`, which hands an existing key to Play App Signing, and the app signing certificate in Play Console carries the keystore's own SHA-1. Play therefore signs what it distributes with this same key.
 
 ## Tests are mandatory
 

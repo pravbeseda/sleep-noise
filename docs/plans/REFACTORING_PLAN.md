@@ -168,9 +168,15 @@ Everything that has to be true before a runner can build this project at all.
 
       Price of option 1, to be paid knowingly: a clean clone no longer builds until the file is
       fetched from the Firebase console. Document that where the build commands live.
-- [ ] Independently of the above, restrict the Android API key by package name and SHA-1
+- [x] Independently of the above, restrict the Android API key by package name and SHA-1
       signing certificate in the Google Cloud console. Google recommends this regardless of
-      where the file is stored, and it is what actually makes the key useless to anyone else.
+      where the file is stored. Done on 2026-10-03: `ru.pravbeseda.sleepnoise` with the SHA-1 of
+      `Drevo.Keystore`, which is also the Play app signing key, and of the maintainer's debug key.
+      The API restriction Firebase set on its own (26 APIs) was kept. Checked against Firebase
+      Installations: both certificates get 200, a foreign one or none gets 403. An Android
+      restriction trusts headers a client can forge, so it filters junk rather than making the key
+      useless to anyone else. The project has no billing account, which is what removes the cost
+      risk.
 - [x] Move `versionName` into `version.properties`, bumped manually on release.
 - [x] Derive `versionCode` from `git rev-list --count HEAD`. The commit count is already an
       order of magnitude above the last manual `versionCode` of **5**, so the switch only ever
