@@ -606,7 +606,7 @@ leaving sessions alive on PRs under review, and to go back to running
 
 **Switched on:** sessions that plan rather than write code.
 
-`docs/plans/REFACTORING_PLAN.md` is the large plan. A planner session takes the
+A large plan in `docs/plans/` is the input. A planner session takes the
 next phase out of it and expands that phase into a detailed plan of its own, as
 a separate file — say `docs/plans/phase-N-<slug>.md`. Such a session writes no
 code.

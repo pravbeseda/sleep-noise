@@ -6,12 +6,12 @@ This file provides guidance to coding agents working in this repository. `CLAUDE
 
 Android app **Sleepy Cocktail** (`ru.pravbeseda.sleepnoise`) that synthesizes six noises in real time for sleep — brown, white, pink, surf, grey and green — with a countdown timer. The user-facing name is the launcher label and the Play title; the `applicationId`, the Gradle `rootProject.name` (`Sleep Noise`) and the repository are the build's own identity and keep the older name deliberately — a rename there would be a new app on Play. Single-module Gradle build (`:app`), Kotlin, minSdk 26 / targetSdk 36 / compileSdk 37, JVM target 11.
 
-An ongoing refactoring plan lives in `docs/plans/REFACTORING_PLAN.md` — check it before starting architectural work.
+Plans for work in progress live in `docs/plans/` — check there before starting architectural work. A plan is deleted once its last item is done, and a decision that outlives it moves into this file first; git history keeps the rest.
 
 `README.md` is the outward-facing description of the same project. Build commands, requirements and
 process live in both files: change one and the other goes stale silently, since nothing checks them
-against each other. Keep them in step, and the plan too when a change closes or moves one of its
-phases.
+against each other. Keep them in step, and an open plan in `docs/plans/` too when a change closes or moves one of its
+items.
 
 ## Contributing workflow
 
@@ -36,8 +36,8 @@ An in-progress merge is exempt from the commit hook, so resolving a conflict on 
 
 ### Scope of one PR
 
-One PR does one thing. Where the work maps onto `docs/plans/REFACTORING_PLAN.md`, that means one
-deliverable of one phase. Refactoring and behaviour changes do not share a PR: a diff that moves
+One PR does one thing. Where the work follows a plan in `docs/plans/`, that means one deliverable
+of it. Refactoring and behaviour changes do not share a PR: a diff that moves
 code *and* changes what it does cannot be reviewed, only trusted.
 
 Files outside the stated scope stay untouched, however tempting. Something worth fixing that turns
@@ -110,8 +110,12 @@ implementation in the same PR. If it cannot, the PR description says which behav
 why. "Untested" is an acceptable answer; "untested and unmentioned" is not.
 
 **Robolectric and MockK are ruled out** — plumbing is covered on a real emulator instead, and pure
-logic needs neither. The decision, with what replaces them, is in `docs/plans/REFACTORING_PLAN.md`
-under "Testing strategy"; adding either dependency means changing that section first.
+logic needs neither. Robolectric is a second, approximate Android, and a foreground service, an
+ongoing notification and audio focus are precisely where the approximation is thinnest; an emulator
+answers the same questions truthfully. Nothing here needs a mock that a hand-written fake or a
+constructor parameter does not cover. "Add Robolectric for the service" is the suggestion that comes
+back every time the service is called untested: reopening it means changing this paragraph first,
+with the case for it, never adding either to `gradle/libs.versions.toml` "just for one test".
 
 **A bug fix starts with a test** that reproduces the defect and fails before the fix.
 
@@ -440,7 +444,7 @@ Two rules are easy to break here. **Every `startForegroundService()` has to be a
 
 `playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
 
-None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Testing strategy" in `docs/plans/REFACTORING_PLAN.md` — and `instrumented.yml` runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
+None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Tests are mandatory" above — and `instrumented.yml` runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
 
 ### Timer
 
@@ -637,6 +641,12 @@ A shallow clone undercounts, which would publish a code below what is already on
 
 A missing or keyless `version.properties` is rejected on the same terms: the `versionName` falls back to `0.0.0`, and a release carrying that placeholder is one nobody can identify afterwards.
 
+**`targetSdk` has a yearly deadline, and nothing in the build enforces it.** Google requires each app to
+target the previous year's API level by 31 August, and a miss means Play stops accepting updates. Lint's
+`OldTargetApi` fires on every run while compileSdk is ahead of targetSdk, but it is informational, so it
+fails nothing. Before each August, confirm the current deadline and level in the Play Console, and raise
+`targetSdk` in a pull request of its own, with a pass over the behaviour changes of that release.
+
 The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` and `packageReleaseBundle` — the two tasks that turn a version into a publishable artifact. So `./gradlew build` and `./gradlew bundle` are covered even though neither names a release, while `lintRelease`, `testReleaseUnitTest` and any debug build still work on a shallow clone, falling back to the floor. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
 
 Release commits follow the message form `Release 1.0.3 (5)`.
@@ -784,9 +794,8 @@ track has to exist, since `release.yml` publishes there by default. A release PR
 
 `app/src/main/play/` is the one place the Google Play texts are written — title, short and full
 description and release notes, per locale, plus `contact-email.txt` and `default-language.txt`. It is
-Gradle Play Publisher's own layout, so a later stage can upload it with no plugin applied here yet:
-today the tree is data, edited in the repository rather than in the Play Console, and a page rebuilt
-from a checkout is the point of it. The plan for the rest is `docs/plans/RELEASE_AND_STORE_PIPELINE.md`.
+Gradle Play Publisher's own layout: the tree is edited in the repository rather than in the Play
+Console, and a page rebuilt from a checkout is the point of it.
 
 **The app's locales and Play's are not spelled the same,** which is the whole reason a mapping exists:
 `values` (the default bucket) is `en-US`, and `ar`, `de`, `es`, `ru`, `uk` are `ar`, `de-DE`, `es-ES`,

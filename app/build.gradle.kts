@@ -218,11 +218,10 @@ android {
         // case of the four: its message is generic, so a baseline would hold it
         // fine. It differs because lint compares targetSdk against the newest
         // API level it knows about, and compileSdk 37 is ahead of targetSdk 36,
-        // so it fires on every machine. Unlike the other
-        // three it tracks a Play deadline, so muting it loses a signal worth
-        // keeping: that is why the targetSdk bump is written into
-        // docs/plans/REFACTORING_PLAN.md instead, where nothing in the build can
-        // quietly drop it.
+        // so it fires on every machine. Unlike the other three it tracks a Play
+        // deadline, so muting it loses a signal worth keeping: that is why the
+        // yearly targetSdk check is written into AGENTS.md instead, where nothing
+        // in the build can quietly drop it.
         //
         // informational, not disable: all four stay in the uploaded report, they
         // just cannot break the build.
@@ -263,9 +262,8 @@ if (project.hasProperty("playPublish")) {
         // Credentials and fails at the task, not at configuration.
         project.findProperty("SN_PLAY_JSON")?.let { serviceAccountCredentials.set(file(it)) }
         // A bundle, never an APK: the listing postdates August 2021, so Play
-        // accepts nothing else from it (D4 of docs/plans/REFACTORING_PLAN.md).
-        // Play App Signing re-signs what it distributes; Drevo.Keystore is the
-        // upload key.
+        // accepts nothing else from it. Play App Signing signs what it
+        // distributes with the key Drevo.Keystore also holds.
         defaultToAppBundles.set(true)
         // Dry by default: a publish task opens an edit in Play and abandons it
         // unless the run passes --commit. Forgetting the flag publishes

@@ -39,9 +39,7 @@ Volumes, theme, language, and the last timer value are remembered between launch
 
 ## Known limitations
 
-Being honest about the current state. The roadmap lives in
-[`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
-in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
+Being honest about the current state:
 
 - The playback service has no automated tests yet: the project's instrumented tests run on an
   emulator, but none of them covers the service, so its lifecycle, notification and audio-focus
@@ -213,6 +211,11 @@ at `1` — also photographs that release's tag and publishes the store page from
 them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`, so an ordinary
 build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
 notes are in [`AGENTS.md`](AGENTS.md), under "The release path".
+
+Once a year the target API level has to keep up with Google Play: each app must target the previous
+year's level by 31 August, or Play stops accepting its updates. Nothing in the build enforces this,
+so it is a check by hand before each August; [`AGENTS.md`](AGENTS.md) says what it involves, under
+"Versioning and releasing".
 
 The store page goes out at that moment and not before, so that it never describes a build nobody
 can install yet. To publish it by hand in between there is a fourth workflow, `publish-listing.yml`:
