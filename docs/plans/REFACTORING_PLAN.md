@@ -245,6 +245,10 @@ the modern API means a `Copy` task wired to `SingleArtifact.APK`, which also cha
 artifact lands. Settle that here, when the upload path that consumes the name is being written,
 rather than guessing at it beforehand.
 
+*Superseded by the AGP 9 migration* ([`AGP9_MIGRATION.md`](AGP9_MIGRATION.md)): the block is gone
+and Gradle no longer renames the APK. The alpha job uploads `app-release.apk` by its fixed path, and
+CI names the bundle it attaches to a GitHub Release.
+
 Landed on branch `ci/alpha-firebase`; the step-by-step record is in
 [`D3_ALPHA_FIREBASE.md`](D3_ALPHA_FIREBASE.md). Three things came out differently from the sketch
 above:
