@@ -39,9 +39,7 @@ Volumes, theme, language, and the last timer value are remembered between launch
 
 ## Known limitations
 
-Being honest about the current state. The roadmap lives in
-[`docs/plans/REFACTORING_PLAN.md`](docs/plans/REFACTORING_PLAN.md), and the two below were decided
-in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVICE.md):
+Being honest about the current state:
 
 - The playback service has no automated tests yet: the project's instrumented tests run on an
   emulator, but none of them covers the service, so its lifecycle, notification and audio-focus
