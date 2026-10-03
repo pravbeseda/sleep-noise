@@ -51,7 +51,7 @@ in [`docs/plans/PHASE_3_PLAYBACK_SERVICE.md`](docs/plans/PHASE_3_PLAYBACK_SERVIC
 
 ## Building from source
 
-Requires JDK 17 and the Android SDK (compileSdk 36, minSdk 26).
+Requires JDK 17 and the Android SDK (compileSdk 37, minSdk 26).
 
 ```bash
 git clone git@github.com:pravbeseda/sleep-noise.git

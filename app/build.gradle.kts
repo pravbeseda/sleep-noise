@@ -142,7 +142,7 @@ afterEvaluate {
 
 android {
     namespace = "ru.pravbeseda.sleepnoise"
-    compileSdk = 36
+    compileSdk = 37
 
     buildFeatures {
         buildConfig = true

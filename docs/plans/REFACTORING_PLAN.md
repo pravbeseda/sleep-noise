@@ -682,8 +682,9 @@ present requirement; the lint finding is about the cycle after it.
       `buildFeatures.compose`) — the UI is entirely XML and Views. Alternatively, commit to a
       Compose migration, but do not leave it half-declared.
 - [x] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.
-- [ ] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
-      `NewerVersionAvailable` 2).
+- [x] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
+      `NewerVersionAvailable` 2). AGP 9.4.1, Gradle 9.8.0, compileSdk 37 and `androidx.core` 1.19.1;
+      detekt stays on 1.23.8 until 2.0 is stable. See [`AGP9_MIGRATION.md`](AGP9_MIGRATION.md).
 - [x] Replace the odd `android:tint="@color/cardview_dark_background"` on the play button
       with a project colour.
 
