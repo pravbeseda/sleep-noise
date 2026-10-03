@@ -5,7 +5,7 @@
         android:id="@+id/theme_button"
         android:title="@string/theme_switch"
         android:icon="@drawable/ic_theme_purple"
-        app:showAsAction="always"/>
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/language_button"

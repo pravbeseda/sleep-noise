@@ -29,16 +29,4 @@
     <string name="notification_channel_playback">Відтворення</string>
     <string name="notification_playing">Грає</string>
     <string name="notification_stop">Стоп</string>
-
-    <!-- Just add your language -->
-    <string name="russian" translatable="false">Русский</string>
-    <string name="english" translatable="false">English</string>
-
-    <!-- No need to translate all strings below. -->
-    <string name="another_language" translatable="false">Another language</string>
-    <string name="credits_text" translatable="false">
-        <b>Dev:</b> Alexander Ivanov\n
-        <b>Logo:</b> Nina Ivanova
-    </string>
-    <string name="app_logo" translatable="false">App logo</string>
 </resources>
