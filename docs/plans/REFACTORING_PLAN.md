@@ -634,9 +634,9 @@ refuses a lint baseline that comes back with entries in it.
 
 ### Deadline: targetSdk
 
-Tracked here rather than in lint. `OldTargetApi` fires on CI (the runner's SDK components are
-ahead of a local install) but it is informational, so it fails nothing — and the reminder lives
-here, where nothing in the build can drop it.
+Tracked here rather than in lint. `OldTargetApi` fires on every run, since compileSdk 37 is ahead
+of targetSdk 36. It is informational, so it fails nothing, and the reminder lives here, where
+nothing in the build can drop it.
 
 Google requires each app to target the previous year's API level by 31 August annually, and
 misses mean Play stops accepting updates. `targetSdk` is currently 36, which satisfies the

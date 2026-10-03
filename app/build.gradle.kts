@@ -217,8 +217,8 @@ android {
         // OldTargetApi is here for a different reason, and it is the weaker
         // case of the four: its message is generic, so a baseline would hold it
         // fine. It differs because lint compares targetSdk against the newest
-        // API level it knows about, and the runner's SDK components are ahead of
-        // a local SDK 36 install — one error there, none here. Unlike the other
+        // API level it knows about, and compileSdk 37 is ahead of targetSdk 36,
+        // so it fires on every machine. Unlike the other
         // three it tracks a Play deadline, so muting it loses a signal worth
         // keeping: that is why the targetSdk bump is written into
         // docs/plans/REFACTORING_PLAN.md instead, where nothing in the build can
