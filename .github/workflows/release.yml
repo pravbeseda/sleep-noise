@@ -403,9 +403,8 @@ jobs:
         # and the release are one step and cannot disagree. prerelease means
         # "still travelling"; rollout.yml clears it when production reaches
         # everyone. The bundle is renamed on the way: AGP names every bundle
-        # app-release.aab, and the applicationVariants block that names the APKs
-        # SleepNoise-<versionName>-<versionCode>-release.apk never sees a
-        # bundle, so the same shape is given to the asset here.
+        # app-release.aab, which says nothing about which release it is once
+        # downloaded.
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
