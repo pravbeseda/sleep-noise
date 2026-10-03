@@ -558,13 +558,6 @@ jobs:
           ORG_GRADLE_PROJECT_SN_STORE_FILE: ${{ runner.temp }}/release.keystore
         run: ./gradlew assembleRelease --stacktrace
 
-      - name: Locate the APK
-        id: apk
-        # applicationVariants renames the output to
-        # SleepNoise-<versionName>-<versionCode>-release.apk, so the name is not
-        # known here and the glob is. One release APK is built, hence head -1.
-        run: echo "path=$(ls app/build/outputs/apk/release/*.apk | head -1)" >> "$GITHUB_OUTPUT"
-
       - name: Distribute to Firebase App Distribution
         # v1.7.1, pinned to its commit. A tag is mutable and this step is handed
         # a service account with App Distribution Admin, so whoever could move
@@ -577,5 +570,5 @@ jobs:
           # APK and not AAB: App Distribution accepts a bundle only for an app
           # linked to Play and processed there first, while an APK installs from
           # the notification straight away.
-          file: ${{ steps.apk.outputs.path }}
+          file: app/build/outputs/apk/release/app-release.apk
           releaseNotes: "Alpha • ${{ github.sha }}"
