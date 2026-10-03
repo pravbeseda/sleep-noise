@@ -212,6 +212,11 @@ them, Gradle Play Publisher, is applied only when a build passes `-PplayPublish`
 build needs no Play credentials. The reasoning, the flags that are not optional and the recovery
 notes are in [`AGENTS.md`](AGENTS.md), under "The release path".
 
+Once a year the target API level has to keep up with Google Play: each app must target the previous
+year's level by 31 August, or Play stops accepting its updates. Nothing in the build enforces this,
+so it is a check by hand before each August; [`AGENTS.md`](AGENTS.md) says what it involves, under
+"Versioning and releasing".
+
 The store page goes out at that moment and not before, so that it never describes a build nobody
 can install yet. To publish it by hand in between there is a fourth workflow, `publish-listing.yml`:
 it sends the titles, descriptions, contact details and screenshots from
