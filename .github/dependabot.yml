@@ -21,9 +21,6 @@ updates:
       # migration of its own recorded in AGENTS.md.
       - dependency-name: "io.gitlab.arturbosch.detekt"
         update-types: ["version-update:semver-major"]
-      # androidx.core 1.19 requires compileSdk 37, so it moves with that bump.
-      - dependency-name: "androidx.core:core-ktx"
-        versions: [">=1.19.0"]
 
   - package-ecosystem: github-actions
     directory: /

@@ -25,9 +25,9 @@ jobs:
       matrix:
         include:
           # The floor and the ceiling of the range the app claims: minSdk 26 and
-          # targetSdk/compileSdk 36 in app/build.gradle.kts. They are the two
-          # ends a failure can be acted on — below the floor the app is not
-          # installed at all, above the ceiling it is not compiled against yet —
+          # targetSdk 36 in app/build.gradle.kts. They are the two ends a
+          # failure can be acted on — below the floor the app is not installed
+          # at all, above the ceiling it does not opt into new behaviour yet —
           # and the levels between them differ from one end or the other, never
           # from both.
           - api-level: 26

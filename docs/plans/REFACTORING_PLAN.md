@@ -634,9 +634,9 @@ refuses a lint baseline that comes back with entries in it.
 
 ### Deadline: targetSdk
 
-Tracked here rather than in lint. `OldTargetApi` fires on CI (the runner's SDK components are
-ahead of a local install) but it is informational, so it fails nothing — and the reminder lives
-here, where nothing in the build can drop it.
+Tracked here rather than in lint. `OldTargetApi` fires on every run, since compileSdk 37 is ahead
+of targetSdk 36. It is informational, so it fails nothing, and the reminder lives here, where
+nothing in the build can drop it.
 
 Google requires each app to target the previous year's API level by 31 August annually, and
 misses mean Play stops accepting updates. `targetSdk` is currently 36, which satisfies the
@@ -682,8 +682,9 @@ present requirement; the lint finding is about the cycle after it.
       `buildFeatures.compose`) — the UI is entirely XML and Views. Alternatively, commit to a
       Compose migration, but do not leave it half-declared.
 - [x] Enable `isMinifyEnabled = true` for release and verify the Crashlytics mapping upload.
-- [ ] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
-      `NewerVersionAvailable` 2).
+- [x] Update AGP and dependencies (`AndroidGradlePluginVersion` 2, `GradleDependency` 7,
+      `NewerVersionAvailable` 2). AGP 9.4.1, Gradle 9.8.0, compileSdk 37 and `androidx.core` 1.19.1;
+      detekt stays on 1.23.8 until 2.0 is stable. See [`AGP9_MIGRATION.md`](AGP9_MIGRATION.md).
 - [x] Replace the odd `android:tint="@color/cardview_dark_background"` on the play button
       with a project colour.
 

@@ -88,6 +88,13 @@ to AGP 9 releases the pins that wait on it: Gradle Play Publisher 4.x, the Gradl
 5. Definition of done line, then `connectedDebugAndroidTest`. Tick the phase 6 item in
    `REFACTORING_PLAN.md`.
 
+### Outcome
+
+- On compileSdk 37, lint reports only the informational `OldTargetApi`, since targetSdk stays 36.
+  Nothing needed fixing.
+- The Definition of done line is green: 115 unit tests, 96.5 % coverage. `connectedDebugAndroidTest`
+  passes 58 tests on API 26.
+
 ## Not in scope
 
 - detekt 2.0: when it is stable, a PR of its own.
