@@ -629,7 +629,7 @@ read as off again the next time the row is bound.
 
 `versionName` lives in `app/version.properties` and is the only value bumped by hand.
 
-`versionCode` is **derived** from `git rev-list --count HEAD` — never edit it. It is monotonic only while `main` (and later `release`) stay append-only, so no force-push or rebase on those branches.
+`versionCode` is **derived** from `git rev-list --count HEAD` — never edit it. It is monotonic only while `main` stays append-only, so no force-push or rebase on it.
 
 A shallow clone undercounts, which would publish a code below what is already on Play, so any shallow checkout is rejected — not just `--depth 1`, since a depth of 20 would clear a numeric threshold while still producing a stale code. A count below the floor (`5`, the last hand-assigned value) is rejected too, as a history that is not the one the app ships from.
 

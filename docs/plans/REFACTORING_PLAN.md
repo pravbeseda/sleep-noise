@@ -268,16 +268,22 @@ above:
 
 ### D4 — Beta: AAB to Google Play internal
 
-- [ ] Create a long-lived `release` branch (the repo currently has only `main` and a stale
+*Superseded by [`RELEASE_AND_STORE_PIPELINE.md`](RELEASE_AND_STORE_PIPELINE.md):* a release is a
+`v<versionName>+<versionCode>` tag cut from `main` by `release.yml` and moved between tracks by
+`promote.yml` and `rollout.yml`, with Gradle Play Publisher doing the upload. There is no `release`
+branch and no `r0adkll` action, so the items below are struck through rather than ticked: none of
+them was built, and none is still to do. The bundle warning after them still holds.
+
+- [ ] ~~Create a long-lived `release` branch (the repo currently has only `main` and a stale
       `sdk36`), following SpendControl's promotion model: features land in `main`, releases are
-      promoted `main → release`, hotfixes branch from `release` and are merged back into `main`.
-- [ ] Add `refs/heads/release` to the branch protection configured in D0 — the local hook
-      already covers it.
-- [ ] Trigger on `push` to `release` plus `workflow_dispatch`, gated on `needs: unit-tests`.
-- [ ] Upload with `r0adkll/upload-google-play`, `packageName: ru.pravbeseda.sleepnoise`,
-      `track: internal`.
-- [ ] Keep `release` strictly append-only — no force-push, no rebase — or the commit-count
-      versionCode can go backwards and Play will reject the upload.
+      promoted `main → release`, hotfixes branch from `release` and are merged back into `main`.~~
+- [ ] ~~Add `refs/heads/release` to the branch protection configured in D0 — the local hook
+      already covers it.~~
+- [ ] ~~Trigger on `push` to `release` plus `workflow_dispatch`, gated on `needs: unit-tests`.~~
+- [ ] ~~Upload with `r0adkll/upload-google-play`, `packageName: ru.pravbeseda.sleepnoise`,
+      `track: internal`.~~
+- [ ] ~~Keep `release` strictly append-only — no force-push, no rebase — or the commit-count
+      versionCode can go backwards and Play will reject the upload.~~
 
 ⚠️ **Build a bundle here, not an APK.** SpendControl uploads APKs because its Play listing
 predates August 2021 and is grandfathered in. Sleep Noise was published far later, so Play
