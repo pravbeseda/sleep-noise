@@ -7,13 +7,17 @@ import android.os.Bundle
 import android.text.BidiFormatter
 import android.view.Menu
 import android.view.MenuItem
+import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.menu.MenuBuilder
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -63,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.enableEdgeToEdge(window)
         // Both themes are dark ones, so the status bar always wants light icons on top of them.
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
+        keepContentClearOfTheBars()
 
         supportActionBar?.title = getString(R.string.app_name)
 
@@ -161,6 +166,19 @@ class MainActivity : AppCompatActivity() {
         timerView.minutes = state.timerMinutes
         timerView.setPlayingState(state.playing)
         if (state.remainingMillis > 0) timerView.showCountdown(state.remainingMillis)
+    }
+
+    /**
+     * Holds the screen's scroll off the system bars and the display cutout with margins, not padding:
+     * ScrollView brings a child into view against its own height and ignores its padding, so insets held
+     * as padding left a focused control partly under the navigation bar (issue #55).
+     */
+    private fun keepContentClearOfTheBars() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.contentScroll)) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> { setMargins(bars.left, bars.top, bars.right, bars.bottom) }
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
     // The contract itself short-circuits when the permission is already held, so there is nothing to check first.

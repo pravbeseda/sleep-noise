@@ -42,7 +42,7 @@ class NoiseLayoutUiTest {
                 }
                 assertTrue("the rows do not scroll", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
                 assertFalse("the screen scrolls as well as the rows", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
-                assertReachableIn(activity.scroll(R.id.noiseScroll), activity.rows())
+                assertReachable(activity.rows())
             }
         }
     }
@@ -55,26 +55,20 @@ class NoiseLayoutUiTest {
 
                 assertTrue("the screen does not scroll", activity.scroll(R.id.contentScroll).canScrollVertically(DOWN))
                 assertFalse("the rows scroll as well as the screen", activity.scroll(R.id.noiseScroll).canScrollVertically(DOWN))
-                assertReachableIn(activity.scroll(R.id.contentScroll), activity.everyControl())
+                assertReachable(activity.everyControl())
             }
         }
     }
 
     /**
-     * Scrolls each control to the top of what the window shows and reads back how much of it is there:
-     * what a drag cannot bring into view is not on the screen.
-     *
-     * The drag is written out rather than asked for with requestRectangleOnScreen, which stops as soon
-     * as the target clears the fading edge and takes no account of the scroll's own padding. The
-     * screen is drawn edge to edge, so fitsSystemWindows does not add to this scroll's 32dp but
-     * replaces it with the system bars' insets — 48dp of navigation bar on a three-button device
-     * against a 24dp fading edge — and the framework leaves the last 24dp of the control inside the
-     * band clipToPadding cuts off. What a finger reaches is the padded content, which is everything.
-     * ScrollView.scrollTo clamps for itself, so the last control needs no arithmetic of its own.
+     * Asks for each control the way focus navigation and TalkBack do, and reads back how much of it the
+     * window shows. requestRectangleOnScreen stops as soon as the target clears the fading edge and
+     * takes no account of the scroll's own padding, so a system bar held off as padding left the last
+     * 24dp of a control under a three-button navigation bar (issue #55).
      */
-    private fun assertReachableIn(scroll: ScrollView, controls: List<Pair<View, String>>) {
+    private fun assertReachable(controls: List<Pair<View, String>>) {
         for ((view, name) in controls) {
-            scroll.scrollTo(0, view.topIn(scroll) - scroll.paddingTop)
+            view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true)
             assertEquals("$name cannot be brought into view", view.height, view.visibleHeight())
         }
     }
@@ -91,17 +85,6 @@ class NoiseLayoutUiTest {
         rows() + listOf(view(R.id.playButton) to "the play button", view(R.id.timerView) to "the timer")
 
     private fun MainActivity.view(id: Int): View = findViewById(id)
-
-    /** Where the view sits in the scroll's own coordinates, which is what scrollTo is given. */
-    private fun View.topIn(scroll: ScrollView): Int {
-        var top = 0
-        var view: View = this
-        while (view !== scroll) {
-            top += view.top
-            view = view.parent as View
-        }
-        return top
-    }
 
     private fun MainActivity.addARowTallerThanTheWindow() {
         val container: LinearLayout = findViewById(R.id.noiseLabContainer)

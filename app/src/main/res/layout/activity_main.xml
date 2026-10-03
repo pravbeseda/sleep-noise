@@ -21,10 +21,8 @@
     android:id="@+id/contentScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:requiresFadingEdge="vertical"
-    android:fadingEdgeLength="@dimen/scroll_fade_length"
-    android:padding="32dp">
+    android:fadingEdgeLength="@dimen/scroll_fade_length">
 
     <LinearLayout
         android:layout_width="match_parent"

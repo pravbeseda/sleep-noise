@@ -540,12 +540,21 @@ as its own, because a `0dp` height with a weight reads as `wrap_content` to a `L
 at anything other than an exact height. `requiresFadingEdge` sits on both: content that really is cut
 off fades out instead of ending mid-glyph.
 
+**The system bars and the display cutout are margins on the outer scroll, never padding.**
+`MainActivity` applies them from an `OnApplyWindowInsetsListener`, because `ScrollView` brings a child
+into view against its own height and takes no account of its padding: held as padding — which is what
+`fitsSystemWindows` did — the bars left the last 24dp of a focused control under a three-button
+navigation bar, on the path focus navigation and TalkBack take (issue #55). The window background is
+what draws under the bars; the content stops at them.
+
 `NoiseLayoutUiTest` holds both arrangements. One test fills the rows past the window and asserts the
 four blocks below them stay fully visible while the rows scroll and the screen does not; the other lays
 the window out at 320dp — the smallest screen dimension Android hands out, and about what a phone in
 landscape comes to — and asserts the reverse, the screen scrolling while the rows do not. Both then
-walk every control on the screen and scroll it fully into view, which is the promise the two
-arrangements share. Both cases are made rather than waited for: how many rows there are is the
+walk every control on the screen and ask for it with `requestRectangleOnScreen`, the way focus and
+TalkBack do, asserting it comes fully into view, which is the promise the two arrangements share.
+Only API 26 shows issue #55: there the three-button bar is 48dp against the 24dp fading edge, while
+API 36 reports 24dp and hides it. Both cases are made rather than waited for: how many rows there are is the
 lab's to decide, and a window shorter than the emulator's is not something a rotation can be asked for.
 
 **No size on this screen comes from a resource a rotation would change: what is left is percentages,
