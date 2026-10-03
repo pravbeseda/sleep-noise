@@ -660,9 +660,11 @@ present requirement; the lint finding is about the cycle after it.
       `AlwaysShowAction`, `Overdraw`, `UnusedResources`.
 - [x] `ContentDescription` on the cats `ImageView` in `activity_main.xml`: the picture is
       decoration, so it is `importantForAccessibility="no"` rather than described.
-- [ ] Replace `android:fitsSystemWindows="true"` with
+- [x] Replace `android:fitsSystemWindows="true"` with
       `ViewCompat.setOnApplyWindowInsetsListener`, which is the supported approach under the
-      mandatory edge-to-edge of targetSdk 35+.
+      mandatory edge-to-edge of targetSdk 35+. The insets are margins on `contentScroll`, not
+      padding, which also closed issue #55; the `32dp` padding beside the attribute had never
+      applied, since `fitsSystemWindows` replaced it, and went with it.
 - [x] Drop the unused Compose stack (Compose BOM, material3, activity-compose, ui-tooling,
       `buildFeatures.compose`) — the UI is entirely XML and Views. Alternatively, commit to a
       Compose migration, but do not leave it half-declared.
