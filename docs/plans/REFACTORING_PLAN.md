@@ -619,18 +619,20 @@ timer — every one from 1.0.3 to 2.0.1 stores them under the same keys.
 
 Lint's real findings (`./gradlew lint`, report at
 `app/build/reports/lint-results-debug.html`) were parked in `app/lint-baseline.xml`, which is
-empty now; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
+gone now that it is empty; version-currency checks are marked informational in `app/build.gradle.kts`, so this phase is
 measured by emptying the baseline. It started at 29 real findings; the four `DefaultLocale`
 entries were the first to go, and in phase 4 the two `Uri.parse` ones left with the feedback mail
 and the two `SharedPreferences.edit` ones with the theme and language controllers. The last
 `UseKtx` one left with `TimerPreferences` in phase 5, and `ContentDescription` when the cats
-picture was marked decorative. Fifteen small ones went together after that, and `VectorPath` was suppressed on its line.
+picture was marked decorative. Fifteen small ones went together after that, and `VectorPath` was
+suppressed on its line; the empty file and the `baseline =` line went last, while Guardrails still
+refuses a lint baseline that comes back with entries in it.
 
 ### Deadline: targetSdk
 
 Tracked here rather than in lint. `OldTargetApi` fires on CI (the runner's SDK components are
-ahead of a local install) but it is informational, and a baseline entry would not survive the
-regenerations this phase requires — so the reminder lives where regeneration cannot drop it.
+ahead of a local install) but it is informational, so it fails nothing — and the reminder lives
+here, where nothing in the build can drop it.
 
 Google requires each app to target the previous year's API level by 31 August annually, and
 misses mean Play stops accepting updates. `targetSdk` is currently 36, which satisfies the

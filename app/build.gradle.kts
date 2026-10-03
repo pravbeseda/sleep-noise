@@ -204,10 +204,6 @@ android {
     }
 
     lint {
-        // The baseline is empty: phase 6 of docs/plans/REFACTORING_PLAN.md
-        // cleared the warnings it was created with. It stays so that CI's
-        // Guardrails job, which refuses a baseline that grows, holds it at zero.
-        baseline = file("lint-baseline.xml")
         warningsAsErrors = true
         abortOnError = true
         // CI uploads it to code scanning, which puts a finding on its line in the pull request diff.
