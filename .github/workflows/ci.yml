@@ -264,11 +264,10 @@ jobs:
 
       - name: Run lint
         if: steps.decide.outputs.run == 'true'
-        # warningsAsErrors is on and the 22 findings this code already carries
-        # sit in app/lint-baseline.xml, so this fails on new warnings only.
-        # Lint reports 38 in total: the other 16 are version-currency checks,
-        # marked informational in app/build.gradle.kts because their messages
-        # embed version numbers and stop matching a baseline as releases appear.
+        # warningsAsErrors is on and app/lint-baseline.xml is empty, so any
+        # finding fails the run. Version-currency checks are marked
+        # informational in app/build.gradle.kts, because their messages embed
+        # version numbers and would turn every release into a new finding.
         run: ./gradlew lint --stacktrace
 
       - name: Upload lint report
@@ -346,10 +345,10 @@ jobs:
           # Counts an entry, not a line: one signature per entry in both files.
           #
           # The lint pattern is deliberately '<issue( |$)' and not '<issue'. The
-          # latter also matches the root <issues> element, so it reports 19 where
-          # the file holds 18 — and the first entry a PR adds would slip through
+          # latter also matches the root <issues> element, so it reports one more
+          # than the file holds — and the first entry a PR adds would slip through
           # unnoticed. Both counts are stated in AGENTS.md; verify with
-          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 18
+          #   git show origin/main:app/lint-baseline.xml     | grep -cE '<issue( |$)'   # 0
           #   git show origin/main:config/detekt/baseline.xml | grep -c '<ID>'          # 5
           count_at() { # <ref-or-empty-for-worktree> <path> <pattern>
             if [ -n "$1" ]; then

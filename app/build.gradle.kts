@@ -204,15 +204,9 @@ android {
     }
 
     lint {
-        // The 16 warnings this project already carries are recorded in the
-        // baseline, so CI fails on new ones only. Clearing them out is phase 6
-        // of docs/plans/REFACTORING_PLAN.md; until then the baseline is what
-        // stops the count from quietly growing.
-        //
-        // Regenerate after fixing something: ./gradlew updateLintBaseline.
-        // That writes every issue it finds, informational ones included; drop
-        // those from the file again, or each run reports them as baseline
-        // entries "not found in the project" once their version numbers move.
+        // The baseline is empty: phase 6 of docs/plans/REFACTORING_PLAN.md
+        // cleared the warnings it was created with. It stays so that CI's
+        // Guardrails job, which refuses a baseline that grows, holds it at zero.
         baseline = file("lint-baseline.xml")
         warningsAsErrors = true
         abortOnError = true
