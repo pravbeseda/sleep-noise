@@ -178,7 +178,7 @@ jobs:
         # --version-code names which code the destination release carries, so a
         # promotion says which release it means rather than "whatever is on the
         # source track". It does not verify that the code is on that track:
-        # DefaultTrackManager.promote at 3.13.0 rewrites every release on the
+        # DefaultTrackManager.promote at 4.1.1 rewrites every release on the
         # source with the given code. See the longer note in rollout.yml, which
         # is where an older tag can do real damage. --commit because the build script
         # leaves it off by default, --rerun (Gradle's per-task one) because a

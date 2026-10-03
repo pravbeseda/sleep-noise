@@ -17,18 +17,11 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # Each major is a migration of its own, recorded in AGENTS.md: AGP 9 moves
-      # Gradle Play Publisher to 4.x with it, and detekt 2.0 wants Kotlin 2.4 / AGP 9.
-      - dependency-name: "com.android.application"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "com.github.triplet.play"
-        update-types: ["version-update:semver-major"]
+      # detekt 2.0 is still alpha and moves to the plugin id dev.detekt, a
+      # migration of its own recorded in AGENTS.md.
       - dependency-name: "io.gitlab.arturbosch.detekt"
         update-types: ["version-update:semver-major"]
-      # Gradle 9.6 removed an internal API every AGP 8.x release relies on.
-      - dependency-name: "gradle-wrapper"
-        update-types: ["version-update:semver-major"]
-      # androidx.core 1.19 requires compileSdk 37 and AGP 9.1, so it moves with the AGP major.
+      # androidx.core 1.19 requires compileSdk 37, so it moves with that bump.
       - dependency-name: "androidx.core:core-ktx"
         versions: [">=1.19.0"]
 

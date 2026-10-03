@@ -1,11 +1,8 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import com.github.triplet.gradle.play.PlayPublisherExtension
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kover)
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
@@ -206,8 +203,6 @@ android {
     lint {
         warningsAsErrors = true
         abortOnError = true
-        // CI uploads it to code scanning, which puts a finding on its line in the pull request diff.
-        sarifReport = true
 
         // These answer "is something newer available?", which depends on the day
         // and the machine rather than on the commit under test. Left as errors
@@ -241,38 +236,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    // Deliberately still the deprecated applicationVariants API, while the
-    // release gate above uses androidComponents.onVariants. The modern API has
-    // no equivalent: VariantOutput exposes versionCode, versionName and enabled,
-    // and nothing else — checked against gradle-api 8.12.2 and 9.0.1 alike, so
-    // AGP 9 removes this API without replacing what it is used for here.
-    // Renaming through the new API means a Copy task wired to
-    // SingleArtifact.APK, which also moves where the artifact lands. That is a
-    // D3 decision (the upload path is what consumes the name), not one to guess
-    // at now — see docs/plans/REFACTORING_PLAN.md.
-    applicationVariants.all {
-        val variant = this
-        outputs.forEach { output ->
-            if (output is BaseVariantOutputImpl) {
-                val appName = "SleepNoise"
-                val versionName = variant.versionName
-                val versionCode = variant.versionCode
-                val buildTypeName = variant.buildType.name
-
-                // No parentheses: the filename ends up in shell globs and CI
-                // artifact paths, where they need quoting to survive.
-                val newApkName = "$appName-$versionName-$versionCode-$buildTypeName.apk"
-                output.outputFileName = newApkName
-            }
-        }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_11
     }
 }
 

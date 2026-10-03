@@ -1,6 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.application) apply false
+    // Applied by no module: AGP 9 compiles Kotlin itself. Declared here, it puts this KGP on the
+    // classpath, lifting the 2.2.10 that AGP depends on to the catalog's version.
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)

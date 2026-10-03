@@ -75,7 +75,7 @@ Single unit test:
 
 `app/google-services.json` is gitignored but **required** — the `com.google.gms.google-services` and Crashlytics plugins are applied unconditionally, so the build fails without it. A fresh clone has to download it from the Firebase console (project settings → your app). It stays out of git deliberately: this repository is public, and a committed key is picked up by secret scanners and stuck in the history for good.
 
-Release APKs are renamed by an `applicationVariants` block in `app/build.gradle.kts` to `SleepNoise-<versionName>-<versionCode>-<buildType>.apk`.
+Gradle names the outputs as AGP does, `app-release.apk` and `app-release.aab`: AGP 9 hides the variant API that renamed them and offers nothing in its place. Where a name has to say which release it is, CI gives it one — `release.yml` renames the bundle it attaches to the GitHub Release `SleepNoise-<versionName>-<versionCode>-release.aab`.
 
 The `release` build type is signed by a `signingConfig` reading four project properties — `SN_KEY_ALIAS`, `SN_KEY_PASSWORD`, `SN_STORE_PASSWORD` and `SN_STORE_FILE` — so `assembleRelease` **fails without them** rather than producing an unsigned APK, which is the point: a release that quietly comes out unsigned is worse than one that stops. `SN_STORE_FILE` defaults to `../.key/Drevo.Keystore`, the maintainer's gitignored copy; the default exists because `file(null)` throws at configuration time and would take down every Gradle task in the project, tests included. The other three have no default. CI passes all four as `ORG_GRADLE_PROJECT_SN_*` environment variables, which Gradle maps onto properties of the same name.
 
@@ -184,7 +184,7 @@ Two more steps keep secrets out of a history that is public and keeps whatever r
 
 The last two steps lint what no Gradle task reads. **actionlint** checks every workflow under `.github/workflows/` and hands each `run:` script to shellcheck; **shellcheck** covers the scripts kept in files — `.github/scripts/*.sh`, `.github/actions/*/*.sh` and `.githooks/*`, so a script added anywhere else is not scanned until that list names it. Both stop at `--severity=warning`, set once as `SHELLCHECK_OPTS` on the job — shellcheck reads it directly, and actionlint passes it on: below it this repository holds only style and deliberate choices — `$ARGS` in `promote.yml` and `rollout.yml` is unquoted on purpose, and says so — and a floor that fails on those gets muted rather than read. actionlint is pinned to a version and its tarball's SHA-256 the way gitleaks is. shellcheck is the runner's own, 0.9.0 on `ubuntu-24.04`, and not pinned, so a newer local copy can report a finding CI does not. actionlint does not read composite actions, so `.github/actions/*/action.yml` stays unchecked apart from its shell script. Neither is on the Definition of done line, since a line that needs `actionlint` installed is a line that gets skipped; to run them by hand, `SHELLCHECK_OPTS=--severity=warning actionlint` and `SHELLCHECK_OPTS=--severity=warning shellcheck .github/scripts/*.sh .github/actions/*/*.sh .githooks/*`.
 
-**Version updates come from `.github/dependabot.yml`**, weekly, for the version catalog and the workflow actions. Every minor and patch bump of the Gradle build — catalog, plugins and wrapper alike — arrives as one pull request, and every action bump as one more, because bumps landing one pull request at a time are a queue, each rebased behind the last under strict protection. A major that is not ignored arrives on its own, so one migration cannot hold back the rest. Majors of AGP, Gradle Play Publisher and detekt are ignored there: each is the migration the versioning pins in `gradle/libs.versions.toml` and the detekt section already describe, and a pull request that cannot go green is noise. `androidx.core` 1.19 and later is ignored for the same reason: it requires `compileSdk` 37 and AGP 9.1, so it moves with the AGP major. So does the Gradle wrapper's major: Gradle 9.6 removed an internal API every AGP 8.x release relies on. Lift a pin in both places at once. A Dependabot pull request runs the same five checks with Dependabot's own secrets, which hold none of this repository's, so it builds against the stub `google-services.json` the way a fork does. What Dependabot does not read stays pinned by hand: gitleaks and actionlint, whose versions and checksums live inside `run:` scripts in `ci.yml`, and ktlint, whose version sits in the catalog's `[versions]` but reaches Spotless as a bare string, with no library or plugin coordinate for Dependabot to look up.
+**Version updates come from `.github/dependabot.yml`**, weekly, for the version catalog and the workflow actions. Every minor and patch bump of the Gradle build — catalog, plugins and wrapper alike — arrives as one pull request, and every action bump as one more, because bumps landing one pull request at a time are a queue, each rebased behind the last under strict protection. A major that is not ignored arrives on its own, so one migration cannot hold back the rest. The major of detekt is ignored there: it is the migration the detekt section describes, and a pull request that cannot go green is noise. `androidx.core` 1.19 and later is ignored for the same reason: it requires `compileSdk` 37, which is a move of its own. Lift a pin in both places at once. A Dependabot pull request runs the same five checks with Dependabot's own secrets, which hold none of this repository's, so it builds against the stub `google-services.json` the way a fork does. What Dependabot does not read stays pinned by hand: gitleaks and actionlint, whose versions and checksums live inside `run:` scripts in `ci.yml`, and ktlint, whose version sits in the catalog's `[versions]` but reaches Spotless as a bare string, with no library or plugin coordinate for Dependabot to look up.
 
 The context names (`Unit tests`, `Lint`, `Detekt`, `Format`, `Guardrails`) are the job names, and they are written out in **three** places, not two: the job's own `name:` in `ci.yml`, the branch protection rule, and guard 3 of `.github/workflows/release.yml`, which insists on all five before it publishes. Renaming a job without renaming the context turns the check into a missing one — it blocks every merge at the first two places and refuses every release at the third. Change all three together. The two instrumented contexts are written in two places, the job's `name:` in `instrumented.yml`, which interpolates the matrix value, and guard 3; renaming the job or changing an API level without the other refuses every release.
 
@@ -288,8 +288,10 @@ dialogs, rows and service binding moved out in phase 4. The 6 `MagicNumber` find
 remain sit in `timer/TimerView` (5) and `adapters/LanguagesArrayAdapter` (1), and the 2
 `EmptyFunctionBlock` ones in `timer/TimerView`.
 
-The version is deliberate: detekt 2.0.0 is still alpha and is built against Kotlin 2.4 / AGP 9;
-the project is on Kotlin 2.4 but still a major behind on AGP. Revisit when AGP moves, not before.
+The version is deliberate: detekt 2.0.0 is still alpha, and it moves to the plugin id `dev.detekt`
+with a new report and baseline format. 1.23.8 runs on Gradle 9 and AGP 9 here, warning only about
+two deprecated Gradle APIs, the first of them removed in Gradle 10. Revisit when 2.0 is stable, or when Gradle 10 lands, whichever
+comes first.
 
 ## Kotlin conventions
 
@@ -690,9 +692,8 @@ that calls the screenshot workflow on the tag — see the store listing section 
 
 Gradle Play Publisher is applied to `:app` **only under `-PplayPublish`**, so an ordinary build, a
 debug build and every CI job that publishes nothing need no Play credentials and never configure the
-plugin. It is 3.13.0 and not 4.x on purpose: 4.0.0 is built against AGP 9, and this project is on
-8.13.2 — the version moves with the AGP major, and `gradle/libs.versions.toml` says so beside the
-number. The service account JSON arrives as `SN_PLAY_JSON`, the same `SN_*` shape as the keystore
+plugin. It is 4.x, which requires AGP 9 and moved with it; its tasks and flags are the ones 3.13.0
+had. The service account JSON arrives as `SN_PLAY_JSON`, the same `SN_*` shape as the keystore
 properties; CI decodes `PLAY_SERVICE_ACCOUNT_JSON` into `$RUNNER_TEMP` and hands the path over as
 `ORG_GRADLE_PROJECT_SN_PLAY_JSON`.
 
@@ -709,7 +710,7 @@ Four flags are not optional, and each has a failure behind it that SpendControl 
   fewer value to keep in step with the workflow.
 - **`--version-code`** on every promotion: without it the task acts on whatever sits on the source
   track *now*, so completing an older tag after a newer release reached production would finish the
-  newer one's rollout. **It is not a guard, though it reads like one.** Gradle Play Publisher 3.13.0
+  newer one's rollout. **It is not a guard, though it reads like one.** Gradle Play Publisher 4.1.1
   does not check that the code is on the track: `DefaultTrackManager.promote` rewrites every release
   on the source track with the code it is given. Dispatching an older tag after a newer one reached
   production therefore rewrites the newer release backwards instead of failing. What protects
