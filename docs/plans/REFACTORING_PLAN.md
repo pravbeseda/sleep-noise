@@ -647,11 +647,13 @@ present requirement; the lint finding is about the cycle after it.
       into CLAUDE.md — localized digits stay, so an Arabic device keeps reading `١٢:٣٤` like its
       system clock. That makes this a no-op on output: it silences the check and records the
       choice, nothing more. Do not "fix" it to `Locale.ROOT` while clearing the baseline.
-- [ ] Check the timer under RTL on a device, which nothing has done. `"%02d:%02d"` reaches the
-      bidi algorithm as digits around a neutral colon, and the failure mode is a countdown that
-      reads `34:12`. `BidiFormatter` is already applied to language names in `MainActivity` but
-      not here. Independent of the digit question above — it goes wrong the same way with
-      Western digits in an RTL layout.
+- [x] Check the timer under RTL on a device. Checked on 2 October 2026 on an API 36 emulator,
+      app locale `ar-EG` (Arabic digits) and `ar-MA` (Western digits): the idle value, the
+      `hh:mm:ss` countdown and the notification all read in order — `٠١:٢٩:٥٤`, `01:29:56`.
+      The feared `34:12` cannot happen: by rule W4 of UAX #9 a single colon between two numbers
+      of the same type takes their type, so the whole time is one number run, and the timer
+      needs no `BidiFormatter`. That holds only while the separator stands alone between digits;
+      text added around the time is a new string to check.
 - [x] `UseKtx` (8 hits): replace `preferences.edit().apply()` with `edit { }` and friends. The
       last one went with `TimerPreferences` in phase 5.
 - [ ] `Untranslatable` (5), `IconDuplicates` (5), `MonochromeLauncherIcon` (2),
