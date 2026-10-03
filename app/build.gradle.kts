@@ -226,8 +226,8 @@ android {
         // a local SDK 36 install — one error there, none here. Unlike the other
         // three it tracks a Play deadline, so muting it loses a signal worth
         // keeping: that is why the targetSdk bump is written into
-        // docs/plans/REFACTORING_PLAN.md instead, where a baseline regeneration
-        // cannot quietly drop it.
+        // docs/plans/REFACTORING_PLAN.md instead, where nothing in the build can
+        // quietly drop it.
         //
         // informational, not disable: all four stay in the uploaded report, they
         // just cannot break the build.
