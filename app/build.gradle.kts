@@ -284,6 +284,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
     implementation(libs.play.review.ktx)
+    implementation(libs.play.app.update.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

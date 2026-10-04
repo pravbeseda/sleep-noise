@@ -32,6 +32,8 @@
     <string name="notification_channel_playback">Playback</string>
     <string name="notification_playing">Playing</string>
     <string name="notification_stop">Stop</string>
+    <string name="update_downloaded">An update is downloaded</string>
+    <string name="update_restart">Restart</string>
 
     <!-- Just add your language -->
     <string name="russian" translatable="false">Русский</string>

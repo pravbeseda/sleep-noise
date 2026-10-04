@@ -30,4 +30,6 @@
     <string name="notification_channel_playback">التشغيل</string>
     <string name="notification_playing">قيد التشغيل</string>
     <string name="notification_stop">إيقاف</string>
+    <string name="update_downloaded">تم تنزيل تحديث</string>
+    <string name="update_restart">إعادة التشغيل</string>
 </resources>
