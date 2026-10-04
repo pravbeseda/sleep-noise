@@ -95,7 +95,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── media/                   # NoiseEngine + NoiseMixer + the noise sources
 ├── playback/                # PlaybackService (foreground), AudioFocus, PlaybackViewModel + PlaybackState
 ├── settings/                # SettingsRepository + its SharedPreferences adapter, ThemeController, LocaleController
-├── support/                 # FeedbackMail — the mail to the developer, with device and app version
+├── support/                 # FeedbackMail — the mail to the developer, with device and app version; PlayStorePage — the app's Play page
 ├── timer/                   # TimerView, SleepTimer
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider; NoiseRows builds one per noise; the language and credits dialogs
 ├── models/ · adapters/
