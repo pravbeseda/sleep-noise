@@ -14,6 +14,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.android.gms.tasks.Tasks
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
@@ -131,6 +132,23 @@ class UpdatePromptTest {
         onView(withText(R.string.update_downloaded)).check(matches(isDisplayed()))
     }
 
+    /** Both reviews of PR #132: a check still in flight must not offer alongside the one that replaced it. */
+    @Test
+    fun aCheckOvertakenByAnotherOffersOnce() = onScreen { fake, _ ->
+        val play = SlowAnswer(fake)
+        onMain {
+            fake.setUpdateAvailable(AVAILABLE_VERSION, AppUpdateType.FLEXIBLE)
+            val prompt = UpdatePrompt(activity, settings, play)
+            prompt.onPlaybackChanged(nothingPlays = true) {}
+            prompt.onPlaybackChanged(nothingPlays = false) {}
+            prompt.onPlaybackChanged(nothingPlays = true) {}
+        }
+
+        onMain { play.answerAll() }
+
+        assertEquals(1, play.flowsStarted)
+    }
+
     private fun downloadToTheEnd(play: FakeAppUpdateManager, prompt: UpdatePrompt) = onMain {
         play.setUpdateAvailable(AVAILABLE_VERSION, AppUpdateType.FLEXIBLE)
         prompt.onPlaybackChanged(nothingPlays = true) {}
@@ -183,6 +201,22 @@ class UpdatePromptTest {
             flowsStarted++
             return Tasks.forResult(Activity.RESULT_CANCELED)
         }
+    }
+
+    /** Play's fake answering update checks only when told to, so that two of them can be in flight at once. */
+    private class SlowAnswer(private val fake: FakeAppUpdateManager) : AppUpdateManager by fake {
+        private val pending = mutableListOf<TaskCompletionSource<AppUpdateInfo>>()
+        var flowsStarted = 0
+            private set
+
+        override fun getAppUpdateInfo(): Task<AppUpdateInfo> = TaskCompletionSource<AppUpdateInfo>().also { pending += it }.task
+
+        override fun startUpdateFlow(info: AppUpdateInfo, activity: Activity, options: AppUpdateOptions): Task<Int> {
+            flowsStarted++
+            return fake.startUpdateFlow(info, activity, options)
+        }
+
+        fun answerAll() = pending.forEach { it.setResult(fake.appUpdateInfo.result) }
     }
 
     private companion object {

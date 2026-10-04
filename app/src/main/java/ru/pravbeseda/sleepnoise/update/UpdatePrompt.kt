@@ -19,6 +19,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.ktx.requestAppUpdateInfo
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.settings.SettingsRepository
@@ -36,6 +37,9 @@ class UpdatePrompt(
     private var offered = false
     private var restartOffer: Snackbar? = null
 
+    /** The update check in flight, cancelled by every later transition, so that only the latest answer acts. */
+    private var check: Job? = null
+
     private val downloadListener = InstallStateUpdatedListener { state ->
         if (state.installStatus() == InstallStatus.DOWNLOADED && idle) offerRestart()
     }
@@ -50,6 +54,7 @@ class UpdatePrompt(
     override fun onStop(owner: LifecycleOwner) {
         manager.unregisterListener(downloadListener)
         idle = false
+        check?.cancel()
     }
 
     /**
@@ -59,14 +64,13 @@ class UpdatePrompt(
     fun onPlaybackChanged(nothingPlays: Boolean, otherwise: () -> Unit) {
         if (nothingPlays == idle) return
         idle = nothingPlays
+        check?.cancel()
         if (!idle) {
             restartOffer?.dismiss()
             return
         }
-        activity.lifecycleScope.launch {
+        check = activity.lifecycleScope.launch {
             val info = requestInfo()
-            // The answer arrives later, and a session may have started meanwhile.
-            if (!idle) return@launch
             if (info == null) {
                 nothingToOffer(otherwise)
                 return@launch
