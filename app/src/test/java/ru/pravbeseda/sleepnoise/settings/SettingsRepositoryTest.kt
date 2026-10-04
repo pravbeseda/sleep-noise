@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.models.AppTheme
+import ru.pravbeseda.sleepnoise.review.LONG_SESSION_MILLIS
 
 class SettingsRepositoryTest {
     private val appStore = InMemoryStore()
@@ -134,6 +135,30 @@ class SettingsRepositoryTest {
     fun theGateHearsTheLevelOnlyWhileTheNoiseIsOn() {
         assertEquals(0.4f, heardVolume(0.4f, enabled = true), 0f)
         assertEquals(0f, heardVolume(0.4f, enabled = false), 0f)
+    }
+
+    @Test
+    fun anUntouchedInstallHasNoLongSessionsAndWasNeverAskedForAReview() {
+        assertEquals(0, settings.longSessions)
+        assertFalse(settings.reviewRequested)
+    }
+
+    @Test
+    fun aLongSessionIsCountedAndAShortOneIsNot() {
+        settings.recordSession(LONG_SESSION_MILLIS)
+        settings.recordSession(LONG_SESSION_MILLIS - 1)
+        settings.recordSession(LONG_SESSION_MILLIS)
+
+        assertEquals(2, appStore.values[LONG_SESSIONS])
+        assertEquals(2, settings.longSessions)
+    }
+
+    @Test
+    fun theReviewRequestIsStoredUnderItsKey() {
+        settings.reviewRequested = true
+
+        assertEquals(true, appStore.values[REVIEW_REQUESTED])
+        assertTrue(settings.reviewRequested)
     }
 
     private companion object {

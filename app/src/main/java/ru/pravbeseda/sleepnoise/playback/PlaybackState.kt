@@ -13,6 +13,8 @@ data class PlaybackState(
     /** Milliseconds left on the sleep timer, 0 when there is none or before the first tick. */
     val remainingMillis: Long = 0,
     val timerMinutes: Int = 0,
+    /** The service has reported at least once; until then [playing] is the screen's guess and a cold start reads as stopped. */
+    val confirmed: Boolean = false,
 ) {
     /** Sounding right now, so the button offers to stop; a paused session is offered a start, which resumes it. */
     val audible: Boolean
@@ -22,7 +24,7 @@ data class PlaybackState(
     fun afterStart(): PlaybackState = copy(playing = true, paused = false)
 
     fun afterBind(playing: Boolean, paused: Boolean, remainingMillis: Long): PlaybackState =
-        copy(playing = playing, paused = paused, remainingMillis = remainingMillis)
+        copy(playing = playing, paused = paused, remainingMillis = remainingMillis, confirmed = true)
 
     fun afterTick(remainingMillis: Long): PlaybackState = copy(remainingMillis = remainingMillis)
 

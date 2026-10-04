@@ -1,6 +1,7 @@
 package ru.pravbeseda.sleepnoise.settings
 
 import ru.pravbeseda.sleepnoise.models.AppTheme
+import ru.pravbeseda.sleepnoise.review.isLongSession
 
 /** A noise ships switched on, so an install made before the toggles existed sounds exactly as it did. */
 const val DEFAULT_NOISE_ENABLED = true
@@ -33,6 +34,18 @@ class SettingsRepository(private val app: KeyValueStore) {
     var timerMinutes: Int
         get() = app.getInt(TIMER_MINUTES, 0)
         set(value) = app.putInt(TIMER_MINUTES, value)
+
+    val longSessions: Int
+        get() = app.getInt(LONG_SESSIONS, 0)
+
+    /** Every session ending, whatever ended it; only the long ones are counted. */
+    fun recordSession(durationMillis: Long) {
+        if (isLongSession(durationMillis)) app.putInt(LONG_SESSIONS, longSessions + 1)
+    }
+
+    var reviewRequested: Boolean
+        get() = app.getBoolean(REVIEW_REQUESTED, false)
+        set(value) = app.putBoolean(REVIEW_REQUESTED, value)
 
     /** The language an older release stored, until it is handed to AppCompat and forgotten. */
     val legacyLanguage: String?
