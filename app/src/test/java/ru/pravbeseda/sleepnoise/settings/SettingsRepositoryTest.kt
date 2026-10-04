@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.review.LONG_SESSION_MILLIS
+import ru.pravbeseda.sleepnoise.update.NO_DECLINED_VERSION
 
 class SettingsRepositoryTest {
     private val appStore = InMemoryStore()
@@ -159,6 +160,19 @@ class SettingsRepositoryTest {
 
         assertEquals(true, appStore.values[REVIEW_REQUESTED])
         assertTrue(settings.reviewRequested)
+    }
+
+    @Test
+    fun anUntouchedInstallHasDeclinedNoUpdate() {
+        assertEquals(NO_DECLINED_VERSION, settings.declinedUpdateVersion)
+    }
+
+    @Test
+    fun theDeclinedUpdateIsStoredUnderItsKey() {
+        settings.declinedUpdateVersion = 320
+
+        assertEquals(320, appStore.values[DECLINED_UPDATE_VERSION])
+        assertEquals(320, settings.declinedUpdateVersion)
     }
 
     private companion object {

@@ -95,7 +95,7 @@ the smallest implementation that passes it, then refactoring. New pure logic wit
 same commit is not finished work — do not describe it as done.
 
 The roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
-walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt` and the
+walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt`, `update/UpdatePolicy.kt` and the
 three pure files of `settings/` — `SettingsRepository.kt`, `KeyValueStore.kt` and `AppPreferences.kt` — and fails naming the file and the
 import line when one of them imports `android.*`, `androidx.*` or the generated `R` — which is neither,
 yet exists only inside an Android build, so it is the import that would stop those roots moving into a
@@ -124,7 +124,7 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 
 **Coverage has a floor: 80 % of lines**, set in `app/build.gradle.kts` and measured on the debug
 variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`,
-`playback/PlaybackState`, `models/AppTheme`, `review/ReviewPolicy` and `settings/SettingsRepository` with its `NoiseSetting`. The
+`playback/PlaybackState`, `models/AppTheme`, `review/ReviewPolicy`, `update/UpdatePolicy` and `settings/SettingsRepository` with its `NoiseSetting`. The
 denominator is cut down on purpose: an Activity or a Service is a line no JVM test can execute, so
 counting them makes the figure report how much Android plumbing the app has rather than how well its
 logic is tested. It is the logic that is measured, not everything a JVM test could technically
@@ -464,7 +464,7 @@ interface of its own, so it is tested on the JVM; `SharedPreferencesStore` is th
 `SharedPreferences`, and `settingsRepository(context)` opens `APP_PREFS` behind it. The language is not a setting
 of the app's at all: AppCompat holds it, see Localization.
 
-One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme`, `timerMinutes`, `longSessions` and `reviewRequested`, the four that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
+One store, `APP_PREFS` ("AppPreferences"). It holds a `<name>NoiseVolume` / `<name>NoiseEnabled` pair for each of the six shipping noises — `white`, `pink`, `brown`, `surf`, `grey` and `green` — plus `selectedTheme`, `timerMinutes`, `longSessions`, `reviewRequested` and `declinedUpdateVersion`, the five that are constants in `settings/AppPreferences.kt` beside `APP_PREFS` itself. **The noise keys are not:** both are derived from the noise's name inside `catalog/ShippingNoises.kt`, the way the lab derives its candidates', so a noise's keys cannot be mistyped into another noise's and there is no second list of them to fall out of step. A name there is a stored key — renaming one loses every level saved under the old spelling.
 
 Every released version kept the timer in a file of its own, `timer_prefs`, under `timer_value`. `settingsRepository(context)` moves it: `moveLegacyTimer` copies the minutes across unless `timerMinutes` already exists, through a store that commits rather than applies, and the old file is deleted once the copy is on disk, so the move happens once per install and a process killed in between loses nothing.
 
@@ -502,10 +502,43 @@ is otherwise opened by someone settling down to sleep.
 
 `MainActivity` asks only once `PlaybackState.confirmed` is set and nothing is playing. Until the service has
 answered, `playing` is the screen's guess, and a cold start reads as stopped while the noise may be sounding.
+It also asks only on an open with no update to offer — see the update prompt below.
 
 **The menu's "Rate the app" opens the store page and never calls this API**: under the quota the dialog may not
 appear, and a button that does nothing is the broken experience Google's guidelines warn against. The dialog
 shows only in an install that came from Play — internal testing or internal app sharing — never in a debug build.
+
+### Update prompt
+
+`update/UpdatePrompt` offers a newer version through Play's In-App Updates API, **flexible flow only**: Play
+downloads in the background and the app asks for nothing more until the download is done. The priority a release
+can carry is ignored and `release.yml` sends none — an offline app with no server has no old version dangerous
+enough to block the screen for, and an immediate flow is its own decision if one ever is.
+
+**Offered once per version.** A dismissed dialog stores the version's code as `declinedUpdateVersion`, and only a
+higher one is offered again; a flow that failed is not a dismissal. `update/UpdatePolicy` holds that rule and is
+tested on the JVM.
+
+**Nothing happens while a session plays**, on the gate the rating prompt uses: `MainActivity` feeds the prompt
+`confirmed && !playing` with every state, and the prompt acts as that turns true and on every screen start.
+`completeUpdate()` restarts the process, so the restart is a Snackbar the user presses — never a silent install
+in the background, where a wrong "nothing plays" would cut the noise for someone falling asleep. A session that
+starts withdraws the Snackbar, and a download that finishes during one waits for its end.
+
+**The offer wins over the rating prompt**: the rating prompt is the prompt's `otherwise`, run only on an open
+with nothing to offer and never on the screen that has just shown Play's update dialog, so two Play dialogs
+never follow each other.
+
+The offer uses `startUpdateFlow`, whose task answers with the result code, rather than an activity-result
+launcher, which has to be registered before the Activity starts. Its listener is not scoped to the Activity: Play's
+dialog stops it, and a scoped listener would be gone by the time the answer arrives.
+
+The Snackbar is handed the root window insets before it is shown. AppCompat passes insets to the content only
+when they change, so below API 30 a view added later never hears of the navigation bar and was drawn under it.
+
+`UpdatePromptTest` drives Play's own `FakeAppUpdateManager`. The fake's `startUpdateFlow` answers `RESULT_OK`
+before the dialog is touched, so the dismissal is played out on a hand-written delegate over it. The dialog Play
+really shows, and the install its restart really performs, are seen only through internal app sharing.
 
 ### Theme
 

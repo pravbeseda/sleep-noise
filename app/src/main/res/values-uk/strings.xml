@@ -30,4 +30,6 @@
     <string name="notification_channel_playback">Відтворення</string>
     <string name="notification_playing">Грає</string>
     <string name="notification_stop">Стоп</string>
+    <string name="update_downloaded">Оновлення завантажено</string>
+    <string name="update_restart">Перезапустити</string>
 </resources>

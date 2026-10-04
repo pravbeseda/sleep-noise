@@ -36,6 +36,7 @@ import ru.pravbeseda.sleepnoise.ui.CreditsDialogFragment
 import ru.pravbeseda.sleepnoise.ui.LanguageDialog
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import ru.pravbeseda.sleepnoise.ui.NoiseRows
+import ru.pravbeseda.sleepnoise.update.UpdatePrompt
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: ImageButton
@@ -43,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var themeController: ThemeController
     private lateinit var localeController: LocaleController
     private lateinit var reviewPrompt: ReviewPrompt
+    private lateinit var updatePrompt: UpdatePrompt
     private val playback: PlaybackViewModel by viewModels()
 
     /**
@@ -66,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         localeController.adoptLegacyLanguage()
         reviewPrompt = ReviewPrompt(this, settings)
+        updatePrompt = UpdatePrompt(this, settings)
         setContentView(R.layout.activity_main)
 
         WindowCompat.enableEdgeToEdge(window)
@@ -99,7 +102,8 @@ class MainActivity : AppCompatActivity() {
                 playback.state.collect { state ->
                     render(state)
                     // Only once the service has answered: a cold start reads as stopped while the noise may be playing.
-                    if (state.confirmed && !state.playing) reviewPrompt.askIfDue()
+                    // An update offer goes first, and the rating prompt waits for an open with nothing to offer.
+                    updatePrompt.onPlaybackChanged(nothingPlays = state.confirmed && !state.playing, otherwise = reviewPrompt::askIfDue)
                 }
             }
         }

@@ -2,6 +2,7 @@ package ru.pravbeseda.sleepnoise.settings
 
 import ru.pravbeseda.sleepnoise.models.AppTheme
 import ru.pravbeseda.sleepnoise.review.isLongSession
+import ru.pravbeseda.sleepnoise.update.NO_DECLINED_VERSION
 
 /** A noise ships switched on, so an install made before the toggles existed sounds exactly as it did. */
 const val DEFAULT_NOISE_ENABLED = true
@@ -46,6 +47,11 @@ class SettingsRepository(private val app: KeyValueStore) {
     var reviewRequested: Boolean
         get() = app.getBoolean(REVIEW_REQUESTED, false)
         set(value) = app.putBoolean(REVIEW_REQUESTED, value)
+
+    /** The versionCode of the update offer last dismissed; only a higher one is offered again. */
+    var declinedUpdateVersion: Int
+        get() = app.getInt(DECLINED_UPDATE_VERSION, NO_DECLINED_VERSION)
+        set(value) = app.putInt(DECLINED_UPDATE_VERSION, value)
 
     /** The language an older release stored, until it is handed to AppCompat and forgotten. */
     val legacyLanguage: String?

@@ -30,4 +30,6 @@
     <string name="notification_channel_playback">Wiedergabe</string>
     <string name="notification_playing">Läuft</string>
     <string name="notification_stop">Stopp</string>
+    <string name="update_downloaded">Ein Update wurde heruntergeladen</string>
+    <string name="update_restart">Neu starten</string>
 </resources>
