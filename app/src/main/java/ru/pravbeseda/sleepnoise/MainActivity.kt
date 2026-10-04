@@ -30,6 +30,7 @@ import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
+import ru.pravbeseda.sleepnoise.support.PlayStorePage
 import ru.pravbeseda.sleepnoise.timer.TimerView
 import ru.pravbeseda.sleepnoise.ui.CreditsDialogFragment
 import ru.pravbeseda.sleepnoise.ui.LanguageDialog
@@ -137,6 +138,11 @@ class MainActivity : AppCompatActivity() {
 
         R.id.language_button -> {
             LanguageDialog.show(this, localeController)
+            true
+        }
+
+        R.id.rate -> {
+            PlayStorePage.open(this)
             true
         }
 
