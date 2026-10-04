@@ -295,7 +295,7 @@ dependencies {
 
 // --- Coverage ---------------------------------------------------------------
 // The denominator is cut down to the classes a JVM test can actually reach:
-// media/ minus the audio engine, plus timer/SleepTimer. Everything else in the
+// media/ minus the audio engine, plus the pure classes listed below. Everything else in the
 // app imports android.*, so no unit test can execute a line of it, and leaving
 // it in would make the figure track the Activity/Service line count rather than
 // how well the logic is tested.
@@ -326,6 +326,7 @@ kover {
                     "ru.pravbeseda.sleepnoise.settings.NoiseSetting",
                     "ru.pravbeseda.sleepnoise.models.AppTheme*",
                     "ru.pravbeseda.sleepnoise.review.ReviewPolicy*",
+                    "ru.pravbeseda.sleepnoise.update.UpdatePolicy*",
                 )
             }
             excludes {
