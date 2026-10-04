@@ -14,6 +14,12 @@
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/rate"
+        android:title="@string/rate_app"
+        android:icon="@drawable/ic_rate"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/mail"
         android:title="@string/mail"
         android:icon="@drawable/ic_email"
