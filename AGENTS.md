@@ -489,11 +489,12 @@ Eight more `APP_PREFS` keys belong to the noise lab, a `lab<name>NoiseVolume` / 
 
 ### Rating prompt
 
-The app asks Google Play for its in-app rating dialog **once per user, ever**: `review/ReviewPrompt` sets
+The app asks Google Play for its in-app rating dialog **once per install, ever**: `review/ReviewPrompt` sets
 `reviewRequested` before it sends the request, so a request Play refused or the user let pass counts as the one
-ask. Auto Backup carries the flag and the session count to a reinstall or a new phone, and that is deliberate:
-whoever reinstalls is the person already asked, so the keys stay in `APP_PREFS` rather than in a file the backup
-rules exclude. The Play API reports neither whether the dialog appeared — its quota is undisclosed — nor what the user did,
+ask. Where Auto Backup restores `APP_PREFS` onto a reinstall or a new phone, the flag and the session count come
+with it, and that is deliberate: whoever reinstalls is the person already asked, so the keys stay in `APP_PREFS`
+rather than in a file the backup rules exclude. A restore is best effort — a device may never have backed up, and
+each device keeps its own backup — so it only ever widens the promise, never makes it. The Play API reports neither whether the dialog appeared — its quota is undisclosed — nor what the user did,
 so there is no answer to wait for and nothing to retry on. `review/ReviewPolicy` holds the rule and is tested on
 the JVM: 10 long sessions (30 minutes or more, however they ended — `PlaybackService` counts them as each one
 ends, since a timer expires with no screen in sight), and a local hour from 9:00 up to 20:00, because the screen
