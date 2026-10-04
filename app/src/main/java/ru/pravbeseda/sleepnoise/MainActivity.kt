@@ -24,6 +24,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import ru.pravbeseda.sleepnoise.playback.PlaybackState
 import ru.pravbeseda.sleepnoise.playback.PlaybackViewModel
+import ru.pravbeseda.sleepnoise.review.ReviewPrompt
 import ru.pravbeseda.sleepnoise.settings.DEFAULT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timerView: TimerView
     private lateinit var themeController: ThemeController
     private lateinit var localeController: LocaleController
+    private lateinit var reviewPrompt: ReviewPrompt
     private val playback: PlaybackViewModel by viewModels()
 
     /**
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         localeController.adoptLegacyLanguage()
+        reviewPrompt = ReviewPrompt(this, settings)
         setContentView(R.layout.activity_main)
 
         WindowCompat.enableEdgeToEdge(window)
@@ -92,7 +95,11 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                playback.state.collect(::render)
+                playback.state.collect { state ->
+                    render(state)
+                    // Only once the service has answered: a cold start reads as stopped while the noise may be playing.
+                    if (state.confirmed && !state.playing) reviewPrompt.askIfDue()
+                }
             }
         }
     }

@@ -36,7 +36,13 @@ class PlaybackStateTest {
         val bound = idle.afterBind(playing = true, paused = true, remainingMillis = REMAINING_MILLIS)
 
         assertEquals(
-            PlaybackState(playing = true, paused = true, remainingMillis = REMAINING_MILLIS, timerMinutes = TIMER_MINUTES),
+            PlaybackState(
+                playing = true,
+                paused = true,
+                remainingMillis = REMAINING_MILLIS,
+                timerMinutes = TIMER_MINUTES,
+                confirmed = true,
+            ),
             bound,
         )
     }
@@ -44,7 +50,16 @@ class PlaybackStateTest {
     /** The session ended while nothing was bound to hear it: the screen must not go on showing it. */
     @Test
     fun aBindToAStoppedServiceEndsTheSessionOnScreen() {
-        assertEquals(idle, playing.afterBind(playing = false, paused = false, remainingMillis = 0))
+        assertEquals(idle.copy(confirmed = true), playing.afterBind(playing = false, paused = false, remainingMillis = 0))
+    }
+
+    /** Until the service answers, `playing` is the screen's own guess: a cold start reads as stopped whatever is sounding. */
+    @Test
+    fun aSessionIsConfirmedOnlyOnceTheServiceAnswers() {
+        assertFalse(idle.confirmed)
+        assertFalse(idle.afterStart().afterStop().confirmed)
+        assertTrue(idle.afterBind(playing = false, paused = false, remainingMillis = 0).confirmed)
+        assertTrue(idle.afterBind(playing = true, paused = false, remainingMillis = 0).afterStop().confirmed)
     }
 
     @Test

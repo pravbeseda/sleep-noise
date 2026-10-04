@@ -30,6 +30,7 @@ class AndroidFreeSourcesTest {
             root("src/main/java/ru/pravbeseda/sleepnoise/settings/KeyValueStore.kt"),
             root("src/main/java/ru/pravbeseda/sleepnoise/settings/AppPreferences.kt"),
             root("src/main/java/ru/pravbeseda/sleepnoise/models/AppTheme.kt"),
+            root("src/main/java/ru/pravbeseda/sleepnoise/review/ReviewPolicy.kt"),
         )
 
         val violations = (mediaFiles + singleFiles).flatMap { file ->

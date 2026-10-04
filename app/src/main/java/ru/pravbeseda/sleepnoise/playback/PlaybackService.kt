@@ -87,6 +87,7 @@ class PlaybackService : Service() {
     }
 
     private var playing = false
+    private var sessionStartedAt = 0L
     private var sleepTimer: SleepTimer? = null
     private var listener: Listener? = null
 
@@ -136,6 +137,8 @@ class PlaybackService : Service() {
      */
     private val localized: Context
         get() = ContextCompat.getContextForLanguage(this)
+
+    private val settings by lazy { settingsRepository(this) }
 
     private val remainingMillis: Long
         get() = sleepTimer?.remaining(SystemClock.elapsedRealtime()) ?: 0
@@ -265,7 +268,6 @@ class PlaybackService : Service() {
         }
         // Read here and not pushed by the Activity: a session started from the notification, or after the
         // Activity is gone, has nothing but the store to read.
-        val settings = settingsRepository(this)
         (SHIPPING_NOISES.map { it.setting } + labCandidates.map { it.setting }).forEach { setting ->
             channels.getValue(setting.volumeKey).volume = settings.heardVolume(setting)
         }
@@ -281,6 +283,7 @@ class PlaybackService : Service() {
 
         noiseEngine.start()
         playing = true
+        sessionStartedAt = SystemClock.elapsedRealtime()
         if (sleepTimer != null) {
             handler.postDelayed(tick, TICK_INTERVAL_MILLIS)
         }
@@ -295,6 +298,7 @@ class PlaybackService : Service() {
         sleepTimer = null
         // A paused engine is already silent and a stopped one has nothing to fade: neither would report the end of one.
         val fadeOut = fade && playing && !pausedByFocusLoss
+        if (playing) settings.recordSession(SystemClock.elapsedRealtime() - sessionStartedAt)
         playing = false
         pausedByFocusLoss = false
         fadingOut = fadeOut

@@ -283,6 +283,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
+    implementation(libs.play.review.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -324,6 +325,7 @@ kover {
                     "ru.pravbeseda.sleepnoise.settings.SettingsRepository*",
                     "ru.pravbeseda.sleepnoise.settings.NoiseSetting",
                     "ru.pravbeseda.sleepnoise.models.AppTheme*",
+                    "ru.pravbeseda.sleepnoise.review.ReviewPolicy*",
                 )
             }
             excludes {
