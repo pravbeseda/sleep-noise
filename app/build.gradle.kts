@@ -328,6 +328,7 @@ kover {
                     "ru.pravbeseda.sleepnoise.models.AppTheme*",
                     "ru.pravbeseda.sleepnoise.review.ReviewPolicy*",
                     "ru.pravbeseda.sleepnoise.update.UpdatePolicy*",
+                    "ru.pravbeseda.sleepnoise.widget.WidgetFace*",
                 )
             }
             excludes {

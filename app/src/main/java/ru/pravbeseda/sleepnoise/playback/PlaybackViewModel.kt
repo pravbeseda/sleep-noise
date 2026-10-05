@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
+import ru.pravbeseda.sleepnoise.widget.PlayWidgets
 
 /**
  * The session as the screen shows it, and the screen's one binding to [PlaybackService].
@@ -91,6 +92,8 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
     fun setTimerMinutes(minutes: Int) {
         mutableState.update { it.afterTimerChange(minutes) }
         settings.timerMinutes = minutes
+        // A stopped widget shows the timer its next start carries.
+        PlayWidgets.refresh(context)
     }
 
     override fun onCleared() = disconnect()

@@ -32,4 +32,6 @@
     <string name="notification_stop">Stopp</string>
     <string name="update_downloaded">Ein Update wurde heruntergeladen</string>
     <string name="update_restart">Neu starten</string>
+    <string name="widget_button_label">Wiedergabetaste</string>
+    <string name="widget_description">Startet deinen Geräuschmix mit dem Timer aus der App</string>
 </resources>

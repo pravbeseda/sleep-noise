@@ -29,6 +29,8 @@ store texts say playback needs no connection and never that the app sends nothin
 - **Plays through the night** — the noise and the timer live in a foreground service, so leaving
   the app, locking the screen or switching theme does not stop them. The ongoing notification
   counts the timer down and carries a Stop action.
+- **Home-screen widget** — a 1x1 play button that starts your mix with the timer set in the app, and
+  stops it.
 - **Gets out of the way** — an incoming call silences the noise and it comes back afterwards;
   unplugging the headphones stops it instead of moving it to the speaker.
 - **Two themes** — purple and dark (purple by default), cycled by the action-bar button.
@@ -41,11 +43,10 @@ Volumes, theme, language, and the last timer value are remembered between launch
 
 Being honest about the current state:
 
-- The playback service has no automated tests yet: the project's instrumented tests run on an
-  emulator, but none of them covers the service, so its lifecycle, notification and audio-focus
-  handling are verified by hand on a device.
-- No lock-screen or headset-button controls — the ongoing notification's Stop action is the only
-  control outside the app.
+- The playback service is barely covered by automated tests: the widget's tests start and stop it,
+  but its lifecycle, notification and audio-focus handling are verified by hand on a device.
+- No lock-screen or headset-button controls — the ongoing notification's Stop action and the
+  home-screen widget are the only controls outside the app.
 
 ## Building from source
 
@@ -99,6 +100,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── support/                 # FeedbackMail — the mail to the developer, with device and app version; PlayStorePage — the app's Play page
 ├── timer/                   # TimerView, SleepTimer
 ├── update/                  # UpdatePolicy + UpdatePrompt — Google Play's flexible in-app update and its restart
+├── widget/                  # The 1x1 home-screen play widgets: one provider per style, PlayWidgets draws them, WidgetFace says what
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider; NoiseRows builds one per noise; the language and credits dialogs
 ├── models/ · adapters/
 ```
@@ -152,7 +154,7 @@ second line.
 New pure logic — anything that does not import `android.*` — is written test-first and lands with
 its test in the same commit. `AndroidFreeSourcesTest` checks that boundary, `androidx.*` and the
 generated `R` included, for its listed roots only: `media/` minus `NoiseEngine.kt`, plus
-`timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt`, `update/UpdatePolicy.kt` and the pure files of `settings/`. Anywhere else the rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
+`timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt`, `update/UpdatePolicy.kt`, `widget/WidgetFace.kt` and the pure files of `settings/`. Anywhere else the rule is discipline. Android plumbing is exempt from test-first, but a PR that leaves behaviour
 uncovered says which behaviour and why. Bug fixes start with a test that reproduces the bug. No test
 gets disabled or weakened to turn a build green. `koverVerifyDebug` puts a line-coverage floor under
 the noise, timer and settings logic; `AGENTS.md` says what it is and which classes it counts.

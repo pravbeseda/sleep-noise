@@ -32,4 +32,6 @@
     <string name="notification_stop">إيقاف</string>
     <string name="update_downloaded">تم تنزيل تحديث</string>
     <string name="update_restart">إعادة التشغيل</string>
+    <string name="widget_button_label">زر التشغيل</string>
+    <string name="widget_description">يشغّل مزيج الضوضاء بالمؤقّت المضبوط في التطبيق</string>
 </resources>

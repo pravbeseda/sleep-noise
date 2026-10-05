@@ -32,4 +32,6 @@
     <string name="notification_stop">Стоп</string>
     <string name="update_downloaded">Обновление загружено</string>
     <string name="update_restart">Перезапустить</string>
+    <string name="widget_button_label">Кнопка</string>
+    <string name="widget_description">Запускает ваш микс шумов с таймером из приложения</string>
 </resources>

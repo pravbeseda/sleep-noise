@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's picture of widget_button below API 31, which has no previewLayout to draw the real one. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path android:pathData="M24,0h52a24,24 0,0 1,24 24v52a24,24 0,0 1,-24 24h-52a24,24 0,0 1,-24 -24v-52a24,24 0,0 1,24 -24z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endColor="@color/purple_background_bottom"
+                android:endX="0"
+                android:endY="100"
+                android:startColor="@color/purple_background_top"
+                android:startX="0"
+                android:startY="0"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="@color/purple_accent"
+        android:pathData="M50,18a32,32 0,1 1,0 64a32,32 0,1 1,0 -64z" />
+    <path
+        android:fillColor="@color/purple_on_accent"
+        android:pathData="M42,37v26l21,-13z" />
+</vector>

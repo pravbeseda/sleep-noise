@@ -8,7 +8,7 @@ import java.util.Locale
  * The clock is passed in rather than read here — the app supplies `SystemClock.elapsedRealtime()` —
  * so this class imports nothing from `android.*` and is tested on the JVM.
  */
-class SleepTimer(private val deadlineMillis: Long) {
+class SleepTimer(val deadlineMillis: Long) {
 
     /** Milliseconds left at [nowMillis], never negative. */
     fun remaining(nowMillis: Long): Long = (deadlineMillis - nowMillis).coerceAtLeast(0)

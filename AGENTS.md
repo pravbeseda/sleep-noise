@@ -95,7 +95,7 @@ the smallest implementation that passes it, then refactoring. New pure logic wit
 same commit is not finished work — do not describe it as done.
 
 The roots the coverage floor names are checked rather than trusted: `AndroidFreeSourcesTest`
-walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt`, `update/UpdatePolicy.kt` and the
+walks `media/` minus `NoiseEngine.kt`, plus `timer/SleepTimer.kt`, `playback/PlaybackState.kt`, `models/AppTheme.kt`, `review/ReviewPolicy.kt`, `update/UpdatePolicy.kt`, `widget/WidgetFace.kt` and the
 three pure files of `settings/` — `SettingsRepository.kt`, `KeyValueStore.kt` and `AppPreferences.kt` — and fails naming the file and the
 import line when one of them imports `android.*`, `androidx.*` or the generated `R` — which is neither,
 yet exists only inside an Android build, so it is the import that would stop those roots moving into a
@@ -124,7 +124,7 @@ loosening an assertion. A test that seems wrong is a discussion in the PR, not a
 
 **Coverage has a floor: 80 % of lines**, set in `app/build.gradle.kts` and measured on the debug
 variant over one named set of classes — `media/` minus `NoiseEngine`, plus `timer/SleepTimer`,
-`playback/PlaybackState`, `models/AppTheme`, `review/ReviewPolicy`, `update/UpdatePolicy` and `settings/SettingsRepository` with its `NoiseSetting`. The
+`playback/PlaybackState`, `models/AppTheme`, `review/ReviewPolicy`, `update/UpdatePolicy`, `widget/WidgetFace` and `settings/SettingsRepository` with its `NoiseSetting`. The
 denominator is cut down on purpose: an Activity or a Service is a line no JVM test can execute, so
 counting them makes the figure report how much Android plumbing the app has rather than how well its
 logic is tested. It is the logic that is measured, not everything a JVM test could technically
@@ -438,13 +438,44 @@ three sliders again once is cheaper than a migration that would live in the code
 
 `playback/PlaybackService` owns the engine, the sleep timer and the ongoing notification, so a session outlives the Activity — backgrounding the app, or the `recreate()` a theme or language change triggers, no longer stops the noise. It is a plain `Service` with `foregroundServiceType="mediaPlayback"`, deliberately not a media3 `MediaSessionService`: media3 wants a `Player` implementation and this app plays a generated track, not a media item. There are no lock-screen or headset-button controls, and adding them is its own decision.
 
-It is driven two ways at once. `ACTION_START` (carrying `EXTRA_TIMER_MINUTES`) and `ACTION_STOP` drive playback; the `LocalBinder` lets a visible Activity read `isPlaying` and `remainingMillis`, push volume changes, and receive `onTick` / `onPlaybackStopped`. `playback/PlaybackViewModel` holds that binding, through the application context, and the Activity renders its `StateFlow<PlaybackState>` rather than holding state of its own. It binds in the Activity's `onStart` and unbinds in its `onStop` — **unless `isChangingConfigurations`**: a `recreate()` for a theme or language change keeps the binding and the last state, so the new Activity shows the pause icon and the countdown from its first frame instead of a stopped screen until a fresh binding answers. An app in the background holds no binding, so the service's lifetime is what it was. The listener is cleared on both sides so nothing outside the service is reachable from a service that outlives it. `playback/PlaybackState` is the state and its transitions, pure and tested on the JVM; the service reports no start, so a start is the ViewModel's own transition, made as it sends `ACTION_START`. `PlaybackRecreateUiTest` reads the recreated screen as it resumes — before its first frame, and before any binding of its own could answer, since a service connection always arrives in a later main-thread message — so the flash fails it rather than racing it.
+It is driven two ways at once. `ACTION_START` (carrying `EXTRA_TIMER_MINUTES`, or nothing, and then the stored timer is the one it starts with) and `ACTION_STOP` drive playback; the `LocalBinder` lets a visible Activity read `isPlaying` and `remainingMillis`, push volume changes, and receive `onTick` / `onPlaybackStopped`. `playback/PlaybackViewModel` holds that binding, through the application context, and the Activity renders its `StateFlow<PlaybackState>` rather than holding state of its own. It binds in the Activity's `onStart` and unbinds in its `onStop` — **unless `isChangingConfigurations`**: a `recreate()` for a theme or language change keeps the binding and the last state, so the new Activity shows the pause icon and the countdown from its first frame instead of a stopped screen until a fresh binding answers. An app in the background holds no binding, so the service's lifetime is what it was. The listener is cleared on both sides so nothing outside the service is reachable from a service that outlives it. `playback/PlaybackState` is the state and its transitions, pure and tested on the JVM; the service reports no start, so a start is the ViewModel's own transition, made as it sends `ACTION_START`. `PlaybackRecreateUiTest` reads the recreated screen as it resumes — before its first frame, and before any binding of its own could answer, since a service connection always arrives in a later main-thread message — so the flash fails it rather than racing it.
 
 Two rules are easy to break here. **Every `startForegroundService()` has to be answered by a `startForeground()`**, including one that arrives while playback is already running — an unanswered start crashes the app five seconds later, which is why the notification is posted before the "already playing" guard. And the **volumes are read from preferences at start**, not pushed by the Activity: the sliders persist on every move, so preferences are the single source and the binder setters carry only live changes.
 
 `playback/AudioFocus` holds the focus request and the mapping of the raw focus constants onto what the service does: stop for good, silence the engine while keeping the session (a call must not extend the sleep timer), or resume. Ducking is **not** implemented on purpose — from API 26 the framework ducks the app's own track and never delivers `LOSS_TRANSIENT_CAN_DUCK` to a `CONTENT_TYPE_MUSIC` listener. A code-registered receiver (never a manifest one) stops playback on `ACTION_AUDIO_BECOMING_NOISY`.
 
-None of the service is covered by tests yet. It is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Tests are mandatory" above — and `instrumented.yml` runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its behaviour is verified by hand on a device.
+Little of the service is covered by tests yet: `PlayWidgetsTest` starts and stops it the way a widget does, and sends it the Stop of a stale widget, and that is all. The rest is meant to be covered by instrumented tests on an emulator — Robolectric was weighed and ruled out, see "Tests are mandatory" above — and `instrumented.yml` runs those on one, so what is still missing is the tests and no longer somewhere to run them. Until they are written, its lifecycle, notification and audio focus are verified by hand on a device.
+
+### Home-screen widgets
+
+A 1x1 play button on the home screen starts a session with the levels and the timer the app holds, and stops it.
+**Each style is a widget of its own in the launcher's list**, not one widget with a style setting: a style is a
+`PlayWidgetProvider` subclass with its layout, a receiver in the manifest and an entry in `PlayWidgets.providers`.
+`ButtonWidget` is the first, the app's accent circle on the purple gradient.
+
+**Both taps are foreground starts.** Play sends `ACTION_START` with no timer, so the service starts with the stored
+one and the widget never carries a stale copy. Stop sends `ACTION_STOP` with `EXTRA_FOREGROUND_START`, and the
+service answers it with `startForeground()` before stopping. A widget is the user's own tap, which Android lets
+start a foreground service from the background, while a plain `startService()` from there is refused. And the
+answer is not optional: a widget still showing "playing" after its process died sends that Stop to a service with
+nothing to stop, and an unanswered foreground start crashes the app as the service stops itself.
+
+**The session the widgets draw is held in memory, in `PlayWidgets`.** The service sets it on every start and stop
+and redraws the widgets; `PlaybackViewModel` redraws them when the timer changes, since a stopped widget shows the
+timer its next start carries. A process that died took its session with it, so a fresh one reading "stopped"
+reads the truth; a copy on disk would outlive the session and draw "playing" over silence after a reboot.
+
+`widget/WidgetFace` is what a widget shows, pure and tested on the JVM: the glyph, and either the chosen timer as
+`h:mm` or a countdown, which a `Chronometer` runs on its own between redraws. No timer means no text. The
+layouts are RemoteViews, drawn by the launcher: `ic_widget_play` and `ic_widget_pause` are the app's glyphs
+without their theme tint, since `?attr` resolves to nothing there, and `android:tint` stands where lint asks for
+AppCompat's `app:tint`, which a launcher's plain `ImageView` ignores. The corners follow the launcher's own radius
+from API 31, through `widget_corner_radius` in `values-v31`.
+
+`PlayWidgetsTest` applies the RemoteViews in the test process and taps them, which sends the PendingIntent a
+launcher would. Its stale-Stop case catches main-thread exceptions itself: under instrumentation a crash on the
+main thread kills that thread and leaves the process and the test running, so a test that only waited would
+pass over the crash.
 
 ### Timer
 
@@ -577,7 +608,7 @@ The array also carries an `engName` used by `LanguagesArrayAdapter`; RTL is hand
 
 ## UI is Views, not Compose
 
-There is no Compose in the build: the stack that sat on the classpath unused was removed. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar. Follow the existing View-based approach unless deliberately migrating.
+There is no Compose in the build: the stack that sat on the classpath unused was removed. The entire UI is XML layouts with AppCompat: `activity_main.xml`, `noise_control_view.xml`, `timer_view.xml`, `dialog_credits.xml`, `item_lang.xml`, plus `menu/` for the action bar, and `widget_*.xml` for the home-screen widgets, which the launcher draws through RemoteViews. Follow the existing View-based approach unless deliberately migrating.
 
 `activity_main.xml` is one column inside `ui/BottomPinningScrollView`: the noise rows in a `ScrollView`
 of their own, then the play button with the timer, the picture and the version line. **The rows take
