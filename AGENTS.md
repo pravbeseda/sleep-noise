@@ -450,7 +450,8 @@ Little of the service is covered by tests yet: `PlayWidgetsTest` starts and stop
 
 A 1x1 play button on the home screen starts a session with the levels and the timer the app holds, and stops it.
 **Each style is a widget of its own in the launcher's list**, not one widget with a style setting: a style is a
-`PlayWidgetProvider` subclass with its layout, a receiver in the manifest and an entry in `PlayWidgets.providers`.
+`PlayWidgetProvider` subclass with its layout and a receiver in the manifest, which is also where `PlayWidgets`
+finds the providers it redraws, so there is no second list to forget.
 `ButtonWidget` is the first, the app's accent circle on the purple gradient.
 
 **Both taps are foreground starts.** Play sends a bare `ACTION_START`, as the screen does: the service reads the

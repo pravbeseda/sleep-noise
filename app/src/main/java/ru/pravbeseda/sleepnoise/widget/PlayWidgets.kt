@@ -2,7 +2,6 @@ package ru.pravbeseda.sleepnoise.widget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.view.View
@@ -21,9 +20,6 @@ import ru.pravbeseda.sleepnoise.settings.settingsRepository
  * the session and draw "playing" over silence after a reboot.
  */
 object PlayWidgets {
-    /** Every play widget the app ships. A new style is one provider here and one receiver in the manifest. */
-    private val providers: List<Class<out PlayWidgetProvider>> = listOf(ButtonWidget::class.java)
-
     // Null while stopped; a session's deadline is null when it runs without a timer.
     @Volatile
     private var session: Session? = null
@@ -40,14 +36,18 @@ object PlayWidgets {
         refresh(context)
     }
 
-    /** Redraws every placed play widget, through the provider's own update, so each draws its own layout. */
+    /**
+     * Redraws every placed play widget, through the provider's own update, so each draws its own layout. The
+     * providers are the manifest's own receivers, so a new style cannot be registered there and missed here.
+     */
     fun refresh(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
-        providers.forEach { provider ->
-            val ids = manager.getAppWidgetIds(ComponentName(context, provider))
+        manager.getInstalledProvidersForPackage(context.packageName, null).forEach { info ->
+            val ids = manager.getAppWidgetIds(info.provider)
             if (ids.isNotEmpty()) {
                 context.sendBroadcast(
-                    Intent(context, provider)
+                    Intent()
+                        .setComponent(info.provider)
                         .setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
                         .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids),
                 )
