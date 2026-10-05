@@ -44,6 +44,78 @@
                 android:resource="@xml/widget_button_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.DarkButtonWidget"
+            android:exported="false"
+            android:label="@string/widget_dark_button_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_dark_button_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TimerRingWidget"
+            android:exported="false"
+            android:label="@string/widget_timer_ring_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_timer_ring_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MoonWidget"
+            android:exported="false"
+            android:label="@string/widget_moon_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_moon_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.IconWidget"
+            android:exported="false"
+            android:label="@string/widget_icon_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_icon_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WallpaperColorsWidget"
+            android:exported="false"
+            android:label="@string/widget_wallpaper_colors_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_wallpaper_colors_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.GlassWidget"
+            android:exported="false"
+            android:label="@string/widget_glass_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_glass_info" />
+        </receiver>
+
         <!-- Below API 33 the framework keeps no per-app locale, so AppCompat stores the chosen one itself. -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

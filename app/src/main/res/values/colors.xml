@@ -29,4 +29,19 @@
 
     <color name="splash_background">#430985</color>
     <color name="credits_text_color">#DDDDDD</color>
+    <!-- The home-screen widgets. Each style draws with the theme colours above where it shares them. -->
+    <color name="widget_dark_outline">#26222E</color>
+    <!-- The timer ring's track: the accent at 22 %, which the share of the timer left is drawn over. -->
+    <color name="widget_ring_track">#38C7A9FF</color>
+    <!-- The launcher icon's moon and stars. -->
+    <color name="widget_moon">#FFFF33</color>
+    <!-- Below API 31 there are no wallpaper colours to take; values-v31 holds the system's. -->
+    <color name="widget_wallpaper_background">#3B2A5E</color>
+    <color name="widget_wallpaper_accent">@color/purple_accent</color>
+    <color name="widget_wallpaper_on_accent">@color/purple_on_accent</color>
+    <color name="widget_wallpaper_text">@color/purple_foreground</color>
+    <color name="widget_glass_fill">#29FFFFFF</color>
+    <color name="widget_glass_outline">#61FFFFFF</color>
+    <color name="widget_glass_text">#FFFFFF</color>
+    <color name="widget_glass_text_dim">#CCFFFFFF</color>
 </resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- widget_icon_play's counterpart while the noise plays. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/purple_accent"
+        android:strokeColor="@color/ic_launcher_background"
+        android:strokeWidth="3"
+        android:pathData="M78,62a16,16 0,1 1,0 32a16,16 0,1 1,0 -32z" />
+    <path
+        android:fillColor="@color/purple_on_accent"
+        android:pathData="M73.2,72h3.6v12h-3.6zM79.2,72h3.6v12h-3.6z" />
+</vector>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher icon's purple and its crescent; the glyph and the stars are drawn over it by widget_moon_play/pause. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/splash_background"
+        android:pathData="M24,0h52a24,24 0,0 1,24 24v52a24,24 0,0 1,-24 24h-52a24,24 0,0 1,-24 -24v-52a24,24 0,0 1,24 -24z" />
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M43.09,21.23A34,34 0,1 0,80.77 58.91A27,27 0,0 1,43.09 21.23Z" />
+</vector>

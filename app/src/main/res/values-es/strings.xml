@@ -33,5 +33,11 @@
     <string name="update_downloaded">Se ha descargado una actualización</string>
     <string name="update_restart">Reiniciar</string>
     <string name="widget_button_label">Botón de reproducción</string>
+    <string name="widget_dark_button_label">Botón oscuro</string>
+    <string name="widget_timer_ring_label">Anillo del temporizador</string>
+    <string name="widget_moon_label">Luna</string>
+    <string name="widget_icon_label">Icono de la app</string>
+    <string name="widget_wallpaper_colors_label">Colores del fondo</string>
+    <string name="widget_glass_label">Cristal</string>
     <string name="widget_description">Inicia tu mezcla de ruidos con el temporizador de la app</string>
 </resources>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Drawn by the launcher through RemoteViews: only the views and attributes RemoteViews allows belong here.
-  The app's own play button: the accent circle on the purple gradient.
+  The play button in the wallpaper's colours from API 31, and in the app's purple below it.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -15,7 +15,7 @@
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:scaleType="fitCenter"
-        android:src="@drawable/widget_button_background" />
+        android:src="@drawable/widget_wallpaper_colors_background" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -29,11 +29,11 @@
             android:id="@+id/widget_glyph"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:background="@drawable/widget_button_circle"
+            android:background="@drawable/widget_wallpaper_colors_circle"
             android:importantForAccessibility="no"
             android:padding="8dp"
             android:src="@drawable/ic_widget_play"
-            android:tint="@color/purple_on_accent"
+            android:tint="@color/widget_wallpaper_on_accent"
             tools:ignore="UseAppTint" />
 
         <TextView
@@ -42,7 +42,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:fontFamily="sans-serif-medium"
-            android:textColor="@color/purple_foreground_dim"
+            android:textColor="@color/widget_wallpaper_text"
             android:textSize="11sp"
             android:visibility="gone" />
 
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:fontFamily="sans-serif-medium"
-            android:textColor="@color/purple_foreground"
+            android:textColor="@color/widget_wallpaper_text"
             android:textSize="11sp"
             android:visibility="gone" />
     </LinearLayout>

@@ -450,9 +450,16 @@ Little of the service is covered by tests yet: `PlayWidgetsTest` starts and stop
 
 A 1x1 play button on the home screen starts a session with the levels and the timer the app holds, and stops it.
 **Each style is a widget of its own in the launcher's list**, not one widget with a style setting: a style is a
-`PlayWidgetProvider` subclass with its layout and a receiver in the manifest, which is also where `PlayWidgets`
-finds the providers it redraws, so there is no second list to forget.
-`ButtonWidget` is the first, the app's accent circle on the purple gradient.
+`PlayWidgetProvider` subclass carrying a `PlayWidgetStyle` — its layout and the two images its glyph swaps
+between — and a receiver in the manifest, which is also where `PlayWidgets` finds the providers it redraws, so
+there is no second list to forget. Seven ship: the app's button on purple, the same on black, a timer ring, the
+launcher icon's moon, the launcher icon with a play badge, the wallpaper's colours and a see-through tile.
+
+**Every style is a square in the middle of its cell, whatever shape the launcher's cell is.** RemoteViews has no
+aspect ratio, so the square is an image: each background is a drawable sized 100dp square, and `fitCenter` scales
+it to the cell's shorter side. What has to stay in register with that art is drawn the same way, a full 100dp frame
+over it — the moon's glyph and stars, the icon's badge, the timer ring — and what does not is fixed-size and
+centred, as the button and its timer label are.
 
 **Both taps are foreground starts.** Play sends a bare `ACTION_START`, as the screen does: the service reads the
 timer from the preferences, so the widget never carries a stale copy. Stop sends `ACTION_STOP` with `EXTRA_FOREGROUND_START`, and the
@@ -468,15 +475,19 @@ language it was drawn in. A language picked in the app recreates the screen, so 
 changed in the system settings reaches it the next time the app opens. A process that died took its session with it, so a fresh one reading "stopped"
 reads the truth; a copy on disk would outlive the session and draw "playing" over silence after a reboot.
 
-`widget/WidgetFace` is what a widget shows, pure and tested on the JVM: the glyph, and either the chosen timer as
-`h:mm` or a countdown, which a `Chronometer` runs on its own between redraws. No timer means no text. The
-layouts are RemoteViews, drawn by the launcher: `ic_widget_play` and `ic_widget_pause` are the app's glyphs
-without their theme tint, since `?attr` resolves to nothing there, and `android:tint` stands where lint asks for
-AppCompat's `app:tint`, which a launcher's plain `ImageView` ignores. The corners follow the launcher's own radius
-from API 31, through `widget_corner_radius` in `values-v31`.
+`widget/WidgetFace` is what a widget shows, pure and tested on the JVM: the glyph, either the chosen timer as
+`h:mm` or a countdown, and the share of the timer left. A `Chronometer` runs the countdown on its own between
+redraws; the ring is an image whose level is that share, so the service redraws the widgets each time a minute of
+the timer passes. No timer means no text and a full ring. `PlayWidgets.render` sets every view any style has, and
+a layout simply leaves out what it does not show: RemoteViews skips an action whose view is not there. The layouts
+are RemoteViews, drawn by the launcher: `ic_widget_play` and `ic_widget_pause` are the app's glyphs without their
+theme tint, since `?attr` resolves to nothing there, and `android:tint` stands where lint asks for AppCompat's
+`app:tint`, which a launcher's plain `ImageView` ignores. The wallpaper's colours are `@android:color/system_accent1_*`
+in `values-v31/colors.xml`; below API 31 the same names hold the app's purple.
 
 `PlayWidgetsTest` applies the RemoteViews in the test process and taps them, which sends the PendingIntent a
-launcher would. Its stale-Stop case catches main-thread exceptions itself: under instrumentation a crash on the
+launcher would. It reads the styles off the manifest, as `PlayWidgets` does, and applies every one in both faces:
+a layout RemoteViews refuses is a widget the launcher shows as "Can't load widget". Its stale-Stop case catches main-thread exceptions itself: under instrumentation a crash on the
 main thread kills that thread and leaves the process and the test running, so a test that only waited would
 pass over the crash.
 

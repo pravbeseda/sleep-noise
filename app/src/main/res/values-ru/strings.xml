@@ -33,5 +33,11 @@
     <string name="update_downloaded">Обновление загружено</string>
     <string name="update_restart">Перезапустить</string>
     <string name="widget_button_label">Кнопка</string>
+    <string name="widget_dark_button_label">Тёмная кнопка</string>
+    <string name="widget_timer_ring_label">Кольцо таймера</string>
+    <string name="widget_moon_label">Луна</string>
+    <string name="widget_icon_label">Иконка приложения</string>
+    <string name="widget_wallpaper_colors_label">Цвета обоев</string>
+    <string name="widget_glass_label">Стекло</string>
     <string name="widget_description">Запускает ваш микс шумов с таймером из приложения</string>
 </resources>

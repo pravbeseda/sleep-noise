@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Drawn by the launcher through RemoteViews: only the views and attributes RemoteViews allows belong here.
+  The launcher icon's crescent, with the glyph in its shadow and stars out while the noise plays.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Square in any cell: fitCenter scales the 100dp tile to the shorter side. -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_moon_background" />
+
+    <!-- The glyph is a whole frame drawn over the background, so it scales and stays where the art puts it. -->
+    <ImageView
+        android:id="@+id/widget_glyph"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_moon_play" />
+</FrameLayout>

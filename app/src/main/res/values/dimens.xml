@@ -22,6 +22,4 @@
     <dimen name="slider_thumb_size">14dp</dimen>
     <!-- Either side of the thumb: 14dp of thumb between two of these is the 48dp minimum touch target. -->
     <dimen name="slider_touch_padding">17dp</dimen>
-    <!-- A widget's corners below API 31, where no launcher states its own; values-v31 takes the launcher's. -->
-    <dimen name="widget_corner_radius">16dp</dimen>
 </resources>

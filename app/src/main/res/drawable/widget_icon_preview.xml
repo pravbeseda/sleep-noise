@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's picture of widget_icon below API 31: the stopped widget, its two frames stacked. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_icon_background" />
+    <item android:drawable="@drawable/widget_icon_play" />
+</layer-list>
