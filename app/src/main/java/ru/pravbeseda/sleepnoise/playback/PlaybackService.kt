@@ -30,6 +30,7 @@ import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
+import ru.pravbeseda.sleepnoise.widget.PlayWidgets
 import kotlin.random.Random
 
 /**
@@ -204,8 +205,18 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startPlayback(intent.getIntExtra(EXTRA_TIMER_MINUTES, 0))
-            ACTION_STOP -> stopPlayback(fade = true)
+            // Read here, like the volumes: the screen stores every pick before it can send a start,
+            // and a widget has nothing else to send.
+            ACTION_START -> startPlayback(settings.timerMinutes)
+
+            ACTION_STOP -> {
+                // A widget's Stop arrives as a foreground start, and one has to be answered even when nothing
+                // plays: a widget can still show "playing" over a session its dead process took with it.
+                if (intent.getBooleanExtra(EXTRA_FOREGROUND_START, false)) {
+                    ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), foregroundServiceType())
+                }
+                stopPlayback(fade = true)
+            }
         }
         return START_NOT_STICKY
     }
@@ -284,6 +295,7 @@ class PlaybackService : Service() {
         noiseEngine.start()
         playing = true
         sessionStartedAt = SystemClock.elapsedRealtime()
+        PlayWidgets.onPlaying(this, sleepTimer?.deadlineMillis)
         if (sleepTimer != null) {
             handler.postDelayed(tick, TICK_INTERVAL_MILLIS)
         }
@@ -312,6 +324,7 @@ class PlaybackService : Service() {
             stopSelf()
         }
         listener?.onPlaybackStopped()
+        PlayWidgets.onStopped(this)
     }
 
     // Called from stopPlayback(), a turned-around fade and onDestroy(), and stopSelf() puts the first before the last.
@@ -346,7 +359,9 @@ class PlaybackService : Service() {
     companion object {
         const val ACTION_START = "ru.pravbeseda.sleepnoise.action.START"
         const val ACTION_STOP = "ru.pravbeseda.sleepnoise.action.STOP"
-        const val EXTRA_TIMER_MINUTES = "ru.pravbeseda.sleepnoise.extra.TIMER_MINUTES"
+
+        /** On [ACTION_STOP]: sent through `startForegroundService()`, which the service has to answer. */
+        const val EXTRA_FOREGROUND_START = "ru.pravbeseda.sleepnoise.extra.FOREGROUND_START"
 
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1

@@ -50,4 +50,6 @@
         <b>Logo:</b> Nina Ivanova
     </string>
     <string name="app_logo" translatable="false">App logo</string>
+    <string name="widget_button_label">Play button</string>
+    <string name="widget_description">Starts your noise mix with the timer set in the app</string>
 </resources>

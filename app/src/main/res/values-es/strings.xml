@@ -32,4 +32,6 @@
     <string name="notification_stop">Detener</string>
     <string name="update_downloaded">Se ha descargado una actualización</string>
     <string name="update_restart">Reiniciar</string>
+    <string name="widget_button_label">Botón de reproducción</string>
+    <string name="widget_description">Inicia tu mezcla de ruidos con el temporizador de la app</string>
 </resources>
