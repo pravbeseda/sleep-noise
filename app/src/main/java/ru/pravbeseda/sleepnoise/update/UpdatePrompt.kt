@@ -96,16 +96,27 @@ class UpdatePrompt(
         null
     }
 
-    private fun actionFor(info: AppUpdateInfo): UpdateAction = updateAction(
-        offerable = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE),
-        availableVersionCode = info.availableVersionCode(),
-        declinedVersionCode = settings.declinedUpdateVersion,
-        install = when (info.installStatus()) {
-            InstallStatus.DOWNLOADED -> InstallProgress.DOWNLOADED
-            InstallStatus.PENDING, InstallStatus.DOWNLOADING, InstallStatus.INSTALLING -> InstallProgress.RUNNING
-            else -> InstallProgress.NONE
-        },
-    )
+    private fun actionFor(info: AppUpdateInfo): UpdateAction {
+        val availability = info.updateAvailability()
+        val flexibleAllowed = info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+        val declined = settings.declinedUpdateVersion
+        // Play's answer is all there is to go on when a device shows no offer, so it is logged as it arrives.
+        Log.i(
+            TAG,
+            "Play reports availability=$availability, flexible=$flexibleAllowed, status=${info.installStatus()}, " +
+                "code=${info.availableVersionCode()}, declined=$declined",
+        )
+        return updateAction(
+            offerable = availability == UpdateAvailability.UPDATE_AVAILABLE && flexibleAllowed,
+            availableVersionCode = info.availableVersionCode(),
+            declinedVersionCode = declined,
+            install = when (info.installStatus()) {
+                InstallStatus.DOWNLOADED -> InstallProgress.DOWNLOADED
+                InstallStatus.PENDING, InstallStatus.DOWNLOADING, InstallStatus.INSTALLING -> InstallProgress.RUNNING
+                else -> InstallProgress.NONE
+            },
+        )
+    }
 
     private fun offer(info: AppUpdateInfo) {
         offered = true
