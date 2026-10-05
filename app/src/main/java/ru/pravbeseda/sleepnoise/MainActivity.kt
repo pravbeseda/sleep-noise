@@ -37,6 +37,7 @@ import ru.pravbeseda.sleepnoise.ui.LanguageDialog
 import ru.pravbeseda.sleepnoise.ui.NoiseControlView
 import ru.pravbeseda.sleepnoise.ui.NoiseRows
 import ru.pravbeseda.sleepnoise.update.UpdatePrompt
+import ru.pravbeseda.sleepnoise.widget.PlayWidgets
 
 class MainActivity : AppCompatActivity() {
     private lateinit var playButton: ImageButton
@@ -67,6 +68,9 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         localeController.adoptLegacyLanguage()
+        // A placed widget keeps the labels it was drawn with, and a language change, from the picker or the
+        // system's per-app page, recreates this screen or meets it on the next launch.
+        PlayWidgets.refresh(this)
         reviewPrompt = ReviewPrompt(this, settings)
         updatePrompt = UpdatePrompt(this, settings)
         setContentView(R.layout.activity_main)

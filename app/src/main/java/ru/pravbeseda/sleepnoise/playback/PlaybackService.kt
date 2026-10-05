@@ -205,8 +205,9 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            // A widget names no timer: the one the app last chose is the one it starts with.
-            ACTION_START -> startPlayback(intent.getIntExtra(EXTRA_TIMER_MINUTES, settings.timerMinutes))
+            // Read here, like the volumes: the screen stores every pick before it can send a start,
+            // and a widget has nothing else to send.
+            ACTION_START -> startPlayback(settings.timerMinutes)
 
             ACTION_STOP -> {
                 // A widget's Stop arrives as a foreground start, and one has to be answered even when nothing
@@ -358,7 +359,6 @@ class PlaybackService : Service() {
     companion object {
         const val ACTION_START = "ru.pravbeseda.sleepnoise.action.START"
         const val ACTION_STOP = "ru.pravbeseda.sleepnoise.action.STOP"
-        const val EXTRA_TIMER_MINUTES = "ru.pravbeseda.sleepnoise.extra.TIMER_MINUTES"
 
         /** On [ACTION_STOP]: sent through `startForegroundService()`, which the service has to answer. */
         const val EXTRA_FOREGROUND_START = "ru.pravbeseda.sleepnoise.extra.FOREGROUND_START"

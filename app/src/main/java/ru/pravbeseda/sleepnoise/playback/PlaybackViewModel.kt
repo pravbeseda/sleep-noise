@@ -74,9 +74,7 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
 
     fun start() {
         mutableState.update { it.afterStart() }
-        val startIntent = playbackIntent(PlaybackService.ACTION_START)
-            .putExtra(PlaybackService.EXTRA_TIMER_MINUTES, state.value.timerMinutes)
-        ContextCompat.startForegroundService(context, startIntent)
+        ContextCompat.startForegroundService(context, playbackIntent(PlaybackService.ACTION_START))
     }
 
     fun stop() {
