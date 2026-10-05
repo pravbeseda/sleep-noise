@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's picture of widget_dark_button below API 31, which has no previewLayout to draw the real one. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/dark_background"
+        android:pathData="M24,0h52a24,24 0,0 1,24 24v52a24,24 0,0 1,-24 24h-52a24,24 0,0 1,-24 -24v-52a24,24 0,0 1,24 -24z" />
+    <path
+        android:fillColor="@color/dark_accent"
+        android:pathData="M50,18a32,32 0,1 1,0 64a32,32 0,1 1,0 -64z" />
+    <path
+        android:fillColor="@color/dark_on_accent"
+        android:pathData="M42,37v26l21,-13z" />
+</vector>

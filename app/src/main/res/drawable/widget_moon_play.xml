@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drawn over widget_moon_background in the same 100 x 100 frame: the glyph in the crescent's shadow, one star. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M60.5,28L76,37L60.5,46Z" />
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M84,75.4Q84,78 86.6,78Q84,78 84,80.6Q84,78 81.4,78Q84,78 84,75.4Z" />
+</vector>

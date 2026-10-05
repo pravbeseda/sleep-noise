@@ -1,11 +1,13 @@
 package ru.pravbeseda.sleepnoise.widget
 
 import android.app.ActivityManager
+import android.appwidget.AppWidgetManager
 import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import android.widget.Chronometer
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -50,7 +52,7 @@ class PlayWidgetsTest {
     @Test
     fun aPlayingWidgetCountsDownToTheDeadline() {
         val deadline = SystemClock.elapsedRealtime() + NINETY_MINUTES_MILLIS
-        val widget = applied(WidgetFace.playing(deadline))
+        val widget = applied(WidgetFace.playing(deadline, NINETY_MINUTES_MILLIS))
 
         assertEquals(context.getString(R.string.notification_stop), widget.contentDescription)
         assertEquals(View.GONE, widget.planned.visibility)
@@ -61,10 +63,36 @@ class PlayWidgetsTest {
 
     @Test
     fun aPlayingWidgetWithNoTimerShowsNoText() {
-        val widget = applied(WidgetFace.playing(deadlineMillis = null))
+        val widget = applied(WidgetFace.playing(deadlineMillis = null, durationMillis = null))
 
         assertEquals(View.GONE, widget.planned.visibility)
         assertEquals(View.GONE, widget.countdown.visibility)
+    }
+
+    /** A layout that fails to apply is a widget the launcher shows as "Can't load widget". */
+    @Test
+    fun everyStyleDrawsBothFaces() {
+        val styles = installedStyles()
+        assertTrue("no widget styles in the manifest", styles.isNotEmpty())
+        val deadline = SystemClock.elapsedRealtime() + NINETY_MINUTES_MILLIS
+        styles.forEach { (name, style) ->
+            val stopped = applied(WidgetFace.stopped(timerMinutes = 90), style)
+            assertEquals("$name stopped", context.getString(R.string.play_button), stopped.contentDescription)
+            val playing = applied(WidgetFace.playing(deadline, NINETY_MINUTES_MILLIS), style)
+            assertEquals("$name playing", context.getString(R.string.notification_stop), playing.contentDescription)
+            stopped.plannedOrNull?.let { assertEquals("$name planned timer", "1:30", it.text.toString()) }
+            playing.countdownOrNull?.let { assertEquals("$name countdown", View.VISIBLE, it.visibility) }
+        }
+    }
+
+    @Test
+    fun theTimerRingShowsTheShareOfTheTimerLeft() {
+        val halfwayDeadline = SystemClock.elapsedRealtime() + NINETY_MINUTES_MILLIS / 2
+
+        assertEquals(0, ringLevel(WidgetFace.stopped(timerMinutes = 90)))
+        assertEquals(FULL_LEVEL, ringLevel(WidgetFace.playing(deadlineMillis = null, durationMillis = null)))
+        val halfway = ringLevel(WidgetFace.playing(halfwayDeadline, NINETY_MINUTES_MILLIS))
+        assertTrue("half the ring at half the timer, read $halfway", halfway in FULL_LEVEL / 2 - LEVEL_SLACK..FULL_LEVEL / 2)
     }
 
     @Test
@@ -93,7 +121,7 @@ class PlayWidgetsTest {
             if (thread != Looper.getMainLooper().thread) handler?.uncaughtException(thread, error)
         }
         try {
-            tap(WidgetFace.playing(deadlineMillis = null))
+            tap(WidgetFace.playing(deadlineMillis = null, durationMillis = null))
             awaitService(running = true)
             awaitService(running = false)
             SystemClock.sleep(CRASH_DELIVERY_MILLIS)
@@ -109,15 +137,29 @@ class PlayWidgetsTest {
         val contentDescription: CharSequence? get() = root.contentDescription
         val planned: TextView get() = root.findViewById(R.id.widget_planned)
         val countdown: Chronometer get() = root.findViewById(R.id.widget_countdown)
+
+        // A style may leave the timer out of its layout.
+        val plannedOrNull: TextView? get() = root.findViewById(R.id.widget_planned)
+        val countdownOrNull: Chronometer? get() = root.findViewById(R.id.widget_countdown)
     }
 
-    private fun applied(face: WidgetFace): AppliedWidget {
+    private fun applied(face: WidgetFace, style: PlayWidgetStyle = ButtonWidget().style): AppliedWidget {
         var root: View? = null
         instrumentation.runOnMainSync {
-            root = PlayWidgets.render(context, R.layout.widget_button, face).apply(context, FrameLayout(context))
+            root = PlayWidgets.render(context, style, face).apply(context, FrameLayout(context))
         }
         return AppliedWidget(requireNotNull(root))
     }
+
+    /** Read off the manifest, as `PlayWidgets.refresh` reads them, so a style registered there is a style tested here. */
+    private fun installedStyles(): List<Pair<String, PlayWidgetStyle>> =
+        AppWidgetManager.getInstance(context).getInstalledProvidersForPackage(context.packageName, null).map { info ->
+            val provider = Class.forName(info.provider.className).getDeclaredConstructor().newInstance() as PlayWidgetProvider
+            info.provider.shortClassName to provider.style
+        }
+
+    private fun ringLevel(face: WidgetFace): Int = applied(face, TimerRingWidget().style).root
+        .findViewById<ImageView>(R.id.widget_ring).drawable.level
 
     private fun tap(face: WidgetFace) {
         val widget = applied(face)
@@ -148,6 +190,10 @@ class PlayWidgetsTest {
 
     private companion object {
         const val NINETY_MINUTES_MILLIS = 90 * 60 * 1000L
+        const val FULL_LEVEL = 10_000
+
+        // The test's own few milliseconds between computing the deadline and drawing it.
+        const val LEVEL_SLACK = 10
         const val AWAIT_MILLIS = 5_000L
         const val POLL_MILLIS = 50L
         const val SERVICE_AWAIT_MILLIS = 10_000L

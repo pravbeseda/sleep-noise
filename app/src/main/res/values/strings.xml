@@ -51,5 +51,11 @@
     </string>
     <string name="app_logo" translatable="false">App logo</string>
     <string name="widget_button_label">Play button</string>
+    <string name="widget_dark_button_label">Dark button</string>
+    <string name="widget_timer_ring_label">Timer ring</string>
+    <string name="widget_moon_label">Moon</string>
+    <string name="widget_icon_label">App icon</string>
+    <string name="widget_wallpaper_colors_label">Wallpaper colours</string>
+    <string name="widget_glass_label">Glass</string>
     <string name="widget_description">Starts your noise mix with the timer set in the app</string>
 </resources>

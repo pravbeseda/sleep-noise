@@ -33,5 +33,11 @@
     <string name="update_downloaded">Ein Update wurde heruntergeladen</string>
     <string name="update_restart">Neu starten</string>
     <string name="widget_button_label">Wiedergabetaste</string>
+    <string name="widget_dark_button_label">Dunkle Taste</string>
+    <string name="widget_timer_ring_label">Timer-Ring</string>
+    <string name="widget_moon_label">Mond</string>
+    <string name="widget_icon_label">App-Symbol</string>
+    <string name="widget_wallpaper_colors_label">Hintergrundfarben</string>
+    <string name="widget_glass_label">Glas</string>
     <string name="widget_description">Startet deinen Geräuschmix mit dem Timer aus der App</string>
 </resources>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The track, and over it the share of the timer left: the image's level, 0 to 10 000, is the sweep of the second
+  ring, which the rotation starts at twelve o'clock. Both rings are sized by ratio, so they scale with the circle.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape
+            android:innerRadiusRatio="2.5"
+            android:shape="ring"
+            android:thicknessRatio="16"
+            android:useLevel="false">
+            <solid android:color="@color/widget_ring_track" />
+            <size
+                android:width="100dp"
+                android:height="100dp" />
+        </shape>
+    </item>
+    <item>
+        <rotate
+            android:fromDegrees="270"
+            android:toDegrees="270">
+            <shape
+                android:innerRadiusRatio="2.5"
+                android:shape="ring"
+                android:thicknessRatio="16"
+                android:useLevel="true">
+                <solid android:color="@color/purple_accent" />
+                <size
+                    android:width="100dp"
+                    android:height="100dp" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- widget_moon_play's counterpart while the noise plays: the pause glyph, and the stars out. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M58.8,28h5.4v18h-5.4zM67.8,28h5.4v18h-5.4z" />
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M20,15.5Q20,20 24.5,20Q20,20 20,24.5Q20,20 15.5,20Q20,20 20,15.5Z" />
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M86,66.5Q86,70 89.5,70Q86,70 86,73.5Q86,70 82.5,70Q86,70 86,66.5Z" />
+    <path
+        android:fillColor="@color/widget_moon"
+        android:pathData="M84,85.6Q84,88 86.4,88Q84,88 84,90.4Q84,88 81.6,88Q84,88 84,85.6Z" />
+</vector>

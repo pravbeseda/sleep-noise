@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's picture of widget_glass below API 31, over a dark wallpaper: on the picker's own light background it would not show. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="@color/purple_background_top"
+        android:pathData="M0,0h100v100h-100z" />
+    <path
+        android:fillColor="@color/widget_glass_fill"
+        android:pathData="M30,8h40a22,22 0,0 1,22 22v40a22,22 0,0 1,-22 22h-40a22,22 0,0 1,-22 -22v-40a22,22 0,0 1,22 -22z" />
+    <path
+        android:fillColor="@color/widget_glass_text"
+        android:pathData="M42,36v28l22,-14z" />
+</vector>

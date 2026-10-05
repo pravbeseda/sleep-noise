@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Drawn by the launcher through RemoteViews: only the views and attributes RemoteViews allows belong here.
-  The app's own play button: the accent circle on the purple gradient.
+  A ring that empties with the sleep timer around the glyph and the countdown.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -15,7 +15,16 @@
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:scaleType="fitCenter"
-        android:src="@drawable/widget_button_background" />
+        android:src="@drawable/widget_timer_ring_background" />
+
+    <!-- Its level is the share of the timer left, set by PlayWidgets; same frame as the circle, so it lines up. -->
+    <ImageView
+        android:id="@+id/widget_ring"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_timer_ring" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -27,13 +36,11 @@
         <!-- android:tint, not app:tint: the launcher inflates a plain ImageView, which knows nothing of AppCompat's. -->
         <ImageView
             android:id="@+id/widget_glyph"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@drawable/widget_button_circle"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:importantForAccessibility="no"
-            android:padding="8dp"
             android:src="@drawable/ic_widget_play"
-            android:tint="@color/purple_on_accent"
+            android:tint="@color/purple_foreground"
             tools:ignore="UseAppTint" />
 
         <TextView

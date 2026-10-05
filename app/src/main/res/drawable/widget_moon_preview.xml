@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's picture of widget_moon below API 31: the stopped widget, its two frames stacked. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_moon_background" />
+    <item android:drawable="@drawable/widget_moon_play" />
+</layer-list>

@@ -90,6 +90,7 @@ class PlaybackService : Service() {
     private var playing = false
     private var sessionStartedAt = 0L
     private var sleepTimer: SleepTimer? = null
+    private var widgetMinutesLeft = -1L
     private var listener: Listener? = null
 
     private var pausedByFocusLoss = false
@@ -155,6 +156,12 @@ class PlaybackService : Service() {
             val remaining = timer.remaining(now)
             postNotification()
             listener?.onTick(remaining)
+            // A widget's countdown runs on its own; its ring has to be redrawn, and a minute is a step it can show.
+            val minutesLeft = remaining / MILLIS_PER_MINUTE
+            if (minutesLeft != widgetMinutesLeft) {
+                widgetMinutesLeft = minutesLeft
+                PlayWidgets.refresh(this@PlaybackService)
+            }
             handler.postDelayed(this, TICK_INTERVAL_MILLIS)
         }
     }
@@ -295,7 +302,7 @@ class PlaybackService : Service() {
         noiseEngine.start()
         playing = true
         sessionStartedAt = SystemClock.elapsedRealtime()
-        PlayWidgets.onPlaying(this, sleepTimer?.deadlineMillis)
+        PlayWidgets.onPlaying(this, sleepTimer?.deadlineMillis, sleepTimer?.let { timerMinutes * MILLIS_PER_MINUTE })
         if (sleepTimer != null) {
             handler.postDelayed(tick, TICK_INTERVAL_MILLIS)
         }
@@ -366,6 +373,7 @@ class PlaybackService : Service() {
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
         private const val TICK_INTERVAL_MILLIS = 1_000L
+        private const val MILLIS_PER_MINUTE = 60_000L
 
         // Reads no instance state, and lives here to keep the service under detekt's function count.
         // The constant itself is API 29, so lint rejects naming it below that even though ServiceCompat

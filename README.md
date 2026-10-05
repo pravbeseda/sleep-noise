@@ -29,8 +29,8 @@ store texts say playback needs no connection and never that the app sends nothin
 - **Plays through the night** — the noise and the timer live in a foreground service, so leaving
   the app, locking the screen or switching theme does not stop them. The ongoing notification
   counts the timer down and carries a Stop action.
-- **Home-screen widget** — a 1x1 play button that starts your mix with the timer set in the app, and
-  stops it.
+- **Home-screen widgets** — a 1x1 play button in seven styles that starts your mix with the timer set in the
+  app, shows the countdown, and stops it.
 - **Gets out of the way** — an incoming call silences the noise and it comes back afterwards;
   unplugging the headphones stops it instead of moving it to the speaker.
 - **Two themes** — purple and dark (purple by default), cycled by the action-bar button.
