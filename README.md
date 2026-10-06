@@ -30,7 +30,8 @@ store texts say playback needs no connection and never that the app sends nothin
   the app, locking the screen or switching theme does not stop them. The ongoing notification
   counts the timer down and carries a Stop action.
 - **Home-screen widgets** — a 1x1 play button in six styles that starts your mix with the timer set in the
-  app and stops it; four of them also show the timer and count it down.
+  app and stops it; four of them also show the timer and count it down. From Android 12 a long press
+  offers the launcher's Settings, which opens the app.
 - **Gets out of the way** — an incoming call silences the noise and it comes back afterwards;
   unplugging the headphones stops it instead of moving it to the speaker.
 - **Two themes** — purple and dark (purple by default), cycled by the action-bar button.
@@ -100,7 +101,7 @@ app/src/main/java/ru/pravbeseda/sleepnoise/
 ├── support/                 # FeedbackMail — the mail to the developer, with device and app version; PlayStorePage — the app's Play page
 ├── timer/                   # TimerView, SleepTimer
 ├── update/                  # UpdatePolicy + UpdatePrompt — Google Play's flexible in-app update and its restart
-├── widget/                  # The 1x1 home-screen play widgets: one provider per style, PlayWidgets draws them, WidgetFace says what
+├── widget/                  # The 1x1 home-screen play widgets: one provider per style, PlayWidgets draws them, WidgetFace says what, WidgetSettingsActivity opens the app from the launcher's Settings
 ├── ui/                      # NoiseControlView — one noise's speaker toggle, label and slider; NoiseRows builds one per noise; the language and credits dialogs
 ├── models/ · adapters/
 ```

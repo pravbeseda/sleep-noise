@@ -468,6 +468,15 @@ start a foreground service from the background, while a plain `startService()` f
 answer is not optional: a widget still showing "playing" after its process died sends that Stop to a service with
 nothing to stop, and an unanswered foreground start crashes the app as the service stops itself.
 
+**A long press offers "Settings", which opens the app — from Android 12 on only.** Every style names
+`widget/WidgetSettingsActivity` as its `configure` activity with `reconfigurable|configuration_optional`, and a
+launcher that honours them — One UI's "Settings", Pixel Launcher's pencil — starts it on a placed widget. It answers
+the launcher yes and opens `MainActivity` with the launcher icon's own intent in a task of its own, so an open app is
+brought forward rather than stacked inside the launcher's task. The attributes live in `res/xml-v31/` copies of the
+six `widget_*_info.xml`, because `configuration_optional` is API 31: below it a launcher runs a configure activity
+the moment the widget is placed and drops the widget unless it answers. A new style needs both copies, and
+`WidgetSettingsTest` fails until it has them.
+
 **The session the widgets draw is held in memory, in `PlayWidgets`.** The service sets it on every start and stop
 and redraws the widgets; `PlaybackViewModel` redraws them when the timer changes, since a stopped widget shows the
 timer its next start carries, and `MainActivity.onCreate` does on every creation, since a placed widget keeps the

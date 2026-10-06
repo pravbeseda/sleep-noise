@@ -27,6 +27,16 @@
             </intent-filter>
         </activity>
 
+        <!-- What a launcher's "Settings" on a placed widget opens; exported, since some launchers start it themselves. -->
+        <activity
+            android:name=".widget.WidgetSettingsActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".playback.PlaybackService"
             android:exported="false"
