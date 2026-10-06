@@ -37,7 +37,6 @@
     <string name="widget_timer_ring_label">Кільце таймера</string>
     <string name="widget_moon_label">Місяць</string>
     <string name="widget_icon_label">Іконка застосунку</string>
-    <string name="widget_wallpaper_colors_label">Кольори шпалер</string>
     <string name="widget_glass_label">Скло</string>
     <string name="widget_description">Вмикає ваш мікс шумів із таймером із застосунку</string>
 </resources>

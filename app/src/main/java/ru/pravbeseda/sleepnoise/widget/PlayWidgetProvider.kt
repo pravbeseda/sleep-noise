@@ -45,8 +45,5 @@ class IconWidget :
         PlayWidgetStyle(R.layout.widget_icon, R.drawable.widget_icon_play, R.drawable.widget_icon_pause),
     )
 
-/** The button in the colours Android 12 takes from the wallpaper, and in the app's purple below it. */
-class WallpaperColorsWidget : PlayWidgetProvider(PlayWidgetStyle(R.layout.widget_wallpaper_colors))
-
 /** A translucent tile over the wallpaper; Android cannot blur what lies behind a widget, so it is only see-through. */
 class GlassWidget : PlayWidgetProvider(PlayWidgetStyle(R.layout.widget_glass))

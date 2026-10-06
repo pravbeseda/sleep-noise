@@ -37,7 +37,6 @@
     <string name="widget_timer_ring_label">حلقة المؤقّت</string>
     <string name="widget_moon_label">القمر</string>
     <string name="widget_icon_label">أيقونة التطبيق</string>
-    <string name="widget_wallpaper_colors_label">ألوان الخلفية</string>
     <string name="widget_glass_label">زجاج</string>
     <string name="widget_description">يشغّل مزيج الضوضاء بالمؤقّت المضبوط في التطبيق</string>
 </resources>

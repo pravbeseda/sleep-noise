@@ -452,8 +452,8 @@ A 1x1 play button on the home screen starts a session with the levels and the ti
 **Each style is a widget of its own in the launcher's list**, not one widget with a style setting: a style is a
 `PlayWidgetProvider` subclass carrying a `PlayWidgetStyle` — its layout and the two images its glyph swaps
 between — and a receiver in the manifest, which is also where `PlayWidgets` finds the providers it redraws, so
-there is no second list to forget. Seven ship: the app's button on purple, the same on black, a timer ring, the
-launcher icon's moon, the launcher icon with a play badge, the wallpaper's colours and a see-through tile.
+there is no second list to forget. Six ship: the app's button on purple, the same on black, a timer ring, the
+launcher icon's moon, the launcher icon with a play badge and a see-through tile.
 
 **Every style is a square in the middle of its cell, whatever shape the launcher's cell is.** RemoteViews has no
 aspect ratio, so the square is an image: each background is a drawable sized 100dp square, and `fitCenter` scales
@@ -482,8 +482,7 @@ the timer passes. No timer means no text and a full ring. `PlayWidgets.render` s
 a layout simply leaves out what it does not show: RemoteViews skips an action whose view is not there. The layouts
 are RemoteViews, drawn by the launcher: `ic_widget_play` and `ic_widget_pause` are the app's glyphs without their
 theme tint, since `?attr` resolves to nothing there, and `android:tint` stands where lint asks for AppCompat's
-`app:tint`, which a launcher's plain `ImageView` ignores. The wallpaper's colours are `@android:color/system_accent1_*`
-in `values-v31/colors.xml`; below API 31 the same names hold the app's purple.
+`app:tint`, which a launcher's plain `ImageView` ignores.
 
 `PlayWidgetsTest` applies the RemoteViews in the test process and taps them, which sends the PendingIntent a
 launcher would. It reads the styles off the manifest, as `PlayWidgets` does, and applies every one in both faces:

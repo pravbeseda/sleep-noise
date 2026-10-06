@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The wallpaper's own palette, which Android 12 hands every app; the widget follows it when the wallpaper changes. -->
-<resources>
-    <color name="widget_wallpaper_background">@android:color/system_accent1_100</color>
-    <color name="widget_wallpaper_accent">@android:color/system_accent1_600</color>
-    <color name="widget_wallpaper_on_accent">@android:color/system_accent1_0</color>
-    <color name="widget_wallpaper_text">@android:color/system_accent1_900</color>
-</resources>
