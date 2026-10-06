@@ -93,18 +93,6 @@
         </receiver>
 
         <receiver
-            android:name=".widget.WallpaperColorsWidget"
-            android:exported="false"
-            android:label="@string/widget_wallpaper_colors_label">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_wallpaper_colors_info" />
-        </receiver>
-
-        <receiver
             android:name=".widget.GlassWidget"
             android:exported="false"
             android:label="@string/widget_glass_label">
