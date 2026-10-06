@@ -474,8 +474,9 @@ launcher that honours them — One UI's "Settings", Pixel Launcher's pencil — 
 the launcher yes and opens `MainActivity` with the launcher icon's own intent in a task of its own, so an open app is
 brought forward rather than stacked inside the launcher's task. The attributes live in `res/xml-v31/` copies of the
 six `widget_*_info.xml`, because `configuration_optional` is API 31: below it a launcher runs a configure activity
-the moment the widget is placed and drops the widget unless it answers. A new style needs both copies, and
-`WidgetSettingsTest` fails until it has them.
+the moment the widget is placed and drops the widget unless it answers. A new style needs both copies, and an
+edit to a style goes into both: `WidgetSettingsResourcesTest`, a JVM test, fails on a missing copy and on a copy
+that differs from its base file by anything but those two attributes.
 
 **The session the widgets draw is held in memory, in `PlayWidgets`.** The service sets it on every start and stop
 and redraws the widgets; `PlaybackViewModel` redraws them when the timer changes, since a stopped widget shows the
