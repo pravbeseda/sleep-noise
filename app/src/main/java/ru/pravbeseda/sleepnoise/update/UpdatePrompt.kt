@@ -13,12 +13,12 @@ import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
-import com.google.android.play.core.install.InstallException
 import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.ktx.requestAppUpdateInfo
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.pravbeseda.sleepnoise.R
@@ -88,11 +88,15 @@ class UpdatePrompt(
         if (!offered) otherwise()
     }
 
+    // A cancelled check must stop here rather than read as "nothing to offer" and run the rating prompt.
     private suspend fun requestInfo(): AppUpdateInfo? = try {
         manager.requestAppUpdateInfo()
-    } catch (e: InstallException) {
-        // Expected where Play is missing or outdated, so a log rather than a Crashlytics report.
-        Log.w(TAG, "Google Play reported no update information", e)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (expected: Exception) {
+        // Expected where Play is missing, outdated or unbound — the last fails with a bare RuntimeException
+        // rather than an InstallException — so a log rather than a Crashlytics report.
+        Log.w(TAG, "Google Play reported no update information", expected)
         null
     }
 
