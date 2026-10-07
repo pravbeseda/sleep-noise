@@ -2,6 +2,7 @@ package ru.pravbeseda.sleepnoise
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.text.BidiFormatter
@@ -28,6 +29,7 @@ import ru.pravbeseda.sleepnoise.review.ReviewPrompt
 import ru.pravbeseda.sleepnoise.settings.DEFAULT_LANGUAGE
 import ru.pravbeseda.sleepnoise.settings.LocaleController
 import ru.pravbeseda.sleepnoise.settings.ThemeController
+import ru.pravbeseda.sleepnoise.settings.keepFrameworkLocale
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.support.FeedbackMail
 import ru.pravbeseda.sleepnoise.support.PlayStorePage
@@ -59,6 +61,11 @@ class MainActivity : AppCompatActivity() {
     // The answer is not read: the foreground service plays either way, a denial only costs the
     // user the ongoing notification and its Stop action.
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
+    override fun attachBaseContext(newBase: Context) {
+        keepFrameworkLocale(newBase)
+        super.attachBaseContext(newBase)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val settings = settingsRepository(this)

@@ -70,7 +70,7 @@ class LegacyLanguageMigrationTest {
     private fun awaitAppCompatsFrameworkSync() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         ActivityScenario.launch(MainActivity::class.java).close()
-        val holder = ComponentName(context, "androidx.appcompat.app.AppLocalesMetadataHolderService")
+        val holder = ComponentName(context, APP_LOCALES_HOLDER)
         val deadline = System.currentTimeMillis() + SYNC_TIMEOUT_MILLIS
         while (context.packageManager.getComponentEnabledSetting(holder) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
             assertTrue("AppCompat never finished copying its locales onto the framework", System.currentTimeMillis() < deadline)

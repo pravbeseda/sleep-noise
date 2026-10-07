@@ -1,5 +1,10 @@
 package ru.pravbeseda.sleepnoise.settings
 
+import android.app.LocaleManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import ru.pravbeseda.sleepnoise.R
@@ -7,6 +12,27 @@ import ru.pravbeseda.sleepnoise.models.Language
 
 /** The language of the default `values` bucket, which a device in a language the app does not ship falls back to. */
 const val DEFAULT_LANGUAGE = "en"
+
+/** The service the manifest declares for `autoStoreLocales`; AppCompat enables it once its one-time sync has run. */
+const val APP_LOCALES_HOLDER = "androidx.appcompat.app.AppLocalesMetadataHolderService"
+
+/**
+ * Keeps a language the framework already holds from AppCompat's one-time sync (issue #151). While its holder
+ * service is still disabled, AppCompat copies its own locale file to the framework if it reads no language
+ * itself — and before the first Activity it reads none, while from API 33 that file is never written. So a
+ * language picked in the system settings before the first launch — and very likely one restored on a new
+ * phone — was replaced by an empty list. With one in place there is nothing to carry across, and the sync is marked as done.
+ * Called before AppCompat attaches, which is where the sync starts.
+ */
+fun keepFrameworkLocale(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val packages = context.packageManager
+    val holder = ComponentName(context, APP_LOCALES_HOLDER)
+    val syncPending = packages.getComponentEnabledSetting(holder) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+    if (syncPending && !context.getSystemService(LocaleManager::class.java).applicationLocales.isEmpty) {
+        packages.setComponentEnabledSetting(holder, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+    }
+}
 
 /** The languages the picker offers, and handing one to AppCompat, which stores it and applies it. */
 class LocaleController(private val settings: SettingsRepository) {
