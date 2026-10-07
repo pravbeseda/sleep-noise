@@ -15,9 +15,9 @@ store texts say playback needs no connection and never that the app sends nothin
 
 <a href="https://play.google.com/store/apps/details?id=ru.pravbeseda.sleepnoise">Get it on Google Play</a>
 
-| Purple theme, idle | Dark theme, playing |
-|---|---|
-| <img src="graph/screenshot-purple-idle.png" width="280" alt="Purple theme, playback stopped"> | <img src="graph/screenshot-dark-playing.png" width="280" alt="Dark theme, playing with countdown"> |
+| Purple theme, idle | Purple theme, playing | Dark theme |
+|---|---|---|
+| <img src="app/src/main/play/listings/en-US/graphics/phone-screenshots/1-mixer.jpg" width="240" alt="Purple theme, playback stopped"> | <img src="app/src/main/play/listings/en-US/graphics/phone-screenshots/2-timer.jpg" width="240" alt="Purple theme, playing with countdown"> | <img src="app/src/main/play/listings/en-US/graphics/phone-screenshots/3-theme.jpg" width="240" alt="Dark theme, playback stopped"> |
 
 ## Features
 
