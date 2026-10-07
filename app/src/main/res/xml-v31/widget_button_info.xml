@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Below API 31 a configure activity would run on placement, so the "Settings" it backs are offered from here on. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_button"
+    android:minWidth="40dp"
+    android:minHeight="40dp"
+    android:previewImage="@drawable/widget_button_preview"
+    android:previewLayout="@layout/widget_button"
+    android:resizeMode="none"
+    android:targetCellWidth="1"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:configure="ru.pravbeseda.sleepnoise.widget.WidgetSettingsActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional" />
