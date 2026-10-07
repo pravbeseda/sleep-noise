@@ -1,7 +1,7 @@
-El ruido ahora sube suavemente al pulsar reproducir y se desvanece al detenerlo o cuando termina el temporizador.
+Un widget para la pantalla de inicio, con seis estilos.
 
-El tema negro tiene ahora un sereno acento marfil en lugar de violeta, y los ruidos apagados se leen mejor en él.
+En Android 13 y versiones posteriores puedes elegir el idioma de la aplicación en los ajustes del sistema.
+
+La aplicación te avisará cuando haya una nueva versión en Google Play.
 
 Errores corregidos.
-
-La aplicación ocupa menos espacio.
