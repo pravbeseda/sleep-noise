@@ -4,4 +4,6 @@ En Android 13 y versiones posteriores puedes elegir el idioma de la aplicación 
 
 La aplicación te avisará cuando haya una nueva versión en Google Play.
 
+Se ha corregido un cierre inesperado al abrir la aplicación en dispositivos donde Google Play no está disponible.
+
 Errores corregidos.

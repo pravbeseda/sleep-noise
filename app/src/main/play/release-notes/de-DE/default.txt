@@ -4,4 +4,6 @@ Ab Android 13 kannst du die Sprache der App in den Systemeinstellungen wählen.
 
 Die App sagt dir Bescheid, wenn bei Google Play eine neue Version erscheint.
 
+Absturz beim Start auf Geräten behoben, auf denen Google Play nicht verfügbar ist.
+
 Fehler behoben.
