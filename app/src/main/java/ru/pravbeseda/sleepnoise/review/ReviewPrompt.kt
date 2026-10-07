@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.play.core.ktx.launchReview
 import com.google.android.play.core.ktx.requestReview
-import com.google.android.play.core.review.ReviewException
 import com.google.android.play.core.review.ReviewManager
 import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.launch
@@ -30,9 +29,10 @@ class ReviewPrompt(
         activity.lifecycleScope.launch {
             try {
                 manager.launchReview(activity, manager.requestReview())
-            } catch (e: ReviewException) {
-                // Expected where Play is missing or outdated, so a log rather than a Crashlytics report.
-                Log.w(TAG, "Google Play refused the rating dialog", e)
+            } catch (expected: Exception) {
+                // Expected where Play is missing, outdated or unbound — the last fails with a bare RuntimeException
+                // rather than a ReviewException — so a log rather than a Crashlytics report.
+                Log.w(TAG, "Google Play refused the rating dialog", expected)
             }
         }
     }

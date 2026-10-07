@@ -149,6 +149,26 @@ class UpdatePromptTest {
         assertEquals(1, play.flowsStarted)
     }
 
+    /** A session starting while Play is still answering cancels the check, which then asks for nothing either. */
+    @Test
+    fun aCheckCancelledBySessionDoesNotRunTheRatingPrompt() = onScreen { fake, _ ->
+        var askedForReview = false
+        onMain {
+            val prompt = UpdatePrompt(activity, settings, SlowAnswer(fake))
+            prompt.onPlaybackChanged(nothingPlays = true) { askedForReview = true }
+            prompt.onPlaybackChanged(nothingPlays = false) {}
+        }
+        assertFalse(askedForReview)
+    }
+
+    /** Issue #145: an unbound Play service fails the check with a RuntimeException, not an InstallException. */
+    @Test
+    fun aPlayThatCannotBeReachedLetsTheRatingPromptHaveItsTurn() = onScreen { fake, _ ->
+        var askedForReview = false
+        onMain { UpdatePrompt(activity, settings, Unreachable(fake)).onPlaybackChanged(nothingPlays = true) { askedForReview = true } }
+        assertTrue(askedForReview)
+    }
+
     private fun downloadToTheEnd(play: FakeAppUpdateManager, prompt: UpdatePrompt) = onMain {
         play.setUpdateAvailable(AVAILABLE_VERSION, AppUpdateType.FLEXIBLE)
         prompt.onPlaybackChanged(nothingPlays = true) {}
@@ -217,6 +237,11 @@ class UpdatePromptTest {
         }
 
         fun answerAll() = pending.forEach { it.setResult(fake.appUpdateInfo.result) }
+    }
+
+    /** Play's update service failing to bind, as it does where the Play Store is missing or disabled. */
+    private class Unreachable(fake: FakeAppUpdateManager) : AppUpdateManager by fake {
+        override fun getAppUpdateInfo(): Task<AppUpdateInfo> = Tasks.forException(RuntimeException("Failed to bind to the service."))
     }
 
     private companion object {
