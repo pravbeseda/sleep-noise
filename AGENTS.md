@@ -756,7 +756,7 @@ fails nothing. Before each August, confirm the current deadline and level in the
 
 The rejection is a task, `verifyReleaseVersioning`, wired into `packageRelease` and `packageReleaseBundle` — the two tasks that turn a version into a publishable artifact. So `./gradlew build` and `./gradlew bundle` are covered even though neither names a release, while `lintRelease`, `testReleaseUnitTest` and any debug build still work on a shallow clone, falling back to the floor. **Any CI job that builds a release must check out with `fetch-depth: 0`.**
 
-Release commits follow the message form `Release 1.0.3 (5)`.
+Release commits follow the message form `Release 2.1.0`, with no version code: the code is the commit count, so the merge commit after it moves the code before anything is built, and the tag `v<versionName>+<versionCode>` is where it is recorded.
 
 ### The release path: three verbs, one tag
 

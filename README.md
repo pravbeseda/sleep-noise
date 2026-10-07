@@ -197,7 +197,8 @@ build whose version cannot be derived from the repository is rejected outright b
 `verifyReleaseVersioning` Gradle task. Any CI job that builds a release must check out with
 `fetch-depth: 0`.
 
-Release commits follow the form `Release 1.0.3 (5)`.
+Release commits follow the form `Release 2.1.0`, with no version code: the code is only known
+once the release is merged, and the tag records it.
 
 Every merge into `main` also builds a signed release APK and sends it to the alpha testers through
 Firebase App Distribution. That build needs the maintainer's upload keystore, which is not in the
