@@ -4,4 +4,6 @@ On Android 13 and later you can pick the app's language in the system settings.
 
 The app lets you know when a new version is out on Google Play.
 
+Fixed a crash on launch on devices where Google Play is unavailable.
+
 Bugs fixed.
