@@ -164,6 +164,17 @@ jobs:
           path: ${{ runner.temp }}/play-screenshots
           if-no-files-found: ignore
 
+      # The Gradle log names no failing test, only the path of a report the runner throws away.
+      - name: Upload the test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: store-screenshot-test-report
+          path: |
+            app/build/reports/androidTests/connected
+            app/build/outputs/androidTest-results/connected
+          if-no-files-found: ignore
+
       - name: Decode the Play service account
         if: inputs.publish
         env:
