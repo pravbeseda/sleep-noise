@@ -1,7 +1,7 @@
-The noise now fades in gently when you press play, and fades out when you stop it or the timer runs out.
+A home-screen widget, in six styles.
 
-The black theme has a calm ivory accent instead of purple, and switched-off noises are easier to read in it.
+On Android 13 and later you can pick the app's language in the system settings.
+
+The app lets you know when a new version is out on Google Play.
 
 Bugs fixed.
-
-The app takes up less space.

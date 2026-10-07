@@ -1,7 +1,7 @@
-Das Rauschen wird jetzt beim Start sanft lauter und klingt sanft aus, wenn du es stoppst oder der Timer abläuft.
+Ein Widget für den Startbildschirm, in sechs Designs.
 
-Das schwarze Design hat jetzt einen ruhigen Elfenbeinton statt Violett als Akzent, und ausgeschaltete Rauschsorten sind darin besser lesbar.
+Ab Android 13 kannst du die Sprache der App in den Systemeinstellungen wählen.
+
+Die App sagt dir Bescheid, wenn bei Google Play eine neue Version erscheint.
 
 Fehler behoben.
-
-Die App braucht weniger Speicherplatz.
