@@ -1,0 +1,21 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['github>pravbeseda/renovate-config'],
+  packageRules: [
+    {
+      // detekt 2.0 is still alpha and moves to the plugin id dev.detekt, a migration of its own
+      // recorded in AGENTS.md. Regex: a Gradle plugin is matched by its marker artifact.
+      matchPackageNames: ['/^io\\.gitlab\\.arturbosch\\.detekt/'],
+      matchUpdateTypes: ['major'],
+      enabled: false,
+    },
+    {
+      matchManagers: ['gradle', 'gradle-wrapper'],
+      semanticCommitType: 'build',
+    },
+    {
+      matchManagers: ['github-actions'],
+      semanticCommitType: 'ci',
+    },
+  ],
+}

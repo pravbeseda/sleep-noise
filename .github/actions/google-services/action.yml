@@ -33,22 +33,22 @@ runs:
         # task needs this file to exist — including unit tests, which never reach Firebase at
         # runtime.
         #
-        # Secrets are withheld from pull requests opened from forks, and GitHub treats Dependabot
-        # the same way. Those runs fall back to a checked-in stub, so a contribution can still go
-        # green against the required checks. Only the package name has to be real.
+        # Secrets are withheld from pull requests opened from forks. Those runs fall back to a
+        # checked-in stub, so a contribution can still go green against the required checks. Only
+        # the package name has to be real.
         #
         # Jobs that ship the build somewhere must NOT use the fallback: a stub would ship an app
         # whose Crashlytics and Analytics go nowhere. They pass require-real, and the refusal is
         # here rather than in each of them, so that one rule governs one fallback.
         if [ "$REQUIRE_REAL" = true ] && [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
           echo "::error::GOOGLE_SERVICES_JSON_B64 is empty and this job ships the build. The stub is" \
-               "for fork and Dependabot pull requests, and an app whose Crashlytics reports to nobody" \
+               "for fork pull requests, and an app whose Crashlytics reports to nobody" \
                "is not what a delivery is for."
           exit 1
         fi
         if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
           printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > app/google-services.json
         else
-          echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork or Dependabot PR) — falling back to ci/google-services-stub.json"
+          echo "::notice::GOOGLE_SERVICES_JSON_B64 unavailable (fork PR) — falling back to ci/google-services-stub.json"
           cp ci/google-services-stub.json app/google-services.json
         fi
