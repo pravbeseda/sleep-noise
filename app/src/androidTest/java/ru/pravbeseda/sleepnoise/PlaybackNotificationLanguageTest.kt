@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.SystemClock
 import android.widget.ImageButton
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -51,6 +52,27 @@ class PlaybackNotificationLanguageTest {
                 awaitNotificationText(inLanguage(DEFAULT_TEXT_LANGUAGE).getString(R.string.notification_playing))
 
                 screen.onActivity { LocaleController(settingsRepository(it)).select(PICKED_LANGUAGE) }
+                screen.awaitLanguage(PICKED_LANGUAGE)
+
+                awaitNotificationText(inLanguage(PICKED_LANGUAGE).getString(R.string.notification_playing))
+            } finally {
+                screen.onActivity { it.startService(Intent(it, PlaybackService::class.java).setAction(PlaybackService.ACTION_STOP)) }
+                instrumentation.waitForIdleSync()
+            }
+        }
+    }
+
+    /** The system's per-app language page takes the user out of the app, which drops the binding the picker keeps. */
+    @Test
+    fun aLanguageChangedWhileTheScreenIsAwayReachesTheNotification() {
+        ActivityScenario.launch(MainActivity::class.java).use { screen ->
+            screen.onActivity { it.findViewById<ImageButton>(R.id.playButton).performClick() }
+            try {
+                awaitNotificationText(inLanguage(DEFAULT_TEXT_LANGUAGE).getString(R.string.notification_playing))
+
+                screen.moveToState(Lifecycle.State.CREATED)
+                applyAppLocale(PICKED_LANGUAGE)
+                screen.moveToState(Lifecycle.State.RESUMED)
                 screen.awaitLanguage(PICKED_LANGUAGE)
 
                 awaitNotificationText(inLanguage(PICKED_LANGUAGE).getString(R.string.notification_playing))
