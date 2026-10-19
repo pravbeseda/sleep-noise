@@ -87,6 +87,11 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
         binder?.setVolume(volumeKey, volume)
     }
 
+    /** Redraws a running session's notification; a binding is still standing across a language change's `recreate()`. */
+    fun refreshNotification() {
+        binder?.refreshNotification()
+    }
+
     fun setTimerMinutes(minutes: Int) {
         mutableState.update { it.afterTimerChange(minutes) }
         settings.timerMinutes = minutes

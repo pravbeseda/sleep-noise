@@ -199,16 +199,17 @@ class PlaybackService : Service() {
         fun setVolume(volumeKey: String, volume: Float) {
             channels.getValue(volumeKey).volume = volume
         }
+
+        /** In the app's current language: a session with no sleep timer has no tick to redraw it on. */
+        fun refreshNotification() {
+            createPlaybackChannel(this@PlaybackService)
+            if (playing) postNotification()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            localized.getString(R.string.notification_channel_playback),
-            NotificationManager.IMPORTANCE_LOW,
-        )
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        createPlaybackChannel(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -383,6 +384,16 @@ class PlaybackService : Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         } else {
             0
+        }
+
+        /** Creating a channel that exists already renames it, so this also carries a language change across. */
+        private fun createPlaybackChannel(context: Context) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                inAppLanguage(context).getString(R.string.notification_channel_playback),
+                NotificationManager.IMPORTANCE_LOW,
+            )
+            context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 }

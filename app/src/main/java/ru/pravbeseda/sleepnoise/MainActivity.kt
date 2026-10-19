@@ -75,9 +75,10 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         localeController.adoptLegacyLanguage()
-        // A placed widget keeps the labels it was drawn with, and a language change, from the picker or the
-        // system's per-app page, recreates this screen or meets it on the next launch.
+        // A placed widget and the notification keep the labels they were drawn with, and a language change, from
+        // the picker or the system's per-app page, recreates this screen or meets it on the next launch.
         PlayWidgets.refresh(this)
+        playback.refreshNotification()
         reviewPrompt = ReviewPrompt(this, settings)
         updatePrompt = UpdatePrompt(this, settings)
         setContentView(R.layout.activity_main)
