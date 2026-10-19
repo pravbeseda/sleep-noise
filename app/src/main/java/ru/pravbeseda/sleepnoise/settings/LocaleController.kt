@@ -1,11 +1,15 @@
 package ru.pravbeseda.sleepnoise.settings
 
+import android.annotation.SuppressLint
 import android.app.LocaleManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.LocaleManagerCompat
 import androidx.core.os.LocaleListCompat
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.models.Language
@@ -32,6 +36,21 @@ fun keepFrameworkLocale(context: Context) {
     if (syncPending && !context.getSystemService(LocaleManager::class.java).applicationLocales.isEmpty) {
         packages.setComponentEnabledSetting(holder, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
     }
+}
+
+/**
+ * [context] in the language picked for the app, for code with no screen to read it from — the service's
+ * notification and the widgets. Not `ContextCompat.getContextForLanguage`: from API 33 it trusts the
+ * application's configuration, which the framework leaves in the old language in a process whose screen was
+ * open during the change (issue #157).
+ */
+@SuppressLint("AppBundleLocaleChanges") // The language split is disabled in bundle {}; lint does not read the build script.
+fun inAppLanguage(context: Context): Context {
+    val locales = LocaleManagerCompat.getApplicationLocales(context)
+    if (locales.isEmpty) return context
+    val configuration = Configuration(context.resources.configuration)
+    configuration.setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
+    return context.createConfigurationContext(configuration)
 }
 
 /** The languages the picker offers, and handing one to AppCompat, which stores it and applies it. */

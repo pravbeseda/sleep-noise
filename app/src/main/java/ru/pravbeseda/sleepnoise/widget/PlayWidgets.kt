@@ -7,9 +7,9 @@ import android.content.Intent
 import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
-import androidx.core.content.ContextCompat
 import ru.pravbeseda.sleepnoise.R
 import ru.pravbeseda.sleepnoise.playback.PlaybackService
+import ru.pravbeseda.sleepnoise.settings.inAppLanguage
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import kotlin.math.roundToInt
 
@@ -59,8 +59,8 @@ object PlayWidgets {
 
     /** Draws [face] in [style]; a layout without the timer or the ring has those actions skipped. */
     fun render(context: Context, style: PlayWidgetStyle, face: WidgetFace): RemoteViews {
-        // Below API 33 the per-app language reaches Activities only, as the service's notification knows.
-        val strings = ContextCompat.getContextForLanguage(context)
+        // The per-app language reaches Activities only, as the service's notification knows.
+        val strings = inAppLanguage(context)
         return RemoteViews(context.packageName, style.layout).apply {
             setImageViewResource(R.id.widget_glyph, if (face.playing) style.pauseImage else style.playImage)
             setContentDescription(
