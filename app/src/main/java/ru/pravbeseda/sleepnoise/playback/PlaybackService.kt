@@ -28,6 +28,7 @@ import ru.pravbeseda.sleepnoise.catalog.NoiseLabCandidate
 import ru.pravbeseda.sleepnoise.catalog.SHIPPING_NOISES
 import ru.pravbeseda.sleepnoise.media.NoiseChannel
 import ru.pravbeseda.sleepnoise.media.NoiseEngine
+import ru.pravbeseda.sleepnoise.settings.inAppLanguage
 import ru.pravbeseda.sleepnoise.settings.settingsRepository
 import ru.pravbeseda.sleepnoise.timer.SleepTimer
 import ru.pravbeseda.sleepnoise.widget.PlayWidgets
@@ -133,12 +134,12 @@ class PlaybackService : Service() {
     private var noisyReceiverRegistered = false
 
     /**
-     * The app's own language, which a service does not otherwise get: below API 33
-     * `AppCompatDelegate.setApplicationLocales` reaches Activities only, so `getString` here would
-     * answer in the device's language while the screen answers in the chosen one.
+     * The app's own language, which a service does not otherwise get: the per-app locale reaches
+     * Activities only — below API 33 always, from 33 until the process restarts after a change —
+     * so `getString` here would answer in another language than the screen does.
      */
     private val localized: Context
-        get() = ContextCompat.getContextForLanguage(this)
+        get() = inAppLanguage(this)
 
     private val settings by lazy { settingsRepository(this) }
 
@@ -198,16 +199,17 @@ class PlaybackService : Service() {
         fun setVolume(volumeKey: String, volume: Float) {
             channels.getValue(volumeKey).volume = volume
         }
+
+        /** In the app's current language: a session with no sleep timer has no tick to redraw it on. */
+        fun refreshNotification() {
+            createPlaybackChannel(this@PlaybackService)
+            if (playing) postNotification()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            localized.getString(R.string.notification_channel_playback),
-            NotificationManager.IMPORTANCE_LOW,
-        )
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        createPlaybackChannel(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -382,6 +384,16 @@ class PlaybackService : Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         } else {
             0
+        }
+
+        /** Creating a channel that exists already renames it, so this also carries a language change across. */
+        private fun createPlaybackChannel(context: Context) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                inAppLanguage(context).getString(R.string.notification_channel_playback),
+                NotificationManager.IMPORTANCE_LOW,
+            )
+            context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 }

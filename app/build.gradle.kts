@@ -155,6 +155,14 @@ android {
         generateLocaleConfig = true
     }
 
+    // The language is picked in the app, so a bundle split by the device's languages would leave
+    // the picked one without its strings.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     defaultConfig {
         applicationId = "ru.pravbeseda.sleepnoise"
         minSdk = 26

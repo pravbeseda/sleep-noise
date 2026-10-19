@@ -48,6 +48,7 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
             val binder = service as? PlaybackService.LocalBinder ?: return
             this@PlaybackViewModel.binder = binder
             binder.listener = listener
+            binder.refreshNotification()
             mutableState.update { it.afterBind(binder.isPlaying, binder.isPaused, binder.remainingMillis) }
         }
 
@@ -56,9 +57,16 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** From the Activity's `onStart`; a binding kept across a `recreate()` is still standing and is left alone. */
+    /**
+     * From the Activity's `onStart`; a binding kept across a `recreate()` is still standing and is left alone.
+     * Either way the notification is redrawn: the screen coming back is where a language change shows up, and a
+     * session with no sleep timer has no tick to redraw it on.
+     */
     fun connect() {
-        if (bound) return
+        if (bound) {
+            binder?.refreshNotification()
+            return
+        }
         bound = true
         context.bindService(Intent(context, PlaybackService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
