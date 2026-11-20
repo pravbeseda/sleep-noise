@@ -1,7 +1,7 @@
 [versions]
 agp = "9.5.1"
 coreSplashscreen = "1.2.0"
-firebaseBom = "35.1.0"
+firebaseBom = "35.2.0"
 kotlin = "2.4.21"
 coreKtx = "1.19.1"
 junit = "4.13.2"
@@ -17,7 +17,7 @@ ktlint = "1.8.0"
 kover = "0.9.11"
 lifecycle = "2.11.0"
 coroutines = "1.11.0"
-playPublisher = "4.1.1"
+playPublisher = "4.1.2"
 playReview = "2.0.2"
 playAppUpdate = "2.1.0"
 
