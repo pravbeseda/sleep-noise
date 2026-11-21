@@ -11,7 +11,7 @@ plugins {
     // build, a debug build and every CI job that publishes nothing need no Play
     // credentials and never configure the plugin.
     alias(libs.plugins.play.publisher) apply false
-    id("com.google.gms.google-services") version "4.5.0" apply false
+    id("com.google.gms.google-services") version "4.6.0" apply false
     id("com.google.firebase.crashlytics") version "3.0.8" apply false
 }
 
